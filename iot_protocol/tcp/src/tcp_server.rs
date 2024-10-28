@@ -1,11 +1,16 @@
-use std::collections::HashMap;
 use common_lib::models::{Auth, TcpMessage};
 use common_lib::redis_handler::RedisWrapper;
+use once_cell::sync::Lazy;
 use serde_json::from_str;
+use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
+use std::sync::{Arc, Mutex};
 use std::thread;
-use tokio::net::unix::uid_t;
+
+static CLIENTS: Lazy<Arc<Mutex<HashMap<String, TcpStream>>>> = Lazy::new(|| {
+    Arc::new(Mutex::new(HashMap::new()))
+});
 
 pub(crate) struct TcpServer {
     address: String,
@@ -13,7 +18,6 @@ pub(crate) struct TcpServer {
     name: String,
     size: u8,
 }
-
 
 
 impl TcpServer {
@@ -73,6 +77,9 @@ impl ConnectionHandler {
                 Ok(bytes_read) => {
                     if bytes_read == 0 {
                         println!("Client disconnected: {}", peer_addr);
+                        self.remove_uid(peer_addr_str.clone()).await;
+
+                        CLIENTS.lock().unwrap().remove(&peer_addr_str);
                         break;
                     }
                     let received_message = String::from_utf8_lossy(&buffer[..bytes_read]);
@@ -102,8 +109,6 @@ impl ConnectionHandler {
             let uid = self.extract_uid(message);
             if uid.is_none() {
                 self.stream.write_all("请发送uid:xxx格式的消息进行设备ID映射。\n".as_bytes())?;
-
-
                 return Ok(());
             } else {
                 let string = message.replace("\n", "");
@@ -114,20 +119,23 @@ impl ConnectionHandler {
                     let device_id = parts[1];
                     let username = parts[2];
                     let password = parts[3];
-                    // 这里可以处理 device_id、username 和 password
 
+                    // 这里可以处理 device_id、username 和 password
                     let x = self.find_device_mapping_up(device_id).await;
                     println!("username {} password {}", x.0, x.1);
 
                     if x.0.as_str() == username && x.1.as_str() == password {
-
-                        //     获取当前服务名称上面 tcp 客户端的总数量
-
+                        // 获取当前服务名称上面 tcp 客户端的总数量
                         let ss = format!("tcp_uid_f:{}", self.name);
                         let option1 = self.wrapper.get_hash_length(ss.as_str()).await.unwrap().unwrap_or(0);
 
-                        if option1 +1 <= self.size as usize {
-                            self.storage_uid(device_id, remote_address).await;
+                        if option1 + 1 <= self.size as usize {
+                            // 成功识别设备编码，存储 UID
+                            self.storage_uid(device_id, remote_address.clone()).await;
+
+                            // 在成功识别设备编码后，将客户端连接添加到全局 HashMap
+                            let mut clients = CLIENTS.lock().unwrap();
+                            clients.insert(remote_address.clone(), self.stream.try_clone().expect("Failed to clone stream"));
 
                             self.stream.write_all("成功识别设备编码.\n".as_bytes())?;
                             return Ok(());
@@ -151,6 +159,20 @@ impl ConnectionHandler {
 
         self.wrapper.set_hash(k1.as_str(), device_id, remote_address.as_str()).await.expect("TODO: panic message");
         self.wrapper.set_hash(k2.as_str(), remote_address.as_str(), device_id).await.expect("TODO: panic message");
+    }
+
+    async fn remove_uid(&mut self, remote_address: String) {
+        let k1 = format!("tcp_uid:{}", self.name);
+        let k2 = format!("tcp_uid_f:{}", self.name);
+
+        // val := globalRedisClient.HGet(context.Background(), "tcp_uid_f:"+globalConfig.NodeInfo.Name, remoteAdd).Val()
+
+        let option = self.wrapper.get_hash(k2.as_str(), remote_address.as_str()).await.unwrap();
+
+        if option.is_some() {
+            self.wrapper.delete_hash_field(k1.as_str(), option.unwrap().as_str()).await.expect("TODO: panic message");
+            self.wrapper.delete_hash_field(k2.as_str(), remote_address.as_str()).await.expect("TODO: panic message");
+        }
     }
 
     async fn find_device_mapping_up(&mut self, device_id: &str) -> (String, String) {
@@ -180,15 +202,12 @@ impl ConnectionHandler {
 
         let string = message.replace("\n", "");
         let tcp = TcpMessage {
-            uid: remote_address
-            ,
+            uid: remote_address,
             message: string,
         };
 
         println!("Send MQ : {}", tcp.to_json_string());
         self.stream.write_all("数据已处理.\n".as_bytes()).expect("handler_message error");
-
-
     }
 
     // 从 redis 中获取
