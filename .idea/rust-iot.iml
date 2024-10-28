@@ -2,8 +2,22 @@
 <module type="EMPTY_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
-      <excludeFolder url="file://$MODULE_DIR$/target" />
+      <sourceFolder url="file://$MODULE_DIR$/api/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/common_lib/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/data_processing/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/iot_protocol/coap/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/iot_protocol/http/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/iot_protocol/tcp/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/iot_protocol/ws/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/notification/src" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/api/target" />
+      <excludeFolder url="file://$MODULE_DIR$/common_lib/target" />
+      <excludeFolder url="file://$MODULE_DIR$/data_processing/target" />
+      <excludeFolder url="file://$MODULE_DIR$/iot_protocol/coap/target" />
+      <excludeFolder url="file://$MODULE_DIR$/iot_protocol/http/target" />
+      <excludeFolder url="file://$MODULE_DIR$/iot_protocol/tcp/target" />
+      <excludeFolder url="file://$MODULE_DIR$/iot_protocol/ws/target" />
+      <excludeFolder url="file://$MODULE_DIR$/notification/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
