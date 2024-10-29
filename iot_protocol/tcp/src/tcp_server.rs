@@ -1,14 +1,16 @@
+use chrono::Utc;
 use common_lib::models::{Auth, TcpMessage};
 use common_lib::redis_handler::RedisWrapper;
 use once_cell::sync::Lazy;
 use serde_json::from_str;
 use std::collections::HashMap;
-use std::io::{Read, Write};
-use std::net::{TcpListener, TcpStream};
-use std::sync::{Arc, Mutex};
-use std::thread;
+use std::sync::Arc;
+use time::Duration;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::{TcpListener, TcpStream};
+use tokio::sync::Mutex;
 
-static CLIENTS: Lazy<Arc<Mutex<HashMap<String, TcpStream>>>> = Lazy::new(|| {
+pub static CLIENTS: Lazy<Arc<Mutex<HashMap<String, Arc<Mutex<TcpStream>>>>>> = Lazy::new(|| {
     Arc::new(Mutex::new(HashMap::new()))
 });
 
@@ -18,7 +20,6 @@ pub(crate) struct TcpServer {
     name: String,
     size: u8,
 }
-
 
 impl TcpServer {
     pub(crate) fn new(address: &str, redis_wrapper: RedisWrapper, name: String, size: u8) -> Self {
@@ -30,19 +31,16 @@ impl TcpServer {
         }
     }
 
-    pub(crate) fn start(&self) {
-        let listener = TcpListener::bind(&self.address).expect("Failed to bind address");
+    pub(crate) async fn start(&self) {
+        let listener = TcpListener::bind(&self.address).await.expect("Failed to bind address");
         println!("Server is listening on {}", self.address);
 
-        for stream in listener.incoming() {
-            match stream {
-                Ok(stream) => {
+        loop {
+            match listener.accept().await {
+                Ok((stream, _)) => {
                     let handler = ConnectionHandler::new(stream, self.redis_wrapper.clone(), self.name.clone(), self.size);
-
-                    thread::spawn(move || {
-                        tokio::runtime::Runtime::new().unwrap().block_on(async {
-                            handler.handle_connection().await;
-                        });
+                    tokio::spawn(async move {
+                        handler.handle_connection().await;
                     });
                 }
                 Err(e) => {
@@ -54,7 +52,7 @@ impl TcpServer {
 }
 
 struct ConnectionHandler {
-    stream: TcpStream,
+    stream: Arc<Mutex<TcpStream>>,
     wrapper: RedisWrapper,
     name: String,
     size: u8,
@@ -62,30 +60,35 @@ struct ConnectionHandler {
 
 impl ConnectionHandler {
     fn new(stream: TcpStream, wrapper: RedisWrapper, name: String, size: u8) -> Self {
-        ConnectionHandler { stream, wrapper, name, size }
+        ConnectionHandler {
+            stream: Arc::new(Mutex::new(stream)),
+            wrapper,
+            name,
+            size,
+        }
     }
 
     async fn handle_connection(mut self) {
-        let peer_addr = self.stream.peer_addr().expect("Failed to get peer address");
+        let peer_addr = self.stream.lock().await.peer_addr().expect("Failed to get peer address");
         let peer_addr_str = peer_addr.to_string();
         println!("Client connected: {}", peer_addr_str);
 
         let mut buffer = [0; 512];
 
         loop {
-            match self.stream.read(&mut buffer) {
+            let mut stream = self.stream.lock().await;
+
+            match stream.read(&mut buffer).await {
+                Ok(bytes_read) if bytes_read == 0 => {
+                    println!("Client disconnected: {}", peer_addr);
+                    drop(stream);
+                    self.cleanup_connection(peer_addr_str.clone()).await;
+                    break;
+                }
                 Ok(bytes_read) => {
-                    if bytes_read == 0 {
-                        println!("Client disconnected: {}", peer_addr);
-                        self.remove_uid(peer_addr_str.clone()).await;
-
-                        CLIENTS.lock().unwrap().remove(&peer_addr_str);
-                        break;
-                    }
                     let received_message = String::from_utf8_lossy(&buffer[..bytes_read]);
-                    println!("Received from {}: {}", peer_addr, received_message);
-
-                    // 处理消息并发送响应
+                    println!("Received from {}, data= {}", peer_addr, received_message);
+                    drop(stream);
                     if let Err(e) = self.send_response(&received_message, peer_addr_str.clone()).await {
                         eprintln!("Failed to send response: {}", e);
                     }
@@ -98,135 +101,111 @@ impl ConnectionHandler {
         }
     }
 
-    async fn send_response(&mut self, message: &str, remote_address: String) -> std::io::Result<()> {
-        let option = self.get_uid(message, remote_address.clone()).await;
+    async fn send_response(&mut self, message: &str, remote_address: String) -> tokio::io::Result<()> {
+        let uid_option = self.get_uid(message, remote_address.clone()).await;
 
-        if let Some(uid) = option {
+        if let Some(uid) = uid_option {
             println!("UID for {}: {}", remote_address, uid);
-            // 使用 UID 进行进一步处理
-            self.handler_message(message, uid);
-        } else {
-            let uid = self.extract_uid(message);
-            if uid.is_none() {
-                self.stream.write_all("请发送uid:xxx格式的消息进行设备ID映射。\n".as_bytes())?;
-                return Ok(());
-            } else {
-                let string = message.replace("\n", "");
-                let parts: Vec<&str> = string.split(':').collect();
-                if parts.len() != 4 {
-                    self.stream.write_all("uid格式错误.\n".as_bytes())?;
-                } else {
-                    let device_id = parts[1];
-                    let username = parts[2];
-                    let password = parts[3];
-
-                    // 这里可以处理 device_id、username 和 password
-                    let x = self.find_device_mapping_up(device_id).await;
-                    println!("username {} password {}", x.0, x.1);
-
-                    if x.0.as_str() == username && x.1.as_str() == password {
-                        // 获取当前服务名称上面 tcp 客户端的总数量
-                        let ss = format!("tcp_uid_f:{}", self.name);
-                        let option1 = self.wrapper.get_hash_length(ss.as_str()).await.unwrap().unwrap_or(0);
-
-                        if option1 + 1 <= self.size as usize {
-                            // 成功识别设备编码，存储 UID
-                            self.storage_uid(device_id, remote_address.clone()).await;
-
-                            // 在成功识别设备编码后，将客户端连接添加到全局 HashMap
-                            let mut clients = CLIENTS.lock().unwrap();
-                            clients.insert(remote_address.clone(), self.stream.try_clone().expect("Failed to clone stream"));
-
-                            self.stream.write_all("成功识别设备编码.\n".as_bytes())?;
-                            return Ok(());
-                        } else {
-                            self.stream.write_all("当前服务器已满载.\n".as_bytes())?;
-                            return Ok(());
-                        }
-                    } else {
-                        self.stream.write_all("账号密码不正确".as_bytes())?;
-                        return Ok(());
-                    }
-                }
+            self.process_message(message, uid, remote_address).await;
+        } else if let Some(uid) = self.extract_uid(message) {
+            if !self.validate_and_store_uid(message, uid, remote_address.clone()).await? {
+                self.respond_with_message("账号密码不正确.\n").await?;
             }
+        } else {
+            self.respond_with_message("请发送uid:xxx格式的消息进行设备ID映射。\n").await?;
         }
         Ok(())
     }
 
-    async fn storage_uid(&mut self, device_id: &str, remote_address: String) {
-        let k1 = format!("tcp_uid:{}", self.name);
-        let k2 = format!("tcp_uid_f:{}", self.name);
-
-        self.wrapper.set_hash(k1.as_str(), device_id, remote_address.as_str()).await.expect("TODO: panic message");
-        self.wrapper.set_hash(k2.as_str(), remote_address.as_str(), device_id).await.expect("TODO: panic message");
+    async fn respond_with_message(&self, msg: &str) -> tokio::io::Result<()> {
+        match self.stream.lock().await.write_all(msg.as_bytes()).await {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                eprintln!("Failed to send message: {:?}", e);
+                Err(e)
+            }
+        }
     }
 
-    async fn remove_uid(&mut self, remote_address: String) {
+    async fn validate_and_store_uid(&mut self, message: &str, uid: String, remote_address: String) -> tokio::io::Result<bool> {
+        let device_info = self.parse_device_info(message).unwrap();
+        let (username, password) = self.find_device_mapping_up(&device_info.0).await;
+        if device_info.1 == username && device_info.2 == password {
+            let ss = format!("tcp_uid_f:{}", self.name);
+            if self.wrapper.get_hash_length(&ss).await.unwrap().unwrap_or(0) + 1 <= self.size as usize {
+                self.store_uid(&device_info.0, remote_address.clone()).await;
+                CLIENTS.lock().await.insert(remote_address.clone(), self.stream.clone());
+                self.respond_with_message("成功识别设备编码.\n").await?;
+                return Ok(true);
+            } else {
+                self.respond_with_message("当前服务器已满载.\n").await?;
+            }
+        }
+        Ok(false)
+    }
+    fn parse_device_info(&self, message: &str) -> Option<(String, String, String)> {
+        let parts: Vec<&str> = message.trim().split(':').collect();
+        if parts.len() == 4 && parts[0] == "uid" {
+            let device_id = parts[1].to_string();
+            let username = parts[2].to_string();
+            let password = parts[3].to_string();
+            Some((device_id, username, password))
+        } else {
+            None
+        }
+    }
+
+    async fn store_uid(&mut self, device_id: &str, remote_address: String) {
         let k1 = format!("tcp_uid:{}", self.name);
         let k2 = format!("tcp_uid_f:{}", self.name);
+        self.wrapper.set_hash(&k1, device_id, &remote_address).await.expect("Failed to set hash");
+        self.wrapper.set_hash(&k2, &remote_address, device_id).await.expect("Failed to set hash");
+    }
 
-        // val := globalRedisClient.HGet(context.Background(), "tcp_uid_f:"+globalConfig.NodeInfo.Name, remoteAdd).Val()
-
-        let option = self.wrapper.get_hash(k2.as_str(), remote_address.as_str()).await.unwrap();
-
-        if option.is_some() {
-            self.wrapper.delete_hash_field(k1.as_str(), option.unwrap().as_str()).await.expect("TODO: panic message");
-            self.wrapper.delete_hash_field(k2.as_str(), remote_address.as_str()).await.expect("TODO: panic message");
+    async fn cleanup_connection(&mut self, remote_address: String) {
+        let k1 = format!("tcp_uid:{}", self.name);
+        let k2 = format!("tcp_uid_f:{}", self.name);
+        if let Some(device_id) = self.wrapper.get_hash(&k2, &remote_address).await.unwrap() {
+            self.wrapper.delete_hash_field(&k1, &device_id).await.expect("Failed to delete hash field");
+            self.wrapper.delete_hash_field(&k2, &remote_address).await.expect("Failed to delete hash field");
         }
     }
 
     async fn find_device_mapping_up(&mut self, device_id: &str) -> (String, String) {
-        let option = self.wrapper.get_hash("auth:tcp", device_id).await.unwrap();
-
-        if option.is_none() {
-            return (String::new(), String::new());
-        } else {
-            let string = option.unwrap();
-
-            // 将 string 解析为 Auth 结构体
+        if let Some(string) = self.wrapper.get_hash("auth:tcp", device_id).await.unwrap() {
             let auth: Auth = from_str(&string).expect("Failed to deserialize Auth");
-            return (auth.username, auth.password);
+            (auth.username, auth.password)
+        } else {
+            (String::new(), String::new())
         }
     }
+
     fn extract_uid(&self, message: &str) -> Option<String> {
         if message.starts_with("uid:") {
-            let uid = &message[4..].trim(); // 提取并去除前导空格
-            return Some(uid.to_string());
+            Some(message[4..].trim().to_string())
+        } else {
+            None
         }
-        None
     }
-    fn handler_message(&mut self, message: &str, remote_address: String) {
-        // self.stream.write_all(b"No UID found");
-        // todo: 写出到消息队列
-        println!("Handler message: {}", message);
 
-        let string = message.replace("\n", "");
+    async fn process_message(&mut self, message: &str, uid: String, remote_address: String) {
+        println!("Processing message: {}", message);
+
+        let string1 = remote_address.replace(":", "@");
+        let now = Utc::now().timestamp();
+        let key = format!("tcp:last:{}", string1);
+        self.wrapper.set_string_with_expiry(&key, &now.to_string(), 24 * 60 * 60).await.unwrap();
+
         let tcp = TcpMessage {
-            uid: remote_address,
-            message: string,
+            uid,
+            message: message.replace("\n", ""),
         };
-
         println!("Send MQ : {}", tcp.to_json_string());
-        self.stream.write_all("数据已处理.\n".as_bytes()).expect("handler_message error");
+        self.respond_with_message("数据已处理.\n").await.expect("process_message error");
     }
 
-    // 从 redis 中获取
     async fn get_uid(&self, message: &str, remote_address: String) -> Option<String> {
         let key = format!("tcp_uid_f:{}", self.name);
-        println!("key = {}  remote_address = {}", key, remote_address);
-        if let Ok(option) = self.wrapper.get_hash(key.as_str(), remote_address.as_str()).await {
-            return option;
-        }
-        None
-    }
-
-    fn close_connection(&mut self) {
-        if let Err(e) = self.stream.shutdown(std::net::Shutdown::Both) {
-            eprintln!("Failed to shutdown connection: {}", e);
-        } else {
-            println!("Connection closed");
-        }
+        self.wrapper.get_hash(&key, &remote_address).await.unwrap()
     }
 }
-
-

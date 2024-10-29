@@ -24,13 +24,25 @@ impl RedisWrapper {
     }
 
     // String 操作
+    // todo : 过期时间处理
     pub async fn set_string(&self, key: &str, value: &str) -> Result<(), RedisError> {
         let mut con = self.get_connection().await?;
         con.set::<&str, &str, ()>(key, value).await?;
         Ok(())
     }
 
-
+    pub async fn set_string_with_expiry(
+        &self,
+        key: &str,
+        value: &str,
+        expiry_seconds: i64
+    ) -> Result<(), RedisError> {
+        let mut con = self.get_connection().await?;
+        // 使用 set 方法和过期时间选项
+        let _: () = con.set(key, value).await?;
+        let _: () = con.expire(key, expiry_seconds).await?; // 设置过期时间
+        Ok(())
+    }
     pub async fn get_string(&self, key: &str) -> Result<Option<String>, RedisError> {
         let mut con = self.get_connection().await?;
         let value: Option<String> = con.get(key).await?;
