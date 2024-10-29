@@ -2,12 +2,18 @@ mod tcp_server;
 
 use crate::tcp_server::CLIENTS;
 use chrono::Utc;
+use log::{debug, info};
 use common_lib::protocol_config::read_config;
 use common_lib::redis_handler::RedisWrapper;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::time::{interval, Duration};
+fn init_logger() {
+    log4rs::init_file("log4rs.yml", Default::default()).unwrap();
+}
+
 #[tokio::main]
 async fn main() {
+    init_logger();
     let result = read_config("app-local.yml").unwrap();
     let redis_wrapper = RedisWrapper::new(result.redis_config).unwrap();
 
@@ -47,12 +53,12 @@ pub async fn print_clients_periodically(redis_wrapper: RedisWrapper, name: Strin
         interval.tick().await;
 
         let mut clients = CLIENTS.lock().await;
-        println!("Current connected clients:");
+        debug!("Current connected clients:");
 
         let mut disconnected_clients = Vec::new(); // 用于存储需要移除的客户端地址
 
         for (address, v) in clients.iter() {
-            println!("Client address: {}", address);
+            debug!("Client address: {}", address);
             let string = address.replace(":", "@");
             let key = format!("tcp:last:{}", string);
 
@@ -63,26 +69,26 @@ pub async fn print_clients_periodically(redis_wrapper: RedisWrapper, name: Strin
                         let current_time = Utc::now().timestamp(); // 使用 chrono crate 获取 UTC 时间戳
                         let time_difference = current_time - last_active;
 
-                        println!("Parsed last active time: {}", last_active);
-                        println!("Time difference in seconds: {}", time_difference);
+                        debug!("Parsed last active time: {}", last_active);
+                        debug!("Time difference in seconds: {}", time_difference);
 
                         // 如果时间差大于 10 秒，关闭 TCP 连接
                         if time_difference > 10 {
-                            println!("Closing TCP connection for: {}", address);
+                            debug!("Closing TCP connection for: {}", address);
                             disconnected_clients.push(address.clone());
 
                             // 获取客户端连接并尝试关闭
                             let mut tcp_stream = v.lock().await;
                             if let Err(e) = tcp_stream.shutdown().await {
-                                println!("Failed to close connection for {}: {}", address, e);
+                                debug!("Failed to close connection for {}: {}", address, e);
                             } else {
-                                println!("Connection closed for: {}", address);
+                                debug!("Connection closed for: {}", address);
                                 // 将需要移除的地址添加到列表
                                 cleanup_connection(name.as_str(), address.clone(), redis_wrapper.clone()).await;
                             }
                         }
                     }
-                    Err(e) => println!("Failed to parse number: {}", e),
+                    Err(e) => debug!("Failed to parse number: {}", e),
                 }
             }
         }
@@ -93,7 +99,7 @@ pub async fn print_clients_periodically(redis_wrapper: RedisWrapper, name: Strin
         }
 
         if clients.is_empty() {
-            println!("No connected clients at this time.");
+            debug!("No connected clients at this time.");
         }
     }
 }

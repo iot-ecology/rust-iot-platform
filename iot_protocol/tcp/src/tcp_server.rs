@@ -5,6 +5,7 @@ use once_cell::sync::Lazy;
 use serde_json::from_str;
 use std::collections::HashMap;
 use std::sync::Arc;
+use log::{error, info};
 use time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
@@ -33,7 +34,7 @@ impl TcpServer {
 
     pub(crate) async fn start(&self) {
         let listener = TcpListener::bind(&self.address).await.expect("Failed to bind address");
-        println!("Server is listening on {}", self.address);
+        info!("Server is listening on {}", self.address);
 
         loop {
             match listener.accept().await {
@@ -44,7 +45,7 @@ impl TcpServer {
                     });
                 }
                 Err(e) => {
-                    eprintln!("Failed to accept connection: {}", e);
+                    error!("Failed to accept connection: {}", e);
                 }
             }
         }
@@ -71,7 +72,7 @@ impl ConnectionHandler {
     async fn handle_connection(mut self) {
         let peer_addr = self.stream.lock().await.peer_addr().expect("Failed to get peer address");
         let peer_addr_str = peer_addr.to_string();
-        println!("Client connected: {}", peer_addr_str);
+        info!("Client connected: {}", peer_addr_str);
 
         let mut buffer = [0; 512];
 
@@ -80,21 +81,21 @@ impl ConnectionHandler {
 
             match stream.read(&mut buffer).await {
                 Ok(bytes_read) if bytes_read == 0 => {
-                    println!("Client disconnected: {}", peer_addr);
+                    info!("Client disconnected: {}", peer_addr);
                     drop(stream);
                     self.cleanup_connection(peer_addr_str.clone()).await;
                     break;
                 }
                 Ok(bytes_read) => {
                     let received_message = String::from_utf8_lossy(&buffer[..bytes_read]);
-                    println!("Received from {}, data= {}", peer_addr, received_message);
+                    info!("Received from {}, data= {}", peer_addr, received_message);
                     drop(stream);
                     if let Err(e) = self.send_response(&received_message, peer_addr_str.clone()).await {
-                        eprintln!("Failed to send response: {}", e);
+                        error!("Failed to send response: {}", e);
                     }
                 }
                 Err(e) => {
-                    eprintln!("Failed to read from connection: {}", e);
+                    error!("Failed to read from connection: {}", e);
                     break;
                 }
             }
@@ -105,7 +106,7 @@ impl ConnectionHandler {
         let uid_option = self.get_uid(message, remote_address.clone()).await;
 
         if let Some(uid) = uid_option {
-            println!("UID for {}: {}", remote_address, uid);
+            info!("UID for {}: {}", remote_address, uid);
             self.process_message(message, uid, remote_address).await;
         } else if let Some(uid) = self.extract_uid(message) {
             if !self.validate_and_store_uid(message, uid, remote_address.clone()).await? {
@@ -122,7 +123,7 @@ impl ConnectionHandler {
         match self.stream.lock().await.write_all(msg.as_bytes()).await {
             Ok(_) => Ok(()),
             Err(e) => {
-                eprintln!("Failed to send message: {:?}", e);
+                error!("Failed to send message: {:?}", e);
                 Err(e)
             }
         }
@@ -140,6 +141,7 @@ impl ConnectionHandler {
                 return Ok(true);
             } else {
                 self.respond_with_message("当前服务器已满载.\n").await?;
+                return Ok(true);
             }
         }
         Ok(false)
@@ -190,7 +192,7 @@ impl ConnectionHandler {
     }
 
     async fn process_message(&mut self, message: &str, uid: String, remote_address: String) {
-        println!("Processing message: {}", message);
+        info!("Processing message: {}", message);
 
         let string1 = remote_address.replace(":", "@");
         let now = Utc::now().timestamp();
@@ -201,7 +203,7 @@ impl ConnectionHandler {
             uid,
             message: message.replace("\n", ""),
         };
-        println!("Send MQ : {}", tcp.to_json_string());
+        info!("Send MQ : {}", tcp.to_json_string());
         let k1 = format!("tcp_uid:{}", self.name);
         let option = self.wrapper.get_hash(k1.as_str(), remote_address.as_str()).await.expect("Failed to get hash");
         if option.is_some(){

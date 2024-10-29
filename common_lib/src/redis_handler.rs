@@ -1,5 +1,4 @@
 use crate::protocol_config::RedisConfig;
-// src/redis_wrapper.rs
 use redis::{AsyncCommands, Client, RedisError};
 
 #[derive(Clone, Debug)]

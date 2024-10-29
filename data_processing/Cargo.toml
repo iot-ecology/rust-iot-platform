@@ -6,3 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+log = "0.4.22"
+common_lib = { path = "../common_lib" }
+chrono = "0.4.38"
+config = "0.14.1"
+log4rs = "1.0"
