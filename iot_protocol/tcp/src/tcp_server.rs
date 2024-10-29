@@ -118,6 +118,7 @@ impl ConnectionHandler {
     }
 
     async fn respond_with_message(&self, msg: &str) -> tokio::io::Result<()> {
+
         match self.stream.lock().await.write_all(msg.as_bytes()).await {
             Ok(_) => Ok(()),
             Err(e) => {
@@ -201,7 +202,13 @@ impl ConnectionHandler {
             message: message.replace("\n", ""),
         };
         println!("Send MQ : {}", tcp.to_json_string());
-        self.respond_with_message("数据已处理.\n").await.expect("process_message error");
+        let k1 = format!("tcp_uid:{}", self.name);
+        let option = self.wrapper.get_hash(k1.as_str(), remote_address.as_str()).await.expect("Failed to get hash");
+        if option.is_some(){
+            self.respond_with_message("数据已处理.\n").await.expect("process_message error");
+
+        }
+
     }
 
     async fn get_uid(&self, message: &str, remote_address: String) -> Option<String> {
