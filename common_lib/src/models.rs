@@ -42,6 +42,18 @@ pub struct HttpMessage {
 
 impl HttpMessage {
     pub fn to_json_string(&self) -> String {
-        serde_json::to_string(self).expect("Failed to serialize TcpMessage")
+        serde_json::to_string(self).expect("Failed to serialize HttpMessage")
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct WsMessage {
+    pub uid: String,
+    pub message: String,
+}
+
+impl WsMessage {
+    pub fn to_json_string(&self) -> String {
+        serde_json::to_string(self).expect("Failed to serialize WsMessage")
     }
 }
