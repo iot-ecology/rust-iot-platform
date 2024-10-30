@@ -33,10 +33,7 @@ fn mirror(id: String, ws: WebSocket, peers_map: &State<PeersMap>) -> Channel<'st
             info!("Connection opened ({} clients)", count);
 
             loop {
-                // 设置一个超时，十秒钟未收到消息就剔除用户
-                let result = timeout(Duration::from_secs(24 * 60 * 60), async {
-                    loop {
-                        select! {
+                select! {
                             message = stream.next() => match message {
                                 Some(Ok(Message::Text(text))) => {
                                     info!("Received message: {:?}", text.clone());
@@ -81,16 +78,6 @@ fn mirror(id: String, ws: WebSocket, peers_map: &State<PeersMap>) -> Channel<'st
                             },
                             else => break,
                         }
-                    }
-                }).await;
-
-                match result {
-                    Ok(_) => {} // 正常结束，没有超时
-                    Err(_) => {
-                        info!("No message received for 10 seconds. Disconnecting {}", id);
-                        break; // 超时，跳出循环
-                    }
-                }
             }
 
             peers_map.lock().await.remove(&id);

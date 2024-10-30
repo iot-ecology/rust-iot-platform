@@ -9,3 +9,4 @@ Cargo.lock
 *.pdb
 
 .idea/
+/.idea/
