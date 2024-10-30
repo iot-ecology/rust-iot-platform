@@ -1,5 +1,5 @@
 [package]
-name = "coap"
+name = "coap-iot"
 version = "0.1.0"
 edition = "2021"
 
@@ -20,3 +20,5 @@ chrono = "0.4"
 log = "0.4.22"
 
 log4rs = "1.0"
+coap = "0.19"
+coap-lite = "0.11.3"
