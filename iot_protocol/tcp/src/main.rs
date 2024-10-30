@@ -2,11 +2,13 @@ mod tcp_server;
 
 use crate::tcp_server::CLIENTS;
 use chrono::Utc;
-use log::{debug, info};
 use common_lib::protocol_config::read_config;
+use common_lib::rabbit_utils::init_rabbitmq_with_config;
 use common_lib::redis_handler::RedisWrapper;
+use log::{debug, info};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::time::{interval, Duration};
+
 fn init_logger() {
     log4rs::init_file("log4rs.yml", Default::default()).unwrap();
 }
@@ -16,17 +18,22 @@ async fn main() {
     init_logger();
     let result = read_config("app-local.yml").unwrap();
     let redis_wrapper = RedisWrapper::new(result.redis_config).unwrap();
+    init_rabbitmq_with_config(result.mq_config).await.unwrap();
 
     let k1 = format!("tcp_uid_f:{}", result.node_info.name);
     let k2 = format!("tcp_uid:{}", result.node_info.name);
     redis_wrapper.delete_hash(k1.as_str()).await.unwrap();
     redis_wrapper.delete_hash(k2.as_str()).await.unwrap();
 
-
     // tokio::spawn(print_clients(CLIENTS,redis_wrapper.clone()));
 
     let server = crate::tcp_server::TcpServer::new(
-        format!("{}:{}", &result.node_info.host, result.node_info.port.to_string().as_str()).as_str(),
+        format!(
+            "{}:{}",
+            &result.node_info.host,
+            result.node_info.port.to_string().as_str()
+        )
+        .as_str(),
         redis_wrapper.clone(),
         result.node_info.name.clone(),
         result.node_info.size,
@@ -42,9 +49,10 @@ async fn main() {
     });
 
     // 保证 main 不会提前退出
-    tokio::signal::ctrl_c().await.expect("Failed to listen for ctrl-c signal");
+    tokio::signal::ctrl_c()
+        .await
+        .expect("Failed to listen for ctrl-c signal");
 }
-
 
 pub async fn print_clients_periodically(redis_wrapper: RedisWrapper, name: String) {
     let mut interval = interval(Duration::from_secs(10));
@@ -84,7 +92,12 @@ pub async fn print_clients_periodically(redis_wrapper: RedisWrapper, name: Strin
                             } else {
                                 debug!("Connection closed for: {}", address);
                                 // 将需要移除的地址添加到列表
-                                cleanup_connection(name.as_str(), address.clone(), redis_wrapper.clone()).await;
+                                cleanup_connection(
+                                    name.as_str(),
+                                    address.clone(),
+                                    redis_wrapper.clone(),
+                                )
+                                .await;
                             }
                         }
                     }
@@ -107,7 +120,13 @@ async fn cleanup_connection(name: &str, remote_address: String, redis_wrapper: R
     let k1 = format!("tcp_uid:{}", name);
     let k2 = format!("tcp_uid_f:{}", name);
     if let Some(device_id) = redis_wrapper.get_hash(&k2, &remote_address).await.unwrap() {
-        redis_wrapper.delete_hash_field(&k1, &device_id).await.expect("Failed to delete hash field");
-        redis_wrapper.delete_hash_field(&k2, &remote_address).await.expect("Failed to delete hash field");
+        redis_wrapper
+            .delete_hash_field(&k1, &device_id)
+            .await
+            .expect("Failed to delete hash field");
+        redis_wrapper
+            .delete_hash_field(&k2, &remote_address)
+            .await
+            .expect("Failed to delete hash field");
     }
 }

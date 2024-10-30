@@ -1,0 +1,17 @@
+node_info:
+  host: 127.0.0.1
+  port: 8888
+  name: http1
+redis_config:
+  host: 127.0.0.1
+  port: 6379
+  db: 10
+  password: eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+
+
+
+mq_config:
+  host: 127.0.0.1
+  port: 5672
+  username: guest
+  password: guest
