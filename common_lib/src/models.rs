@@ -57,3 +57,15 @@ impl WsMessage {
         serde_json::to_string(self).expect("Failed to serialize WsMessage")
     }
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CoapMessage {
+    pub uid: String,
+    pub message: String,
+}
+
+impl CoapMessage {
+    pub fn to_json_string(&self) -> String {
+        serde_json::to_string(self).expect("Failed to serialize CoapMessage")
+    }
+}
