@@ -1,0 +1,26 @@
+refresh_rate: 5 seconds
+
+appenders:
+  console:
+    kind: console
+    encoder:
+      pattern: "{d(%+)(local)} PID: {P}, TID: {i} [{t}] {h({f}:{L})} {m}{n}"
+    filters:
+      - kind: threshold
+        level: info
+  file:
+    kind: file
+    path: info.log
+    encoder:
+      pattern: "{d(%+)(local)} PID: {P}, TID: {i} [{t}] {h({f}:{L})} {m}{n}"
+
+root:
+  appenders:
+    - console
+
+loggers:
+  multi_logger_config::a:
+    level: info
+    appenders:
+      - file
+    additive: true
