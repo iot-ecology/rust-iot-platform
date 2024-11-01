@@ -1,4 +1,7 @@
 use crate::protocol_config::MqConfig;
+use crate::redis_handler::get_redis_instance;
+use futures_util::stream::StreamExt;
+use lapin::options::{BasicAckOptions, BasicConsumeOptions};
 use lapin::{
     message::DeliveryResult,
     options::{BasicPublishOptions, QueueDeclareOptions},
@@ -7,9 +10,11 @@ use lapin::{
 };
 use log::{debug, error, info};
 use std::error::Error;
+use std::future::Future;
 use std::sync::Arc;
 use tokio::sync::{Mutex, MutexGuard, OnceCell};
 
+use serde_json::de::Read;
 pub struct RabbitMQ {
     connection: Connection,
     channel: Channel,
@@ -121,6 +126,44 @@ impl RabbitMQ {
                 BasicProperties::default(),
             )
             .await?;
+        Ok(())
+    }
+
+    pub async fn consume2<F, Fut>(&self, queue_name: &str, handler: F) -> Result<(), Box<dyn Error>>
+    where
+        F: Fn(lapin::message::Delivery) -> Fut + Send + Sync,
+        Fut: Future<Output = Result<(), Box<dyn Error>>> + Send,
+    {
+        let mut consumer = self
+            .channel
+            .basic_consume(
+                queue_name,
+                "",
+                lapin::options::BasicConsumeOptions::default(),
+                FieldTable::default(),
+            )
+            .await?;
+
+        // 消费消息并处理
+        while let Some(delivery) = consumer.next().await {
+            if let Ok(delivery) = delivery {
+                let delivery_tag = delivery.delivery_tag;
+
+                // 调用传入的异步处理函数
+                match handler(delivery).await {
+                    Ok(()) => {
+                        // 处理成功，确认消息
+                        self.channel
+                            .basic_ack(delivery_tag, BasicAckOptions::default())
+                            .await?;
+                    }
+                    Err(e) => {
+                        eprintln!("Error handling message: {:?}", e);
+                        // 处理失败，可以选择不确认消息或采取其他措施
+                    }
+                }
+            }
+        }
         Ok(())
     }
 
