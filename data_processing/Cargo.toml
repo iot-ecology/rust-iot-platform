@@ -11,3 +11,7 @@ common_lib = { path = "../common_lib" }
 chrono = "0.4.38"
 config = "0.14.1"
 log4rs = "1.0"
+tokio = "1.41.0"
+quick-js = "0.4.1"
+serde_json = "1.0.132"
+serde = { version = "1.0.213", features = ["derive"] }

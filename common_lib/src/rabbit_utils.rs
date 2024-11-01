@@ -7,6 +7,7 @@ use lapin::{
 };
 use log::{debug, error, info};
 use std::error::Error;
+use std::sync::Arc;
 use tokio::sync::{Mutex, MutexGuard, OnceCell};
 
 pub struct RabbitMQ {
@@ -123,16 +124,10 @@ impl RabbitMQ {
         Ok(())
     }
 
-    /// 开始消费消息
-    ///
-    /// # Arguments
-    ///
-    /// * `queue_name` - 要消费消息的队列名称。
-    ///
-    /// # Returns
-    ///
-    /// 返回一个空的 `Result`，如果成功则为 `Ok(())`。
-    pub async fn consume(&self, queue_name: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn consume<F>(&self, queue_name: &str, should_ack: F) -> Result<(), Box<dyn Error>>
+    where
+        F: Fn(&[u8]) -> bool + Send + Sync + 'static,
+    {
         let consumer = self
             .channel
             .basic_consume(
@@ -143,20 +138,30 @@ impl RabbitMQ {
             )
             .await?;
 
+        let should_ack = std::sync::Arc::new(should_ack);
+
         // 设置消费者的消息处理逻辑
-        consumer.set_delegate(|d: DeliveryResult| async move {
-            match d {
-                Err(err) => error!("subscribe message error {err}"),
-                Ok(data) => {
-                    if let Some(data) = data {
-                        let raw = data.data.clone();
-                        let ack = data.ack(lapin::options::BasicAckOptions::default());
-                        info!(
-                            "accept msg {}",
-                            String::from_utf8(raw).expect("parse msg failed")
-                        );
-                        if let Err(err) = ack.await {
-                            error!("ack failed {err}");
+        consumer.set_delegate(move |d: DeliveryResult| {
+            let should_ack = Arc::clone(&should_ack);
+            async move {
+                match d {
+                    Err(err) => error!("subscribe message error {err}"),
+                    Ok(data) => {
+                        if let Some(data) = data {
+                            let raw = data.data.clone();
+                            info!(
+                                "accept msg {}",
+                                String::from_utf8(raw.clone()).expect("parse msg failed")
+                            );
+                            if should_ack(&raw) {
+                                if let Err(err) =
+                                    data.ack(lapin::options::BasicAckOptions::default()).await
+                                {
+                                    error!("ack failed {err}");
+                                }
+                            } else {
+                                info!("message not acknowledged");
+                            }
                         }
                     }
                 }
@@ -204,12 +209,15 @@ mod tests {
 
         let rabbit = get_rabbitmq_instance().await?;
 
-        rabbit
-            .publish("", "queue1", "hello12")
-            .await
-            .expect("publish message failed");
+        loop {
+            rabbit
+                .publish("", "queue1", "hello12")
+                .await
+                .expect("publish message failed");
+            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+        }
         // rabbit.consume("queue1").await?;
-        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+        tokio::time::sleep(tokio::time::Duration::from_secs(100)).await;
         Ok(())
     }
 }
