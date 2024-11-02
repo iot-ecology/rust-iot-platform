@@ -15,13 +15,18 @@ fn init_mqtt_map() -> Result<(), Box<dyn Error>> {
     CLIENTS.set(clients).unwrap();
     Ok(())
 }
+fn get_client(client_name: &str) -> Option<AsyncClient> {
+    let clients_lock = CLIENTS.get().unwrap().lock().unwrap();
+    clients_lock.get(client_name).cloned()
+}
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn Error>> {
     init_logger();
     init_mqtt_map()?;
 
-    let mqttoptions = MqttOptions::new("test-1", "broker.emqx.io", 1883);
+    let mut mqttoptions = MqttOptions::new("test-1", "localhost", 1883);
+    mqttoptions.set_credentials("admin", "admin");
     // mqttoptions.set_keep_alive(Duration::from_secs(10));
     let client_name = "test-1".to_string();
     let (client, mut eventloop) = AsyncClient::new(mqttoptions.clone(), 10);
@@ -33,17 +38,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         clients_lock.insert(client_name.clone(), client);
     }
 
-    // let clients_clone = CLIENTS.get().unwrap().clone();
-    // task::spawn(async move {
-    //     let client = {
-    //         let clients_lock = clients_clone.lock().unwrap();
-    //         clients_lock.get(&client_name).unwrap().clone()
-    //     };
-    //     requests(client).await;
-    //     time::sleep(Duration::from_secs(3)).await;
-    // });
-
-    let mqttoptions2 = MqttOptions::new("test-2", "broker.emqx.io", 1883);
+    let mut mqttoptions2 = MqttOptions::new("test-2", "localhost", 1883);
+    mqttoptions2.set_credentials("admin", "admin");
     // mqttoptions2.set_keep_alive(Duration::from_secs(10));
     let client_name2 = "test-2".to_string();
     let (client2, mut eventloop2) = AsyncClient::new(mqttoptions2.clone(), 10);
@@ -55,11 +51,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     loop {
-        // let client_count = {
-        //     let clients_lock = CLIENTS.get().unwrap().lock().unwrap();
-        //     clients_lock.len()
-        // };
-        // println!("Current client count: {}", client_count);
         let event = eventloop.poll().await;
         if let Some(value) = handler_event(&event, "/test/1") {
             return value;
