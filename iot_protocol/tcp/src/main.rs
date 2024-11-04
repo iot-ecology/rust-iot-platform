@@ -2,7 +2,7 @@ mod tcp_server;
 
 use crate::tcp_server::CLIENTS;
 use chrono::Utc;
-use common_lib::protocol_config::{get_config, read_config};
+use common_lib::config::{get_config, read_config};
 use common_lib::rabbit_utils::init_rabbitmq_with_config;
 use common_lib::redis_handler::RedisWrapper;
 use log::{debug, info};

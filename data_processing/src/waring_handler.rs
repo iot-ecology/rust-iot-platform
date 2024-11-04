@@ -1,5 +1,5 @@
 use chrono::Utc;
-use common_lib::models::DataRowList;
+use common_lib::models::{DataRowList, Signal, SignalWaringConfig};
 use common_lib::redis_handler::get_redis_instance;
 use log::{debug, error, info};
 use std::collections::HashMap;
@@ -123,7 +123,6 @@ async fn get_mapping_signal_waring_config(
                     continue;
                 } // 跳过反序列化失败的警告配置
             };
-            swc.unit = signal.unit.clone();
             swcs.push(swc);
         }
         debug!("signal.name = {}", signal.name);
@@ -133,41 +132,17 @@ async fn get_mapping_signal_waring_config(
     Ok(mapping)
 }
 
-#[derive(Deserialize, Serialize, Debug)]
-struct Signal {
-    #[serde(rename = "ID")] // 在序列化时使用 "ID"
-    id: i32,
-    name: String,
-    unit: Option<String>,
-}
-
 use crate::storage_handler::storage_data_row;
 use common_lib::mongo_utils::get_mongo;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
-struct SignalWaringConfig {
-    #[serde(rename = "signal_id")]
-    signal_id: i32, // 信号表的外键ID
-    #[serde(rename = "min")]
-    min: f64, // 范围, 小值
-    #[serde(rename = "max")]
-    max: f64, // 范围, 大值
-    #[serde(rename = "in_or_out")]
-    in_or_out: i32, // 1 范围内报警 0 范围外报警
-    #[serde(rename = "unit")]
-    unit: Option<String>, // 单位
-    #[serde(rename = "ID")]
-    id: i32, // ID
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use common_lib::config::{get_config, read_config};
     use common_lib::init_logger;
     use common_lib::models::DataRow;
     use common_lib::mongo_utils::init_mongo;
-    use common_lib::protocol_config::{get_config, read_config};
     use common_lib::rabbit_utils::init_rabbitmq_with_config;
     use common_lib::redis_handler::init_redis;
     use log::debug;

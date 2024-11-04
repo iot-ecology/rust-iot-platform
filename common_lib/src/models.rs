@@ -75,3 +75,55 @@ pub enum DataValue {
     Text(String),
     Integer(i64),
 }
+#[derive(Serialize, Deserialize)]
+pub struct Signal {
+    pub name: String,
+    pub cache_size: u64,
+    #[serde(rename = "ID")] // 在序列化时使用 "ID"
+    pub id: i64,
+    pub r#type: String,
+    unit: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct SignalWaringConfig {
+    #[serde(rename = "signal_id")]
+    pub signal_id: i32, // 信号表的外键ID
+    #[serde(rename = "min")]
+    pub min: f64, // 范围, 小值
+    #[serde(rename = "max")]
+    pub max: f64, // 范围, 大值
+    #[serde(rename = "in_or_out")]
+    pub in_or_out: i32, // 1 范围内报警 0 范围外报警
+    #[serde(rename = "unit")]
+    pub unit: Option<String>, // 单位
+    #[serde(rename = "ID")]
+    pub id: i32, // ID
+}
+
+#[derive(Debug)]
+pub struct SignalMapping {
+    pub cache_size: u64,
+    pub id: i64,
+    pub numb: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SignalDelayWaringParam {
+    #[serde(rename = "mqtt_client_name")]
+    pub mqtt_client_name: String, // MQTT客户端的名称，不存储在数据库中
+
+    pub protocol: String,
+
+    pub identification_code: String, // 设备标识码
+
+    pub device_uid: i32, // MQTT客户端表的外键ID
+
+    pub name: String, // 参数名称
+    #[serde(rename = "signal_name")]
+    pub signal_name: String, // 信号表 name
+    #[serde(rename = "signal_id")]
+    pub signal_id: i32, // 信号表的外键ID
+    pub signal_delay_waring_id: i32, // SignalDelayWaring 主键
+    pub id: i32,      // ID
+}

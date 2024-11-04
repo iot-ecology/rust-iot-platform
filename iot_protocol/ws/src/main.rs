@@ -1,8 +1,8 @@
 extern crate rocket;
 
 use crate::api::ctr::AppState;
+use common_lib::config::{get_config, read_config};
 use common_lib::models::{TcpMessage, WsMessage};
-use common_lib::protocol_config::{get_config, read_config};
 use common_lib::rabbit_utils::{get_rabbitmq_instance, init_rabbitmq_with_config};
 use common_lib::redis_handler::init_redis;
 use log::info;

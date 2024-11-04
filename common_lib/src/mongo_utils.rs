@@ -1,4 +1,4 @@
-use crate::protocol_config::MongoConfig;
+use crate::config::MongoConfig;
 use futures_util::StreamExt;
 use mongodb::bson::{Bson, Document};
 use mongodb::options::{ClientOptions, ResolverConfig};

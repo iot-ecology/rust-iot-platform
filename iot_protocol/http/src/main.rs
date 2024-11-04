@@ -1,8 +1,8 @@
 #[macro_use]
 extern crate rocket;
 
+use common_lib::config::{get_config, read_config};
 use common_lib::models::{Auth, HttpMessage};
-use common_lib::protocol_config::{get_config, read_config};
 use common_lib::rabbit_utils::{get_rabbitmq_instance, init_rabbitmq_with_config};
 use common_lib::redis_handler::{get_redis_instance, init_redis, RedisWrapper};
 use log::info;

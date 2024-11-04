@@ -1,7 +1,7 @@
 use chrono::Utc;
+use common_lib::config::get_config;
 use common_lib::influxdb_utils::InfluxDBManager;
-use common_lib::models::{DataRowList, DataValue};
-use common_lib::protocol_config::get_config;
+use common_lib::models::{DataRowList, DataValue, Signal, SignalMapping};
 use common_lib::redis_handler::get_redis_instance;
 use serde::{Deserialize, Serialize};
 use serde_json::from_str;
@@ -131,22 +131,6 @@ pub async fn storage_data_row(
     Ok(())
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct Signal {
-    pub name: String,
-    pub cache_size: u64,
-    #[serde(rename = "ID")] // 在序列化时使用 "ID"
-    pub id: i64,
-    pub r#type: String,
-}
-
-#[derive(Debug)]
-pub struct SignalMapping {
-    pub cache_size: u64,
-    pub id: i64,
-    pub numb: bool,
-}
-
 pub async fn get_mqtt_client_signal(
     mqtt_client_id: &str,
     identification_code: &str,
@@ -191,9 +175,9 @@ fn calc_bucket_name(prefix: &str, protocol: &str, id: u32) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use common_lib::config::{get_config, read_config};
     use common_lib::init_logger;
     use common_lib::models::DataRow;
-    use common_lib::protocol_config::{get_config, read_config};
     use common_lib::rabbit_utils::init_rabbitmq_with_config;
     use common_lib::redis_handler::init_redis;
     use log::info;

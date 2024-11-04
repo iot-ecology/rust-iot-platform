@@ -1,5 +1,5 @@
+use common_lib::config::{get_config, read_config};
 use common_lib::init_logger;
-use common_lib::protocol_config::{get_config, read_config};
 use common_lib::rabbit_utils::{get_rabbitmq_instance, init_rabbitmq_with_config};
 use common_lib::redis_handler::{get_redis_instance, init_redis};
 use lapin::options::BasicAckOptions;
@@ -11,6 +11,7 @@ use log::{error, info};
 
 mod js_test;
 mod storage_handler;
+mod waring_dealy_handler;
 mod waring_handler;
 
 #[tokio::main]

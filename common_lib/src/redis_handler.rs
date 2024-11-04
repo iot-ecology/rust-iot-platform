@@ -1,4 +1,4 @@
-use crate::protocol_config::RedisConfig;
+use crate::config::RedisConfig;
 use redis::{AsyncCommands, Client, RedisError};
 use tokio::sync::{Mutex, MutexGuard, OnceCell};
 

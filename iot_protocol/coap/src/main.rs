@@ -1,7 +1,7 @@
 use coap::Server;
 use coap_lite::{CoapRequest, RequestType as Method};
+use common_lib::config::{get_config, read_config};
 use common_lib::models::{Auth, CoapMessage};
-use common_lib::protocol_config::{get_config, read_config};
 use common_lib::rabbit_utils::{get_rabbitmq_instance, init_rabbitmq_with_config};
 use common_lib::redis_handler::{get_redis_instance, init_redis, RedisWrapper};
 use log::{debug, info};

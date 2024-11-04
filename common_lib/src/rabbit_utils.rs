@@ -1,4 +1,4 @@
-use crate::protocol_config::MqConfig;
+use crate::config::MqConfig;
 use crate::redis_handler::get_redis_instance;
 use futures_util::stream::StreamExt;
 use lapin::options::{BasicAckOptions, BasicConsumeOptions};
