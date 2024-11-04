@@ -124,7 +124,7 @@ mod tests {
         let token = env::var("INFLUXDB_TOKEN").unwrap();
         let bucket = "aaa"; // 可以替换成实际的 bucket 名称
 
-        let db_manager = InfluxDBManager::new("localhost", 8086, &org, &token, bucket);
+        let db_manager = InfluxDBManager::new("localhost", 8086, &org, &token);
 
         let measurement = "sb";
         // 准备键值对并写入 CPU 使用数据
@@ -143,7 +143,10 @@ mod tests {
             .await?;
         info!("Raw data: {:?}", raw_data);
 
-        db_manager.create_bucket("kalsjf").await.unwrap();
+        db_manager
+            .create_bucket("kalsjf".to_string())
+            .await
+            .unwrap();
 
         Ok(())
     }

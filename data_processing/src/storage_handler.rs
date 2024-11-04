@@ -64,6 +64,8 @@ pub async fn storage_data_row(
     );
 
     for x in dt.data {
+        let data_value = x.value;
+
         let x1 = match map.get(x.name.as_str()) {
             Some(mapping) => mapping,
             None => {
@@ -73,16 +75,46 @@ pub async fn storage_data_row(
         };
 
         if x1.numb {
-            let float_num: f64 = match x.value.parse() {
+            let float_num: f64 = match data_value.parse() {
                 Ok(num) => num,
                 Err(_) => {
-                    error!("Failed to parse string to float: {}", x.value);
+                    error!("Failed to parse string to float: {}", data_value);
                     continue; // 或者处理解析错误
                 }
             };
             insert_dt.insert(x1.id.to_string(), DataValue::Float(float_num));
         } else {
-            insert_dt.insert(x1.id.to_string(), DataValue::Text(x.value));
+            insert_dt.insert(x1.id.to_string(), DataValue::Text(data_value.clone()));
+        }
+
+        let guard = get_redis_instance().await.unwrap();
+        let key = format!(
+            "signal_delay_warning:{}:{}:{}",
+            device_uid, iden_code, x1.id
+        );
+        if x1.cache_size > 0 {
+            // i := x1.cache_size + 1 - currentSize
+
+            info!("signal_delay_warning key = {}", key);
+
+            let currentSize = guard.get_zset_length(key.as_str()).await.unwrap();
+
+            if currentSize >= x1.cache_size {
+                let i = x1.cache_size + 1 - currentSize;
+                if i == 1 {
+                    guard.delete_first_zset_member(key.as_str()).await.unwrap();
+                    guard
+                        .add_zset(key.as_str(), data_value.as_str(), now_timestamp as f64)
+                        .await
+                        .unwrap();
+                } else {
+                }
+            } else {
+                guard
+                    .add_zset(key.as_str(), data_value.as_str(), now_timestamp as f64)
+                    .await
+                    .unwrap();
+            }
         }
     }
 
@@ -101,7 +133,7 @@ pub async fn storage_data_row(
 #[derive(Serialize, Deserialize)]
 pub struct Signal {
     pub name: String,
-    pub cache_size: usize,
+    pub cache_size: u64,
     #[serde(rename = "ID")] // 在序列化时使用 "ID"
     pub id: i64,
     pub r#type: String,
@@ -109,7 +141,7 @@ pub struct Signal {
 
 #[derive(Debug)]
 pub struct SignalMapping {
-    pub cache_size: usize,
+    pub cache_size: u64,
     pub id: i64,
     pub numb: bool,
 }
@@ -186,7 +218,7 @@ mod tests {
             identification_code: "1".to_string(),
             data: vec![DataRow {
                 name: "信号-31".to_string(),
-                value: "1".to_string(),
+                value: "2".to_string(),
             }],
             nc: "1".to_string(),
             protocol: Some("MQTT".to_string()),
