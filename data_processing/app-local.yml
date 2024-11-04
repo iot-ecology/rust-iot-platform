@@ -24,4 +24,4 @@ influx_config:
   port: 8086
   token: lVXFhDO4rOGqfc5Hpr9MHtbiEQyJMoEmlH8LbIwta41QYB-9A_H9d6cCpfUnaLGuQiC_RbH93QGFlpPeukGX-Q==
   org: myorg
-  bucket: aaa
+  bucket: bbb

@@ -1,6 +1,6 @@
 use chrono::DateTime;
 use chrono::Utc;
-use influxdb2::models::{DataPoint, Query};
+use influxdb2::models::{Bucket, DataPoint, PostBucketRequest, Query};
 use influxdb2::Client;
 use std::collections::HashMap;
 use std::error::Error;
@@ -8,26 +8,57 @@ use std::error::Error;
 use crate::models::DataValue;
 use futures::prelude::*;
 use influxdb2::api::query::FluxRecord;
+use log::info;
 
 pub struct InfluxDBManager {
     client: Client,
-    bucket: String,
+    host: String,
+    port: u16,
+    org: String,
+    token: String,
 }
 
 impl InfluxDBManager {
-    pub fn new(host: &str, port: u16, org: &str, token: &str, bucket: &str) -> Self {
-        let relHost = format!("http://{}:{}", host, port);
+    pub fn new(host: &str, port: u16, org: &str, token: &str) -> Self {
+        let rel_host = format!("http://{}:{}", host, port);
 
         InfluxDBManager {
-            client: Client::new(relHost, org, token),
-            bucket: bucket.to_string(),
+            client: Client::new(rel_host, org, token),
+            host: host.to_string(),
+            port: port,
+            org: org.to_string(),
+            token: token.to_string(),
         }
     }
+    pub async fn bucket_exists(&self, bucket_name: &str) -> Result<bool, Box<dyn Error>> {
+        let buckets = self.client.list_buckets(None).await?;
+        Ok(buckets.buckets.iter().any(|b| b.name == bucket_name))
+    }
 
+    // 创建 bucket
+    pub async fn create_bucket(&self, name: String) -> Result<(), Box<dyn Error>> {
+        if self.bucket_exists(name.as_str()).await? {
+            info!("Bucket '{}' already exists.", name);
+            return Ok(());
+        }
+
+        self.client
+            .create_bucket(Some(PostBucketRequest {
+                org_id: self.org.clone(),
+                name: name.clone(),
+                description: None,
+                rp: None,
+                retention_rules: vec![],
+            }))
+            .await?;
+        info!("Bucket '{}' created successfully.", name);
+        Ok(())
+    }
     pub async fn write(
         &self,
         kv: HashMap<String, DataValue>,
         measurement: &str,
+        bucket: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut point = DataPoint::builder(measurement);
         for (key, value) in kv {
@@ -46,7 +77,7 @@ impl InfluxDBManager {
 
         let data_point = point.build()?;
         self.client
-            .write(&self.bucket, stream::iter(vec![data_point]))
+            .write(bucket, stream::iter(vec![data_point]))
             .await?;
         Ok(())
     }
@@ -56,20 +87,19 @@ impl InfluxDBManager {
         measurement: &str,
         start: DateTime<Utc>,
         stop: DateTime<Utc>,
+        bucket: &str,
     ) -> Result<Vec<FluxRecord>, Box<dyn Error>> {
         let flux_query = format!(
             "from(bucket: \"{}\")
             |> range(start: {}, stop: {})
             |> filter(fn: (r) => r._measurement == \"{}\")",
-            self.bucket,
+            bucket,
             start.timestamp(),
             stop.timestamp(),
             measurement
         );
 
         let query = Query::new(flux_query);
-        // let response:Vec<Series>  = self.client.query(Some(query)).await?;
-
         let response = self.client.query_raw(Some(query)).await?;
 
         Ok(response)
@@ -102,16 +132,18 @@ mod tests {
         tags.insert("age".to_string(), DataValue::Integer(10));
         tags.insert("weight".to_string(), DataValue::Float(12.1));
 
-        db_manager.write(tags, measurement).await?;
-        println!("written successfully.");
+        db_manager.write(tags, measurement, "bbb").await?;
+        info!("written successfully.");
 
         let end_time = Utc::now();
         let start_time = end_time - Duration::hours(1);
 
         let raw_data = db_manager
-            .query_raw(measurement, start_time, end_time)
+            .query_raw(measurement, start_time, end_time, "bbb")
             .await?;
-        println!("Raw data: {:?}", raw_data);
+        info!("Raw data: {:?}", raw_data);
+
+        db_manager.create_bucket("kalsjf").await.unwrap();
 
         Ok(())
     }

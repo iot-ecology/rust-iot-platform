@@ -16,7 +16,7 @@ pub async fn storage_data_row(
     port: u16,
     org: &str,
     token: &str,
-    bucket: &str,
+    bucket_pre: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let device_uid_string = &*dt.device_uid;
     let iden_code = &*dt.identification_code;
@@ -40,12 +40,12 @@ pub async fn storage_data_row(
         }
     };
 
-    let bucket_name = calc_bucket_name(bucket, protocol, device_uid);
+    let bucket_name = calc_bucket_name(bucket_pre, protocol, device_uid);
 
     // fixme: bucketname creaste
     info!("bucket_name: {}", bucket_name);
     // 创建 InfluxDB 管理器
-    let db_manager = InfluxDBManager::new(host, port, org, token, bucket_name.as_str());
+    let db_manager = InfluxDBManager::new(host, port, org, token);
 
     let now = Utc::now();
     let measur = gen_measurement(device_uid_string, iden_code, protocol);
@@ -87,7 +87,10 @@ pub async fn storage_data_row(
     }
 
     // 写入数据
-    if let Err(e) = db_manager.write(insert_dt, measur.as_str()).await {
+    if let Err(e) = db_manager
+        .write(insert_dt, measur.as_str(), bucket_name.as_str())
+        .await
+    {
         error!("Failed to write data to InfluxDB: {:?}", e);
         return Err(e);
     }
@@ -162,26 +165,6 @@ mod tests {
     use common_lib::redis_handler::init_redis;
     use log::info;
 
-    #[tokio::test]
-    async fn test_get_mqtt_client_signal() {
-        let addr = "127.0.0.1:5683";
-
-        init_logger();
-        let result = read_config("app-local.yml").await.unwrap();
-        let config = get_config().await.unwrap();
-        // let node_info_name = config.node_info.name.clone();
-
-        let redis_config = config.redis_config.clone();
-        init_redis(redis_config).await.unwrap();
-        init_rabbitmq_with_config(config.mq_config.clone())
-            .await
-            .unwrap();
-
-        // 调用 get_mqtt_client_signal 函数
-        let result = get_mqtt_client_signal("1", "1").await.unwrap();
-
-        info!("{:?}", result);
-    }
     #[tokio::test]
     async fn test_storage() {
         init_logger();
