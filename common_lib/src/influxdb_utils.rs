@@ -1,10 +1,11 @@
+use chrono::DateTime;
 use chrono::Utc;
-use chrono::{DateTime, FixedOffset};
 use influxdb2::models::{DataPoint, Query};
-use influxdb2::{Client, FromDataPoint};
+use influxdb2::Client;
 use std::collections::HashMap;
 use std::error::Error;
 
+use crate::models::DataValue;
 use futures::prelude::*;
 use influxdb2::api::query::FluxRecord;
 
@@ -14,24 +15,33 @@ pub struct InfluxDBManager {
 }
 
 impl InfluxDBManager {
-    pub fn new(host: &str, org: &str, token: &str, bucket: &str) -> Self {
+    pub fn new(host: &str, port: u16, org: &str, token: &str, bucket: &str) -> Self {
+        let relHost = format!("http://{}:{}", host, port);
+
         InfluxDBManager {
-            client: Client::new(host, org, token),
+            client: Client::new(relHost, org, token),
             bucket: bucket.to_string(),
         }
     }
 
     pub async fn write(
         &self,
-        kv: HashMap<String, String>,
+        kv: HashMap<String, DataValue>,
         measurement: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut point = DataPoint::builder(measurement);
-
         for (key, value) in kv {
-            let float_num: f64 = value.parse().expect("Failed to parse string to float");
-
-            point = point.field(key, float_num);
+            match value {
+                DataValue::Integer(v) => {
+                    point = point.field(key, v);
+                }
+                DataValue::Float(v) => {
+                    point = point.field(key, v);
+                }
+                DataValue::Text(v) => {
+                    point = point.field(key, v);
+                }
+            }
         }
 
         let data_point = point.build()?;
@@ -76,7 +86,7 @@ mod tests {
     async fn test_influxdb_operations() -> Result<(), Box<dyn std::error::Error>> {
         // 设置环境变量（在实际测试中，你可能需要确保这些变量被正确设置）
         env::set_var("INFLUXDB_HOST", "http://localhost:8086");
-        env::set_var("INFLUXDB_ORG", "024f5d759ac79bca");
+        env::set_var("INFLUXDB_ORG", "myorg");
         env::set_var("INFLUXDB_TOKEN", "lVXFhDO4rOGqfc5Hpr9MHtbiEQyJMoEmlH8LbIwta41QYB-9A_H9d6cCpfUnaLGuQiC_RbH93QGFlpPeukGX-Q==");
 
         let host = env::var("INFLUXDB_HOST").unwrap();
@@ -84,13 +94,13 @@ mod tests {
         let token = env::var("INFLUXDB_TOKEN").unwrap();
         let bucket = "aaa"; // 可以替换成实际的 bucket 名称
 
-        let db_manager = InfluxDBManager::new(&host, &org, &token, bucket);
+        let db_manager = InfluxDBManager::new("localhost", 8086, &org, &token, bucket);
 
-        let measurement = "ss";
+        let measurement = "sb";
         // 准备键值对并写入 CPU 使用数据
         let mut tags = HashMap::new();
-        tags.insert("age".to_string(), "100".to_string());
-        tags.insert("weight".to_string(), "10".to_string());
+        tags.insert("age".to_string(), DataValue::Integer(10));
+        tags.insert("weight".to_string(), DataValue::Float(12.1));
 
         db_manager.write(tags, measurement).await?;
         println!("written successfully.");

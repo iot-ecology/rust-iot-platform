@@ -69,3 +69,9 @@ impl CoapMessage {
         serde_json::to_string(self).expect("Failed to serialize CoapMessage")
     }
 }
+#[derive(Debug)]
+pub enum DataValue {
+    Float(f64),
+    Text(String),
+    Integer(i64),
+}
