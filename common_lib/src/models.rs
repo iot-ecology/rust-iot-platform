@@ -125,5 +125,19 @@ pub struct SignalDelayWaringParam {
     #[serde(rename = "signal_id")]
     pub signal_id: i32, // 信号表的外键ID
     pub signal_delay_waring_id: i32, // SignalDelayWaring 主键
-    pub id: i32,      // ID
+    #[serde(rename = "ID")]
+    pub id: i32, // ID
+}
+#[derive(Debug, serde::Deserialize)]
+pub struct SignalDelayWaring {
+    pub name: String,
+    pub script: String,
+    #[serde(rename = "ID")]
+    pub id: i32,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct Tv {
+    pub time: i64,
+    pub value: f64,
 }
