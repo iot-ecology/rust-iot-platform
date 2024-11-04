@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Read;
 use tokio::sync::{Mutex, MutexGuard, OnceCell};
@@ -40,12 +40,24 @@ pub struct InfluxConfig {
     pub bucket: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct MongoConfig {
+    pub host: Option<String>,
+    pub port: Option<i32>,
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub db: Option<String>,
+    pub collection: Option<String>,
+    pub waring_collection: Option<String>,
+    pub script_waring_collection: Option<String>,
+}
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub node_info: NodeInfo,
     pub redis_config: RedisConfig,
     pub mq_config: MqConfig,
     pub influx_config: Option<InfluxConfig>,
+    pub mongo_config: Option<MongoConfig>,
 }
 
 // 全局配置实例

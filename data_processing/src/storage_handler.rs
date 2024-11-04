@@ -42,7 +42,6 @@ pub async fn storage_data_row(
 
     let bucket_name = calc_bucket_name(bucket_pre, protocol, device_uid);
 
-    // fixme: bucketname creaste
     info!("bucket_name: {}", bucket_name);
     // 创建 InfluxDB 管理器
     let db_manager = InfluxDBManager::new(host, port, org, token);
@@ -126,6 +125,8 @@ pub async fn storage_data_row(
         error!("Failed to write data to InfluxDB: {:?}", e);
         return Err(e);
     }
+
+    set_push_time(protocol, iden_code, device_uid_string, now_timestamp).await;
 
     Ok(())
 }
@@ -238,4 +239,23 @@ mod tests {
             log::error!("Failed to store data row: {:?}", e);
         }
     }
+}
+
+pub async fn set_push_time(
+    protocol: &str,
+    identification_code: &str,
+    device_uid: &str,
+    time_from_unix: i64,
+) {
+    let pre_key = "storage_time";
+    let guard = get_redis_instance().await.unwrap();
+    let key = format!(
+        "{}:{}:{}:{}",
+        pre_key, protocol, device_uid, identification_code
+    );
+
+    guard
+        .set_string(key.as_str(), time_from_unix.to_string().as_str())
+        .await
+        .unwrap();
 }

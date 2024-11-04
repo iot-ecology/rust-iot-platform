@@ -1,5 +1,6 @@
 pub mod influxdb_utils;
 pub mod models;
+pub mod mongo_utils;
 pub mod protocol_config;
 pub mod rabbit_utils;
 pub mod redis_handler;

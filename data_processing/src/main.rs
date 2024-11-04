@@ -11,6 +11,7 @@ use log::{error, info};
 
 mod js_test;
 mod storage_handler;
+mod waring_handler;
 
 #[tokio::main]
 async fn main() {
