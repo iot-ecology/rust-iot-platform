@@ -1,7 +1,7 @@
 use coap::Server;
 use coap_lite::{CoapRequest, RequestType as Method};
 use common_lib::models::{Auth, CoapMessage};
-use common_lib::protocol_config::read_config;
+use common_lib::protocol_config::{get_config, read_config};
 use common_lib::rabbit_utils::{get_rabbitmq_instance, init_rabbitmq_with_config};
 use common_lib::redis_handler::{get_redis_instance, init_redis, RedisWrapper};
 use log::{debug, info};
@@ -23,11 +23,20 @@ fn main() {
 
     init_logger();
     let rt = Runtime::new().unwrap(); // 创建异步运行时
-    let result = read_config("app-local.yml").unwrap();
-    let node_info_name = result.node_info.name.clone(); // 克隆 result.node_info.name
-    rt.block_on(init_redis(result.redis_config)).unwrap(); // 初始化 Redis
-    rt.block_on(init_rabbitmq_with_config(result.mq_config))
-        .unwrap(); // 初始化 RabbitMQ
+
+    let rt = Runtime::new().unwrap();
+
+    // 读取配置并初始化 Redis 和 RabbitMQ
+    let config = rt.block_on(read_config("app-local.yml")).unwrap(); // 读取配置
+
+    let guard1 = rt.block_on(get_config()).unwrap(); // 获取配置
+    let node_info_name = guard1.node_info.name.clone(); // 克隆 node_info.name
+
+    // 初始化 Redis 和 RabbitMQ
+    rt.block_on(init_redis(guard1.redis_config.clone()))
+        .unwrap();
+    rt.block_on(init_rabbitmq_with_config(guard1.mq_config.clone()))
+        .unwrap();
 
     runtime.block_on(async move {
         let mut server = Server::new_udp(addr).unwrap();

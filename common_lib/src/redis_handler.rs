@@ -66,6 +66,12 @@ impl RedisWrapper {
         Ok(value)
     }
 
+    pub async fn get_list_all(&self, key: &str) -> Result<Vec<String>, RedisError> {
+        let mut con = self.get_connection().await?;
+        let members: Vec<String> = con.lrange(key, 0, -1).await?;
+        Ok(members)
+    }
+
     pub async fn delete_list(&self, key: &str) -> Result<(), RedisError> {
         let mut con = self.get_connection().await?;
         con.del::<&str, ()>(key).await?; // 显式指定类型

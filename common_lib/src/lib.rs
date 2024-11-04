@@ -1,3 +1,4 @@
+mod influxdb_utils;
 pub mod models;
 pub mod protocol_config;
 pub mod rabbit_utils;

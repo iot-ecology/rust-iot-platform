@@ -2,7 +2,7 @@
 extern crate rocket;
 
 use common_lib::models::{Auth, HttpMessage};
-use common_lib::protocol_config::read_config;
+use common_lib::protocol_config::{get_config, read_config};
 use common_lib::rabbit_utils::{get_rabbitmq_instance, init_rabbitmq_with_config};
 use common_lib::redis_handler::{get_redis_instance, init_redis, RedisWrapper};
 use log::info;
@@ -196,16 +196,22 @@ async fn handler_message(
 #[launch]
 fn rocket() -> _ {
     init_logger(); // 初始化日志记录
-    let result = read_config("app-local.yml").unwrap(); // 读取配置
-    let rt = Runtime::new().unwrap(); // 创建异步运行时
-    rt.block_on(init_redis(result.redis_config)).unwrap(); // 初始化 Redis
-    rt.block_on(init_rabbitmq_with_config(result.mq_config))
+
+    // 创建异步运行时
+    let rt = Runtime::new().unwrap();
+
+    // 读取配置并初始化 Redis 和 RabbitMQ
+    let config = rt.block_on(read_config("app-local.yml")).unwrap(); // 读取配置
+    let guard1 = rt.block_on(get_config()).unwrap(); // 获取配置
+    rt.block_on(init_redis(guard1.redis_config.clone()))
+        .unwrap(); // 初始化 Redis
+    rt.block_on(init_rabbitmq_with_config(guard1.mq_config.clone()))
         .unwrap(); // 初始化 RabbitMQ
 
     // 构建并启动 Rocket 应用
     rocket::build()
         .configure(rocket::Config {
-            port: result.node_info.port,
+            port: guard1.node_info.port,
             ..Default::default()
         })
         .mount("/", routes![index, ping, handler_message]) // 挂载路由

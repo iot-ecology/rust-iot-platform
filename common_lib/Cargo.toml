@@ -21,4 +21,8 @@ log4rs = "1.3.0"
 lapin = {version = "2.5.0" ,features = ["default"]}
 futures-lite = "2.3.0"
 futures-util = "0.3.31"
-
+influxdb2 = "0.5.2"
+influxdb2-structmap = "0.2"
+influxdb2-derive = "0.1.1"
+num-traits = "0.2.19"
+futures = { version = "0.3.31", default-features = false }

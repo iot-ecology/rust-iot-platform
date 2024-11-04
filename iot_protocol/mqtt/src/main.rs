@@ -24,9 +24,13 @@ fn get_client(client_name: &str) -> Option<AsyncClient> {
 async fn create_client(
     client_name: &str,
     topic: &str,
+    username: &str,
+    password: &str,
+    ip: &str,
+    port: u16,
 ) -> Result<(AsyncClient, rumqttc::EventLoop), Box<dyn Error>> {
-    let mut mqttoptions = MqttOptions::new(client_name, "localhost", 1883);
-    mqttoptions.set_credentials("admin", "admin");
+    let mut mqttoptions = MqttOptions::new(client_name, ip, port);
+    mqttoptions.set_credentials(username, password);
 
     let (client, eventloop) = AsyncClient::new(mqttoptions.clone(), 10);
     client.subscribe(topic, QoS::AtMostOnce).await?;
@@ -83,13 +87,15 @@ fn handler_event(
     None
 }
 
-#[tokio::main(flavor = "current_thread")]
+#[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     init_logger();
     init_mqtt_map()?;
 
-    let (client1, mut eventloop1) = create_client("test-1", "/tt1").await?;
-    let (client2, mut eventloop2) = create_client("test-2", "/tt2").await?;
+    let (client1, mut eventloop1) =
+        create_client("test-1", "/tt1", "admin", "admin", "localhost", 1883).await?;
+    let (client2, mut eventloop2) =
+        create_client("test-2", "/tt2", "admin", "admin", "localhost", 1883).await?;
 
     let client_name_clone = "test-1".to_string();
     tokio::spawn(async move {
@@ -97,25 +103,34 @@ async fn main() -> Result<(), Box<dyn Error>> {
         disconnect_client(client_name_clone).await;
     });
 
+    // 在 main 函数中启动任务
+    tokio::spawn(event_loop("/tt1", eventloop1));
+    tokio::spawn(event_loop("/tt2", eventloop2));
+    tokio::signal::ctrl_c()
+        .await
+        .expect("Failed to listen for ctrl-c signal");
+
+    Ok(())
+}
+
+async fn event_loop(client_name: &str, mut eventloop: rumqttc::EventLoop) {
     loop {
-        tokio::select! {
-            event = eventloop1.poll() => {
-                if let Err(e) = event {
-                    error!("Error polling eventloop 1: {:?}", e);
-                } else {
-                    handler_event(&event, "/tt1");
+        match eventloop.poll().await {
+            Ok(event) => {
+                // 处理事件
+                if let Some(err) = handler_event(&Ok(event), client_name) {
+                    if let Err(e) = err {
+                        error!("Error handling event: {:?}", e);
+                    }
                 }
             }
-            event2 = eventloop2.poll() => {
-                if let Err(e) = event2 {
-                    error!("Error polling eventloop 2: {:?}", e);
-                } else {
-                    handler_event(&event2, "/tt2");
-                }
+            Err(e) => {
+                error!("Error polling eventloop for {}: {:?}", client_name, e);
             }
         }
     }
 }
+
 async fn requests(client: AsyncClient) {
     client
         .subscribe("hello/world", QoS::AtMostOnce)

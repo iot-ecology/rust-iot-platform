@@ -2,7 +2,7 @@ mod tcp_server;
 
 use crate::tcp_server::CLIENTS;
 use chrono::Utc;
-use common_lib::protocol_config::read_config;
+use common_lib::protocol_config::{get_config, read_config};
 use common_lib::rabbit_utils::init_rabbitmq_with_config;
 use common_lib::redis_handler::RedisWrapper;
 use log::{debug, info};
@@ -16,12 +16,18 @@ fn init_logger() {
 #[tokio::main]
 async fn main() {
     init_logger();
-    let result = read_config("app-local.yml").unwrap();
-    let redis_wrapper = RedisWrapper::new(result.redis_config).unwrap();
-    init_rabbitmq_with_config(result.mq_config).await.unwrap();
 
-    let k1 = format!("tcp_uid_f:{}", result.node_info.name);
-    let k2 = format!("tcp_uid:{}", result.node_info.name);
+    let result = read_config("app-local.yml").await.unwrap();
+    let config = get_config().await.unwrap();
+    let redis_config = config.redis_config.clone();
+    let node_info_name = config.node_info.name.clone();
+    let redis_wrapper = RedisWrapper::new(redis_config).unwrap();
+    init_rabbitmq_with_config(config.mq_config.clone())
+        .await
+        .unwrap();
+
+    let k1 = format!("tcp_uid_f:{}", node_info_name);
+    let k2 = format!("tcp_uid:{}", node_info_name);
     redis_wrapper.delete_hash(k1.as_str()).await.unwrap();
     redis_wrapper.delete_hash(k2.as_str()).await.unwrap();
 
@@ -30,13 +36,13 @@ async fn main() {
     let server = crate::tcp_server::TcpServer::new(
         format!(
             "{}:{}",
-            &result.node_info.host,
-            result.node_info.port.to_string().as_str()
+            config.node_info.host,
+            config.node_info.port.to_string().as_str()
         )
         .as_str(),
         redis_wrapper.clone(),
-        result.node_info.name.clone(),
-        result.node_info.size,
+        config.node_info.name.clone(),
+        config.node_info.size,
     );
 
     // 启动服务器
@@ -45,7 +51,7 @@ async fn main() {
     });
 
     tokio::spawn(async {
-        print_clients_periodically(redis_wrapper, result.node_info.name).await;
+        print_clients_periodically(redis_wrapper, node_info_name).await;
     });
 
     // 保证 main 不会提前退出
