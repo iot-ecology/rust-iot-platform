@@ -9,12 +9,12 @@ pub async fn handler_waring_once(
     dt: DataRowList,
     waring_collection: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let device_uid_string = &*dt.device_uid;
-    let iden_code = &*dt.identification_code;
-    let push_time = dt.time;
+    let device_uid_string = &*dt.DeviceUid;
+    let iden_code = &*dt.IdentificationCode;
+    let push_time = dt.Time;
     let guard = get_redis_instance().await.unwrap();
 
-    let mapping = get_delay_param(device_uid_string, iden_code, dt.data, guard).await?;
+    let mapping = get_delay_param(device_uid_string, iden_code, dt.DataRows, guard).await?;
     let mut script_param: HashMap<String, Vec<Tv>> = HashMap::new();
 
     let guard = get_redis_instance().await.unwrap();
@@ -75,7 +75,7 @@ pub async fn get_delay_param(
 
 // 将 &rows 的类型改为 &Vec<DataRow>，并使用迭代器来简化循环
 fn name_in_data_row(name: String, rows: &Vec<DataRow>) -> bool {
-    rows.iter().any(|row| row.name == name)
+    rows.iter().any(|row| row.Name == name)
 }
 
 async fn get_delay_script(
@@ -173,15 +173,15 @@ mod tests {
         init_mongo(mongo_config.clone()).await.unwrap();
         let now = Utc::now();
         let dt = DataRowList {
-            time: now.timestamp(),
-            device_uid: "102".to_string(),
-            identification_code: "102".to_string(),
-            data: vec![DataRow {
-                name: "Temperature".to_string(),
-                value: "2".to_string(),
+            Time: now.timestamp(),
+            DeviceUid: "102".to_string(),
+            IdentificationCode: "102".to_string(),
+            DataRows: vec![DataRow {
+                Name: "Temperature".to_string(),
+                Value: "2".to_string(),
             }],
-            nc: "1".to_string(),
-            protocol: Some("MQTT".to_string()),
+            Nc: "1".to_string(),
+            Protocol: Some("MQTT".to_string()),
         };
 
         handler_waring_once(dt, "asf".to_string()).await.unwrap();

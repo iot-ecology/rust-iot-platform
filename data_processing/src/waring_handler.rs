@@ -8,22 +8,22 @@ pub async fn handler_waring_once(
     dt: DataRowList,
     waring_collection: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let device_uid_string = &*dt.device_uid;
-    let iden_code = &*dt.identification_code;
-    let push_time = dt.time;
+    let device_uid_string = &*dt.DeviceUid;
+    let iden_code = &*dt.IdentificationCode;
+    let push_time = dt.Time;
     let mapping = get_mapping_signal_waring_config(device_uid_string, iden_code)
         .await
         .unwrap();
     let now = Utc::now();
     let guard = get_mongo().await.unwrap();
 
-    for x in dt.data {
+    for x in dt.DataRows {
         debug!(" x  :{:?}", x);
 
-        let x1 = mapping.get(x.name.as_str()).unwrap();
+        let x1 = mapping.get(x.Name.as_str()).unwrap();
         debug!("x1 = {:?}", x1);
 
-        let floatValue = x.value.parse::<f64>().unwrap();
+        let floatValue = x.Value.parse::<f64>().unwrap();
 
         for config in x1 {
             let name = calc_collection_name(waring_collection.as_str(), config.id);
@@ -35,7 +35,7 @@ pub async fn handler_waring_once(
                         "device_uid".to_string(),
                         serde_json::json!(device_uid_string),
                     );
-                    document.insert("signal_name".to_string(), serde_json::json!(x.name));
+                    document.insert("signal_name".to_string(), serde_json::json!(x.Name));
                     document.insert("signal_id".to_string(), serde_json::json!(config.signal_id));
                     document.insert("value".to_string(), serde_json::json!(floatValue));
                     document.insert("rule_id".to_string(), serde_json::json!(config.id));
@@ -166,15 +166,15 @@ mod tests {
         init_mongo(mongo_config.clone()).await.unwrap();
         let now = Utc::now();
         let dt = DataRowList {
-            time: now.timestamp(),
-            device_uid: "1".to_string(),
-            identification_code: "1".to_string(),
-            data: vec![DataRow {
-                name: "信号-199".to_string(),
-                value: "2".to_string(),
+            Time: now.timestamp(),
+            DeviceUid: "1".to_string(),
+            IdentificationCode: "1".to_string(),
+            DataRows: vec![DataRow {
+                Name: "信号-199".to_string(),
+                Value: "2".to_string(),
             }],
-            nc: "1".to_string(),
-            protocol: Some("MQTT".to_string()),
+            Nc: "1".to_string(),
+            Protocol: Some("MQTT".to_string()),
         };
 
         if let Err(e) = handler_waring_once(dt, mongo_config.waring_collection.unwrap()).await {

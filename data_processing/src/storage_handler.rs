@@ -1,13 +1,16 @@
 use chrono::Utc;
-use common_lib::config::get_config;
+use common_lib::config::{get_config, InfluxConfig};
 use common_lib::influxdb_utils::InfluxDBManager;
-use common_lib::models::{DataRowList, DataValue, Signal, SignalMapping};
-use common_lib::redis_handler::get_redis_instance;
+use common_lib::models::{DataRowList, DataValue, MQTTMessage, Signal, SignalMapping};
+use common_lib::redis_handler::{get_redis_instance, RedisWrapper};
+use log::{error, info};
+use quick_js::{Context, ContextError};
 use serde::{Deserialize, Serialize};
 use serde_json::from_str;
 use std::collections::HashMap;
-
-use log::{error, info};
+use std::error::Error;
+use std::sync::Arc;
+use tokio::sync::{Mutex, MutexGuard};
 
 pub async fn storage_data_row(
     dt: DataRowList,
@@ -17,13 +20,14 @@ pub async fn storage_data_row(
     org: &str,
     token: &str,
     bucket_pre: &str,
+    redis: RedisWrapper,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let device_uid_string = &*dt.device_uid;
-    let iden_code = &*dt.identification_code;
-    let push_time = dt.time;
+    let device_uid_string = &*dt.DeviceUid;
+    let iden_code = &*dt.IdentificationCode;
+    let push_time = dt.Time;
 
     // 获取 MQTT 客户端信号
-    let map = match get_mqtt_client_signal(device_uid_string, iden_code).await {
+    let map = match get_mqtt_client_signal(device_uid_string, iden_code, redis.clone()).await {
         Ok(map) => map,
         Err(e) => {
             error!("Failed to get MQTT client signal: {:?}", e);
@@ -62,13 +66,13 @@ pub async fn storage_data_row(
         DataValue::Integer(now_timestamp - push_time),
     );
 
-    for x in dt.data {
-        let data_value = x.value;
+    for x in dt.DataRows {
+        let data_value = x.Value;
 
-        let x1 = match map.get(x.name.as_str()) {
+        let x1 = match map.get(x.Name.as_str()) {
             Some(mapping) => mapping,
             None => {
-                error!("Signal not found in mapping: {}", x.name);
+                error!("Signal not found in mapping: {}", x.Name);
                 continue; // 或者处理缺失的信号
             }
         };
@@ -86,7 +90,6 @@ pub async fn storage_data_row(
             insert_dt.insert(x1.id.to_string(), DataValue::Text(data_value.clone()));
         }
 
-        let guard = get_redis_instance().await.unwrap();
         let key = format!(
             "signal_delay_warning:{}:{}:{}",
             device_uid, iden_code, x1.id
@@ -96,26 +99,29 @@ pub async fn storage_data_row(
 
             info!("signal_delay_warning key = {}", key);
 
-            let currentSize = guard.get_zset_length(key.as_str()).await.unwrap();
+            let currentSize = redis.get_zset_length(key.as_str()).await.unwrap();
 
             if currentSize >= x1.cache_size {
                 let i = x1.cache_size + 1 - currentSize;
                 if i == 1 {
-                    guard.delete_first_zset_member(key.as_str()).await.unwrap();
-                    guard
+                    redis.delete_first_zset_member(key.as_str()).await.unwrap();
+                    redis
                         .add_zset(key.as_str(), data_value.as_str(), now_timestamp as f64)
                         .await
                         .unwrap();
                 } else {
                 }
             } else {
-                guard
+                redis
                     .add_zset(key.as_str(), data_value.as_str(), now_timestamp as f64)
                     .await
                     .unwrap();
             }
         }
     }
+    info!("insert_dt.len() = {}", insert_dt.len());
+
+    info!("measur.as_str() = {}", measur.as_str());
 
     // 写入数据
     if let Err(e) = db_manager
@@ -126,7 +132,14 @@ pub async fn storage_data_row(
         return Err(e);
     }
 
-    set_push_time(protocol, iden_code, device_uid_string, now_timestamp).await;
+    set_push_time(
+        protocol,
+        iden_code,
+        device_uid_string,
+        now_timestamp,
+        redis.clone(),
+    )
+    .await;
 
     Ok(())
 }
@@ -134,8 +147,8 @@ pub async fn storage_data_row(
 pub async fn get_mqtt_client_signal(
     mqtt_client_id: &str,
     identification_code: &str,
+    redis: RedisWrapper,
 ) -> Result<HashMap<String, SignalMapping>, Box<dyn std::error::Error>> {
-    let redis = get_redis_instance().await?;
     let key = format!("signal:{}:{}", mqtt_client_id, identification_code);
 
     // 从 Redis 获取列表
@@ -198,15 +211,15 @@ mod tests {
 
         let now = Utc::now();
         let dt = DataRowList {
-            time: now.timestamp(),
-            device_uid: "1".to_string(),
-            identification_code: "1".to_string(),
-            data: vec![DataRow {
-                name: "信号-31".to_string(),
-                value: "2".to_string(),
+            Time: now.timestamp(),
+            DeviceUid: "1".to_string(),
+            IdentificationCode: "1".to_string(),
+            DataRows: vec![DataRow {
+                Name: "信号-31".to_string(),
+                Value: "2".to_string(),
             }],
-            nc: "1".to_string(),
-            protocol: Some("MQTT".to_string()),
+            Nc: "1".to_string(),
+            Protocol: Some("MQTT".to_string()),
         };
 
         if let Err(e) = storage_data_row(
@@ -217,6 +230,7 @@ mod tests {
             influxdb.org.unwrap().as_str(),
             influxdb.token.unwrap().as_str(),
             influxdb.bucket.unwrap().as_str(),
+            get_redis_instance().unwrap(),
         )
         .await
         {
@@ -230,16 +244,64 @@ pub async fn set_push_time(
     identification_code: &str,
     device_uid: &str,
     time_from_unix: i64,
+    redis: RedisWrapper,
 ) {
     let pre_key = "storage_time";
-    let guard = get_redis_instance().await.unwrap();
     let key = format!(
         "{}:{}:{}:{}",
         pre_key, protocol, device_uid, identification_code
     );
 
-    guard
+    redis
         .set_string(key.as_str(), time_from_unix.to_string().as_str())
         .await
         .unwrap();
+}
+
+pub async fn handler_data_storage_string(
+    result: String,
+    jsc: Context,
+    config: InfluxConfig,
+    redis: RedisWrapper,
+) -> Result<(), Box<dyn Error>> {
+    info!("message : {:?}", result);
+    let mqtt_message: MQTTMessage = serde_json::from_str(&result)?;
+
+    let option = redis
+        .get_hash("mqtt_script", mqtt_message.mqtt_client_id.as_str())
+        .await
+        .unwrap();
+    if option.is_some() {
+        let string = option.unwrap();
+        // 将 Context 的创建移到这里
+
+        jsc.eval(string.as_str()).unwrap();
+        let value = jsc.call_function("main", [mqtt_message.message]).unwrap();
+        let js_code_2 = r#"
+        function main2(data) {
+            return JSON.stringify(data);
+        }"#;
+        jsc.eval(js_code_2).unwrap();
+        let value2 = jsc.call_function("main2", [value]).unwrap();
+
+        let x = value2.as_str().unwrap_or("");
+
+        info!("Java Script Result = {:?}", x);
+        let dt: Vec<DataRowList> = from_str(&x).unwrap();
+        info!("{:?}", dt);
+        for x in dt {
+            storage_data_row(
+                x,
+                "MQTT",
+                config.host.clone().unwrap().as_str(),
+                config.port.clone().unwrap(),
+                config.org.clone().unwrap().as_str(),
+                config.token.clone().unwrap().as_str(),
+                config.bucket.clone().unwrap().as_str(),
+                redis.clone(),
+            )
+            .await;
+        }
+    }
+    Ok(())
 }

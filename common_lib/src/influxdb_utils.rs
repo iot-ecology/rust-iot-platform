@@ -143,10 +143,10 @@ mod tests {
             .await?;
         info!("Raw data: {:?}", raw_data);
 
-        db_manager
-            .create_bucket("kalsjf".to_string())
-            .await
-            .unwrap();
+        // db_manager
+        //     .create_bucket("kalsjf".to_string())
+        //     .await
+        //     .unwrap();
 
         Ok(())
     }

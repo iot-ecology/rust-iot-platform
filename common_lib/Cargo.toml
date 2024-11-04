@@ -27,3 +27,4 @@ influxdb2-derive = "0.1.1"
 num-traits = "0.2.19"
 futures = { version = "0.3.31", default-features = false }
 mongodb = "2.0.0"
+quick-js = "0.4.1"

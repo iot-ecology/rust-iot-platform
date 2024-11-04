@@ -2,19 +2,25 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DataRowList {
-    pub time: i64,                   // 秒级时间戳
-    pub device_uid: String,          // 能够产生网络通讯的唯一编码
-    pub identification_code: String, // 设备标识码
-    pub data: Vec<DataRow>,          // 数据行
-    pub nc: String,                  // Nc 字段
+    pub Time: i64,                  // 秒级时间戳
+    pub DeviceUid: String,          // 能够产生网络通讯的唯一编码
+    pub IdentificationCode: String, // 设备标识码
+    pub DataRows: Vec<DataRow>,     // 数据行
+    pub Nc: String,                 // Nc 字段
     #[serde(skip_serializing_if = "Option::is_none")] // 如果为 None，则不序列化
-    pub protocol: Option<String>, // 协议字段
+    pub Protocol: Option<String>, // 协议字段
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct MQTTMessage {
+    #[serde(rename = "mqtt_client_id")]
+    pub mqtt_client_id: String,
+    pub message: String,
+}
+#[derive(Serialize, Deserialize, Debug)]
 pub struct DataRow {
-    pub name: String,  // 数据行名称
-    pub value: String, // 数据行值
+    pub Name: String,  // 数据行名称
+    pub Value: String, // 数据行值
 }
 
 #[derive(Serialize, Deserialize, Debug)]

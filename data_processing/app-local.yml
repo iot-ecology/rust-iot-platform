@@ -24,7 +24,7 @@ influx_config:
   port: 8086
   token: lVXFhDO4rOGqfc5Hpr9MHtbiEQyJMoEmlH8LbIwta41QYB-9A_H9d6cCpfUnaLGuQiC_RbH93QGFlpPeukGX-Q==
   org: myorg
-  bucket: bbb
+  bucket: buc
 mongo_config:
   host: 127.0.0.1
   port: 27017

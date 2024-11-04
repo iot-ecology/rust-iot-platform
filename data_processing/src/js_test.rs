@@ -1,12 +1,17 @@
+use quick_js::Context;
 #[cfg(test)]
 mod tests {
-    use quick_js::Context;
+    use crate::js_test::test_js;
 
     #[test]
     fn test_js_functions() {
-        let context = Context::new().unwrap();
+        test_js();
+    }
+}
+pub async fn test_js() {
+    let context = Context::new().unwrap();
 
-        let js_code = r#"
+    let js_code = r#"
         function main(nc) {
             var dataRows = [
                 { "Name": "Temperature", "Value": "23" },
@@ -24,18 +29,17 @@ mod tests {
         }
     "#;
 
-        context.eval(js_code).unwrap();
+    context.eval(js_code).unwrap();
 
-        let nc_value = "42";
+    let nc_value = "42";
 
-        let value = context.call_function("main", [nc_value]).unwrap();
+    let value = context.call_function("main", [nc_value]).unwrap();
 
-        let js_code_2 = r#"
+    let js_code_2 = r#"
         function main2(data) {
             return JSON.stringify(data);
         }"#;
-        context.eval(js_code_2).unwrap();
-        let value2 = context.call_function("main2", [value]).unwrap();
-        println!("{:?}", value2.as_str().unwrap_or(""));
-    }
+    context.eval(js_code_2).unwrap();
+    let value2 = context.call_function("main2", [value]).unwrap();
+    println!("{:?}", value2.as_str().unwrap_or(""));
 }

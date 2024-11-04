@@ -9,6 +9,7 @@ use lapin::{
     BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind,
 };
 use log::{debug, error, info};
+use quick_js::Context;
 use std::error::Error;
 use std::future::Future;
 use std::sync::Arc;
@@ -16,8 +17,8 @@ use tokio::sync::{Mutex, MutexGuard, OnceCell};
 
 use serde_json::de::Read;
 pub struct RabbitMQ {
-    connection: Connection,
-    channel: Channel,
+    pub connection: Connection,
+    pub channel: Channel,
 }
 
 impl RabbitMQ {
@@ -131,8 +132,8 @@ impl RabbitMQ {
 
     pub async fn consume2<F, Fut>(&self, queue_name: &str, handler: F) -> Result<(), Box<dyn Error>>
     where
-        F: Fn(lapin::message::Delivery) -> Fut + Send + Sync,
-        Fut: Future<Output = Result<(), Box<dyn Error>>> + Send,
+        F: Fn(lapin::message::Delivery, quick_js::Context) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = Result<(), Box<dyn Error>>> + Send + 'static,
     {
         let mut consumer = self
             .channel
@@ -149,8 +150,11 @@ impl RabbitMQ {
             if let Ok(delivery) = delivery {
                 let delivery_tag = delivery.delivery_tag;
 
-                // 调用传入的异步处理函数
-                match handler(delivery).await {
+                // 在这里为每条消息创建独立的状态
+                let context = Context::new().unwrap();
+
+                // 调用传入的异步处理函数，传递独立的上下文
+                match handler(delivery, context).await {
                     Ok(()) => {
                         // 处理成功，确认消息
                         self.channel
