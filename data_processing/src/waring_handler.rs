@@ -25,7 +25,7 @@ pub async fn handler_waring_once(
     let mapping = get_mapping_signal_waring_config(device_uid_string, iden_code, redis)
         .await
         .unwrap();
-    let now = Utc::now();
+    let now = common_lib::time_utils::local_to_utc();
 
     for x in dt.DataRows {
         debug!(" x  :{:?}", x);
@@ -52,10 +52,7 @@ pub async fn handler_waring_once(
                             .insert("signal_id".to_string(), serde_json::json!(config.signal_id));
                         document.insert("value".to_string(), serde_json::json!(floatValue));
                         document.insert("rule_id".to_string(), serde_json::json!(config.id));
-                        document.insert(
-                            "insert_time".to_string(),
-                            serde_json::json!(now.timestamp()),
-                        );
+                        document.insert("insert_time".to_string(), serde_json::json!(now));
                         document.insert("up_time".to_string(), serde_json::json!(push_time));
                         info!("命中报警 in_or_out = 1");
 
@@ -213,9 +210,9 @@ mod tests {
             .unwrap();
 
         init_mongo(mongo_config.clone()).await.unwrap();
-        let now = Utc::now();
+        let now = common_lib::time_utils::local_to_utc();
         let dt = DataRowList {
-            Time: now.timestamp(),
+            Time: now,
             DeviceUid: "1".to_string(),
             IdentificationCode: "1".to_string(),
             DataRows: vec![DataRow {

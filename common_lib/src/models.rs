@@ -147,3 +147,176 @@ pub struct Tv {
     pub time: i64,
     pub value: f64,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CalcCache {
+    #[serde(rename = "id")]
+    pub id: u64,
+    pub param: Option<Vec<CalcParamCache>>,
+    pub cron: String,
+    pub script: String,
+    pub offset: i64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CalcParamCache {
+    pub protocol: String,
+    #[serde(rename = "identification_code")]
+    pub identification_code: String,
+    #[serde(rename = "device_uid")]
+    pub device_uid: u32,
+    pub name: String,
+    #[serde(rename = "signal_id")]
+    pub signal_id: i32,
+    pub reduce: String,
+    #[serde(rename = "calc_rule_id")]
+    pub calc_rule_id: i32,
+}
+
+#[derive(Debug)]
+pub struct InfluxQueryConfig {
+    pub bucket: String,
+    pub measurement: String,
+    pub fields: Vec<String>,
+    pub start_time: i64,
+    pub end_time: i64,
+    pub aggregation: AggregationConfig,
+    pub reduce: String, // sum, min, max, mean
+}
+
+#[derive(Debug)]
+pub struct AggregationConfig {
+    pub every: i32,
+    pub function: String, // e.g., "mean", "sum", "min", "max"
+    pub create_empty: bool,
+}
+
+impl InfluxQueryConfig {
+    // Generate a Flux query based on the InfluxQueryConfig
+    pub fn generate_flux_query(&self) -> String {
+        let filters: Vec<String> = self
+            .fields
+            .iter()
+            .map(|field| format!(r#"r["_field"] == "{}""#, field))
+            .collect();
+
+        let time_range = if self.start_time != 0 && self.end_time != 0 {
+            format!(r#"start: {}, stop: {}"#, self.start_time, self.end_time)
+        } else {
+            String::new()
+        };
+
+        let filter_clause = if !filters.is_empty() {
+            format!(r#"|> filter(fn: (r) => {})"#, filters.join(" or "))
+        } else {
+            String::new()
+        };
+
+        format!(
+            r#"
+            from(bucket: "{}")
+                |> range({})
+                {}
+                |> filter(fn: (r) => r["_measurement"] == "{}")
+                |> aggregateWindow(every: {}s, fn: {}, createEmpty: {})
+                |> yield(name: "mean")
+            "#,
+            self.bucket,
+            time_range,
+            filter_clause,
+            self.measurement,
+            self.aggregation.every,
+            self.aggregation.function,
+            self.aggregation.create_empty
+        )
+    }
+
+    // Generate a Flux reduce query based on the InfluxQueryConfig
+    pub fn generate_flux_reduce(&self) -> String {
+        let filters: Vec<String> = self
+            .fields
+            .iter()
+            .map(|field| format!(r#"r["_field"] == "{}""#, field))
+            .collect();
+
+        let time_range = if self.start_time != 0 && self.end_time != 0 {
+            format!(r#"start: {}, stop: {}"#, self.start_time, self.end_time)
+        } else {
+            String::new()
+        };
+
+        let filter_clause = if !filters.is_empty() {
+            format!(r#"|> filter(fn: (r) => {})"#, filters.join(" or "))
+        } else {
+            String::new()
+        };
+
+        format!(
+            r#"
+            from(bucket: "{}")
+                |> range({})
+                {}
+                |> filter(fn: (r) => r["_measurement"] == "{}")
+                |> {}()
+            "#,
+            self.bucket, time_range, filter_clause, self.measurement, self.reduce
+        )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_flux_query() {
+        let aggregation_config = AggregationConfig {
+            every: 60,
+            function: String::from("mean"),
+            create_empty: true,
+        };
+
+        let query_config = InfluxQueryConfig {
+            bucket: String::from("my_bucket"),
+            measurement: String::from("temperature"),
+            fields: vec![String::from("value")],
+            start_time: 1627848123,
+            end_time: 1627851723,
+            aggregation: aggregation_config,
+            reduce: String::from("sum"),
+        };
+
+        let flux_query = query_config.generate_flux_query();
+        println!("Generated Flux Query:\n{}", flux_query);
+
+        assert!(flux_query.contains("from(bucket: \"my_bucket\")"));
+        assert!(flux_query.contains("|> range(start: 1627848123, stop: 1627851723)"));
+        assert!(flux_query.contains("|> aggregateWindow(every: 60s, fn: mean, createEmpty: true)"));
+    }
+
+    #[test]
+    fn test_generate_flux_reduce() {
+        let aggregation_config = AggregationConfig {
+            every: 60,
+            function: String::from("mean"),
+            create_empty: true,
+        };
+
+        let query_config = InfluxQueryConfig {
+            bucket: String::from("my_bucket"),
+            measurement: String::from("temperature"),
+            fields: vec![String::from("value")],
+            start_time: 1627848123,
+            end_time: 1627851723,
+            aggregation: aggregation_config,
+            reduce: String::from("sum"),
+        };
+
+        let flux_reduce_query = query_config.generate_flux_reduce();
+        println!("Generated Flux Reduce Query:\n{}", flux_reduce_query);
+
+        assert!(flux_reduce_query.contains("from(bucket: \"my_bucket\")"));
+        assert!(flux_reduce_query.contains("|> range(start: 1627848123, stop: 1627851723)"));
+        assert!(flux_reduce_query.contains("|> sum()"));
+    }
+}

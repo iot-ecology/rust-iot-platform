@@ -55,11 +55,11 @@ pub async fn storage_data_row(
     // 创建 InfluxDB 管理器
     let db_manager = InfluxDBManager::new(host, port, org, token);
 
-    let now = Utc::now();
-    let measur = gen_measurement(device_uid_string, iden_code, protocol);
+    let now = common_lib::time_utils::local_to_utc();
+    let measur = calc_measurement(device_uid_string, iden_code, protocol);
 
     let mut insert_dt = HashMap::new();
-    let now_timestamp = now.timestamp();
+    let now_timestamp = now;
 
     insert_dt.insert(
         "storage_time".to_string(),
@@ -184,10 +184,10 @@ pub async fn get_mqtt_client_signal(
     Ok(mapping)
 }
 
-fn gen_measurement(device_uid: &str, identification_code: &str, protocol: &str) -> String {
+pub fn calc_measurement(device_uid: &str, identification_code: &str, protocol: &str) -> String {
     format!("{}_{}_{}", protocol, device_uid, identification_code)
 }
-fn calc_bucket_name(prefix: &str, protocol: &str, id: u32) -> String {
+pub fn calc_bucket_name(prefix: &str, protocol: &str, id: u32) -> String {
     format!("{}_{}_{}", prefix, protocol, id % 100)
 }
 #[cfg(test)]
@@ -214,9 +214,9 @@ mod tests {
             .await
             .unwrap();
 
-        let now = Utc::now();
+        let now = common_lib::time_utils::local_to_utc();
         let dt = DataRowList {
-            Time: now.timestamp(),
+            Time: now,
             DeviceUid: "1".to_string(),
             IdentificationCode: "1".to_string(),
             DataRows: vec![DataRow {
@@ -235,7 +235,7 @@ mod tests {
             influxdb.org.unwrap().as_str(),
             influxdb.token.unwrap().as_str(),
             influxdb.bucket.unwrap().as_str(),
-            get_redis_instance().unwrap(),
+            get_redis_instance().await.unwrap().clone(),
         )
         .await
         {

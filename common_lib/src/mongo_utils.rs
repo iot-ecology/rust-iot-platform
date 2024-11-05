@@ -10,8 +10,8 @@ use std::error::Error;
 
 #[derive(Clone, Debug)]
 pub struct MongoDBManager {
-    client: Client,
-    db: Database,
+    pub client: Client,
+    pub db: Database,
 }
 
 impl MongoDBManager {

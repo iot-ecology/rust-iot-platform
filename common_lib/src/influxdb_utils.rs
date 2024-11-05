@@ -104,14 +104,27 @@ impl InfluxDBManager {
 
         Ok(response)
     }
+
+    pub async fn query_with_string(
+        &self,
+        flux_query: String,
+    ) -> Result<Vec<FluxRecord>, Box<dyn Error>> {
+        let query = Query::new(flux_query);
+
+        let response = self.client.query_raw(Some(query)).await?;
+
+        Ok(response)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::{Duration, Utc};
+    use chrono::{Duration, Local, Utc};
+    use influxdb2_structmap::value::Value;
     use std::collections::HashMap;
     use std::env;
+
     #[tokio::test]
     async fn test_influxdb_operations() -> Result<(), Box<dyn std::error::Error>> {
         // 设置环境变量（在实际测试中，你可能需要确保这些变量被正确设置）
@@ -135,18 +148,41 @@ mod tests {
         db_manager.write(tags, measurement, "bbb").await?;
         info!("written successfully.");
 
-        let end_time = Utc::now();
-        let start_time = end_time - Duration::hours(1);
+        let end_time = Local::now();
+
+        println!("end_time: {:?}", end_time);
+        let start_time = end_time - Duration::hours(1000);
 
         let raw_data = db_manager
-            .query_raw(measurement, start_time, end_time, "bbb")
+            .query_raw(
+                measurement,
+                start_time.with_timezone(&Utc),
+                end_time.with_timezone(&Utc),
+                "bbb",
+            )
             .await?;
         info!("Raw data: {:?}", raw_data);
 
-        // db_manager
-        //     .create_bucket("kalsjf".to_string())
-        //     .await
-        //     .unwrap();
+        for record in raw_data {
+            // 打印每条记录的详细信息
+            println!("Record: {:?}", record);
+
+            let time = record.values.get("_time").unwrap();
+            match time {
+                Value::Unknown => {}
+                Value::String(_) => {}
+                Value::Double(_) => {}
+                Value::Bool(_) => {}
+                Value::Long(_) => {}
+                Value::UnsignedLong(_) => {}
+                Value::Duration(_) => {}
+                Value::Base64Binary(_) => {}
+                Value::TimeRFC(tt) => {
+                    let beijing_time = tt.with_timezone(&chrono::FixedOffset::east(8 * 3600));
+                }
+            }
+            println!("Time: {:?}", time);
+        }
 
         Ok(())
     }

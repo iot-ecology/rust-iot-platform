@@ -245,7 +245,7 @@ impl ConnectionHandler {
         info!("Processing message: {}", message);
 
         let string1 = remote_address.replace(":", "@");
-        let now = Utc::now().timestamp();
+        let now = common_lib::time_utils::local_to_utc().timestamp();
         let key = format!("tcp:last:{}", string1);
         self.wrapper
             .set_string_with_expiry(&key, &now.to_string(), 24 * 60 * 60)

@@ -1,8 +1,12 @@
 use chrono::Utc;
 use common_lib::models::{DataRow, DataRowList, SignalDelayWaring, SignalDelayWaringParam, Tv};
 use common_lib::redis_handler::{get_redis_instance, RedisWrapper};
-use lapin::Connection;
+use futures_util::StreamExt;
+use lapin::options::{BasicAckOptions, BasicConsumeOptions};
+use lapin::types::FieldTable;
+use lapin::{Channel, Connection};
 use log::info;
+use log::{error, trace};
 use serde_json::from_str;
 use std::collections::HashMap;
 use std::error::Error;
@@ -43,7 +47,7 @@ pub async fn handler_waring_delay_once(
     }
 
     let script = get_delay_script(mapping, redis).await.unwrap();
-    let now = Utc::now();
+    let now = common_lib::time_utils::local_to_utc();
     for x in script {
         let js = call_js(x.script.clone(), &script_param);
         info!("js = {}", js);
@@ -57,10 +61,7 @@ pub async fn handler_waring_delay_once(
         document.insert("script".to_string(), serde_json::json!(x.script.clone()));
         document.insert("value".to_string(), serde_json::json!(js));
         document.insert("rule_id".to_string(), serde_json::json!(x.id));
-        document.insert(
-            "insert_time".to_string(),
-            serde_json::json!(now.timestamp()),
-        );
+        document.insert("insert_time".to_string(), serde_json::json!(now));
         document.insert("up_time".to_string(), serde_json::json!(dt.Time));
 
         let name = calc_collection_name(script_waring_collection.as_str(), x.id);
@@ -203,9 +204,9 @@ mod tests {
             .unwrap();
 
         init_mongo(mongo_config.clone()).await.unwrap();
-        let now = Utc::now();
+        let now = common_lib::time_utils::local_to_utc();
         let dt = DataRowList {
-            Time: now.timestamp(),
+            Time: now,
             DeviceUid: "102".to_string(),
             IdentificationCode: "102".to_string(),
             DataRows: vec![DataRow {
@@ -276,4 +277,68 @@ pub async fn handler_waring_delay_string(
     }
 
     Ok(())
+}
+pub async fn waring_delay_handler(
+    influx_config: InfluxConfig,
+    guard: RedisWrapper,
+    rabbit_conn: &Connection,
+    channel1: &Channel,
+    script_waring_collection: String,
+    mongo_dbmanager: &MongoDBManager,
+) {
+    let mut consumer = channel1
+        .basic_consume(
+            "waring_delay_handler",
+            "",
+            BasicConsumeOptions::default(),
+            FieldTable::default(),
+        )
+        .await
+        .unwrap();
+
+    trace!("rmq consumer connected, waiting for messages");
+    while let Some(delivery_result) = consumer.next().await {
+        match delivery_result {
+            Ok(delivery) => {
+                trace!("received msg: {:?}", delivery);
+
+                let result = String::from_utf8(delivery.data).unwrap();
+
+                match handler_waring_delay_string(
+                    result,
+                    Context::new().unwrap(),
+                    influx_config.clone(),
+                    guard.clone(),
+                    rabbit_conn,
+                    script_waring_collection.clone(),
+                    mongo_dbmanager,
+                )
+                .await
+                {
+                    Ok(_) => {
+                        info!("msg processed");
+                    }
+                    Err(error) => {
+                        error!("{}", error);
+                    }
+                };
+
+                match channel1
+                    .basic_ack(delivery.delivery_tag, BasicAckOptions::default())
+                    .await
+                {
+                    Ok(_) => {
+                        info!("消息已成功确认。");
+                    }
+                    Err(e) => {
+                        error!("确认消息时发生错误: {}", e);
+                        // 这里可以添加进一步的错误处理逻辑
+                    }
+                }
+            }
+            Err(err) => {
+                error!("Error receiving message: {:?}", err);
+            }
+        }
+    }
 }

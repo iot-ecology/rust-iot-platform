@@ -1,6 +1,7 @@
+use crate::calc_handler::calc_handler_mq;
 use crate::js_test::test_js;
 use crate::storage_handler::{handler_data_storage_string, pre_handler};
-use crate::waring_dealy_handler::handler_waring_delay_string;
+use crate::waring_dealy_handler::{handler_waring_delay_string, waring_delay_handler};
 use crate::waring_handler::{handler_waring_string, waring_handler};
 use common_lib::config::{get_config, read_config, Config, InfluxConfig};
 use common_lib::init_logger;
@@ -22,6 +23,7 @@ use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::{Mutex, MutexGuard};
 
+mod calc_handler;
 mod js_test;
 mod storage_handler;
 mod waring_dealy_handler;
@@ -77,7 +79,7 @@ async fn main() {
     // pre_handler(guard1, guard, &connection, &channel1).await;
     // waring_handler(option, wrapper, &connection, &channel1, mongoConfig.waring_collection.unwrap()).await;
 
-    let (pre_result, waring_result, waring_dealy_handler) = tokio::join!(
+    let (pre_result, waring_result, waring_dealy_handler, calc_handler_mq) = tokio::join!(
         pre_handler(guard1, redis_wrapper, &connection, &channel1),
         waring_handler(
             option.clone(),
@@ -94,76 +96,20 @@ async fn main() {
             &channel1,
             mongoConfig.script_waring_collection.clone().unwrap(),
             &mongo_manager_wrapper
+        ),
+        calc_handler_mq(
+            option.clone(),
+            redis.clone(),
+            &connection,
+            &channel1,
+            mongoConfig.collection.clone().unwrap(),
+            &mongo_manager_wrapper
         )
     );
 
     tokio::signal::ctrl_c()
         .await
         .expect("Failed to listen for ctrl-c signal");
-}
-pub async fn waring_delay_handler(
-    influx_config: InfluxConfig,
-    guard: RedisWrapper,
-    rabbit_conn: &Connection,
-    channel1: &Channel,
-    script_waring_collection: String,
-    mongo_dbmanager: &MongoDBManager,
-) {
-    let mut consumer = channel1
-        .basic_consume(
-            "waring_delay_handler",
-            "",
-            BasicConsumeOptions::default(),
-            FieldTable::default(),
-        )
-        .await
-        .unwrap();
-
-    info!("rmq consumer connected, waiting for messages");
-    while let Some(delivery_result) = consumer.next().await {
-        match delivery_result {
-            Ok(delivery) => {
-                info!("received msg: {:?}", delivery);
-
-                let result = String::from_utf8(delivery.data).unwrap();
-
-                match handler_waring_delay_string(
-                    result,
-                    Context::new().unwrap(),
-                    influx_config.clone(),
-                    guard.clone(),
-                    rabbit_conn,
-                    script_waring_collection.clone(),
-                    mongo_dbmanager,
-                )
-                .await
-                {
-                    Ok(_) => {
-                        info!("msg processed");
-                    }
-                    Err(error) => {
-                        error!("{}", error);
-                    }
-                };
-
-                match channel1
-                    .basic_ack(delivery.delivery_tag, BasicAckOptions::default())
-                    .await
-                {
-                    Ok(_) => {
-                        info!("消息已成功确认。");
-                    }
-                    Err(e) => {
-                        error!("确认消息时发生错误: {}", e);
-                        // 这里可以添加进一步的错误处理逻辑
-                    }
-                }
-            }
-            Err(err) => {
-                error!("Error receiving message: {:?}", err);
-            }
-        }
-    }
 }
 
 async fn ensure_queue_exists(channel: &Channel, queue_name: &str) -> bool {

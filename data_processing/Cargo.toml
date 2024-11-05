@@ -19,5 +19,8 @@ lapin = {version = "2.5.0" ,features = ["default"]}
 futures-lite = "2.3.0"
 
 futures-util = "0.3.31"
+cron = "0.12.1"
 
-
+chrono-tz = "0.10.0"
+influxdb2-structmap = "0.2"
+bson = "2.3"
