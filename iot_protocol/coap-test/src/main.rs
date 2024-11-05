@@ -1,9 +1,8 @@
 use coap::request::RequestBuilder;
 use coap::UdpCoAPClient;
-use coap_lite::RequestType::{Get, Post};
+use coap_lite::RequestType::Get;
 use serde_json::json;
 use std::time::Duration;
-use tokio::time;
 use tokio::time::sleep;
 
 #[tokio::main]

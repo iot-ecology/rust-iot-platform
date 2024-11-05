@@ -1,6 +1,5 @@
-mod mainc;
-
 extern crate coap;
+mod mainc;
 
 use coap::Server;
 use coap_lite::{CoapRequest, RequestType as Method};

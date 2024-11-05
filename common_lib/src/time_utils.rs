@@ -1,6 +1,5 @@
 use chrono::{Local, Utc};
 use chrono_tz::Tz;
-use chrono_tz::Tz::UTC;
 pub fn local_to_utc() -> i64 {
     // 获取当前本地时间
     let local_time = Local::now();

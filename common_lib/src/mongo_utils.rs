@@ -120,7 +120,6 @@ pub async fn get_mongo() -> Result<MutexGuard<'static, MongoDBManager>, Box<dyn 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::env;
 
     #[tokio::test]
     async fn test_mongodb_operations() -> Result<(), Box<dyn std::error::Error>> {
