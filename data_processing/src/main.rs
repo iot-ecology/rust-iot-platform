@@ -1,7 +1,9 @@
 use crate::js_test::test_js;
-use crate::storage_handler::handler_data_storage_string;
-use common_lib::config::{get_config, read_config, Config};
+use crate::storage_handler::{handler_data_storage_string, pre_handler};
+use crate::waring_handler::handler_waring_string;
+use common_lib::config::{get_config, read_config, Config, InfluxConfig};
 use common_lib::init_logger;
+use common_lib::mongo_utils::{get_mongo, init_mongo, MongoDBManager};
 use common_lib::rabbit_utils::{get_rabbitmq_instance, init_rabbitmq_with_config, RabbitMQ};
 use common_lib::redis_handler::{get_redis_instance, init_redis, RedisWrapper};
 use futures_util::StreamExt;
@@ -34,10 +36,17 @@ async fn main() {
         .await
         .unwrap();
     let rabbit = get_rabbitmq_instance().await.unwrap();
-    let guard = get_redis_instance().await.unwrap();
+    let redis_wrapper = get_redis_instance().await.unwrap();
 
     let channel = rabbit.connection.create_channel().await.unwrap();
+    let mongo_config = guard1.mongo_config.clone().unwrap();
 
+    init_mongo(mongo_config.clone()).await.unwrap();
+
+    let mongoConfig = guard1.mongo_config.clone().unwrap();
+    let option = guard1.influx_config.clone().unwrap();
+
+    let mongo_manager_wrapper = get_mongo().await.unwrap();
     ensure_queue_exists(&channel, "calc_queue").await;
     ensure_queue_exists(&channel, "waring_handler").await;
     ensure_queue_exists(&channel, "waring_notice").await;
@@ -62,22 +71,38 @@ async fn main() {
         .unwrap();
 
     let channel1 = connection.create_channel().await.unwrap();
+    let wrapper = redis_wrapper.clone();
 
-    pre_handler(guard1, guard, &connection, &channel1).await;
+    // pre_handler(guard1, guard, &connection, &channel1).await;
+    // waring_handler(option, wrapper, &connection, &channel1, mongoConfig.waring_collection.unwrap()).await;
+
+    let (pre_result, waring_result) = tokio::join!(
+        pre_handler(guard1, redis_wrapper, &connection, &channel1),
+        waring_handler(
+            option,
+            wrapper,
+            &connection,
+            &channel1,
+            mongoConfig.waring_collection.unwrap(),
+            &mongo_manager_wrapper
+        )
+    );
+
     tokio::signal::ctrl_c()
         .await
         .expect("Failed to listen for ctrl-c signal");
 }
-
-async fn pre_handler(
-    guard1: MutexGuard<'_, Config>,
-    guard: MutexGuard<'_, RedisWrapper>,
+pub async fn waring_handler(
+    influx_config: InfluxConfig,
+    guard: RedisWrapper,
     rabbit_conn: &Connection,
     channel1: &Channel,
+    waring_collection: String,
+    mongo_dbmanager: &MongoDBManager,
 ) {
     let mut consumer = channel1
         .basic_consume(
-            "pre_handler",
+            "waring_handler",
             "",
             BasicConsumeOptions::default(),
             FieldTable::default(),
@@ -93,12 +118,14 @@ async fn pre_handler(
 
                 let result = String::from_utf8(delivery.data).unwrap();
 
-                match handler_data_storage_string(
+                match handler_waring_string(
                     result,
                     Context::new().unwrap(),
-                    guard1.influx_config.clone().unwrap(),
+                    influx_config.clone(),
                     guard.clone(),
                     rabbit_conn,
+                    waring_collection.clone(),
+                    mongo_dbmanager,
                 )
                 .await
                 {

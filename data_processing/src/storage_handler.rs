@@ -1,10 +1,12 @@
 use chrono::Utc;
-use common_lib::config::{get_config, InfluxConfig};
+use common_lib::config::{get_config, Config, InfluxConfig};
 use common_lib::influxdb_utils::InfluxDBManager;
 use common_lib::models::{DataRowList, DataValue, MQTTMessage, Signal, SignalMapping};
 use common_lib::rabbit_utils::RabbitMQ;
 use common_lib::redis_handler::{get_redis_instance, RedisWrapper};
-use lapin::options::BasicPublishOptions;
+use futures_util::StreamExt;
+use lapin::options::{BasicAckOptions, BasicConsumeOptions, BasicPublishOptions};
+use lapin::types::FieldTable;
 use lapin::{BasicProperties, Channel, Connection};
 use log::{error, info};
 use quick_js::{Context, ContextError};
@@ -350,4 +352,65 @@ pub async fn handler_data_storage_string(
     }
 
     Ok(())
+}
+
+pub async fn pre_handler(
+    guard1: MutexGuard<'_, Config>,
+    guard: MutexGuard<'_, RedisWrapper>,
+    rabbit_conn: &Connection,
+    channel1: &Channel,
+) {
+    let mut consumer = channel1
+        .basic_consume(
+            "pre_handler",
+            "",
+            BasicConsumeOptions::default(),
+            FieldTable::default(),
+        )
+        .await
+        .unwrap();
+
+    info!("rmq consumer connected, waiting for messages");
+    while let Some(delivery_result) = consumer.next().await {
+        match delivery_result {
+            Ok(delivery) => {
+                info!("received msg: {:?}", delivery);
+
+                let result = String::from_utf8(delivery.data).unwrap();
+
+                match handler_data_storage_string(
+                    result,
+                    Context::new().unwrap(),
+                    guard1.influx_config.clone().unwrap(),
+                    guard.clone(),
+                    rabbit_conn,
+                )
+                .await
+                {
+                    Ok(_) => {
+                        info!("msg processed");
+                    }
+                    Err(error) => {
+                        error!("{}", error);
+                    }
+                };
+
+                match channel1
+                    .basic_ack(delivery.delivery_tag, BasicAckOptions::default())
+                    .await
+                {
+                    Ok(_) => {
+                        info!("消息已成功确认。");
+                    }
+                    Err(e) => {
+                        error!("确认消息时发生错误: {}", e);
+                        // 这里可以添加进一步的错误处理逻辑
+                    }
+                }
+            }
+            Err(err) => {
+                error!("Error receiving message: {:?}", err);
+            }
+        }
+    }
 }

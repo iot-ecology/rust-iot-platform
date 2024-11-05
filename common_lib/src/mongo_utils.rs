@@ -8,6 +8,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::error::Error;
 
+#[derive(Clone, Debug)]
 pub struct MongoDBManager {
     client: Client,
     db: Database,
