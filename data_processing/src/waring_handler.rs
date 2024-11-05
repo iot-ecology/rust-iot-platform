@@ -91,6 +91,11 @@ pub async fn handler_waring_once(
                             .insert("up_time".to_string(), serde_json::json!(device_uid_string));
                         info!("命中报警 in_or_out = 0");
                         mongo_dbmanager
+                            .create_collection(name.as_str())
+                            .await
+                            .unwrap();
+
+                        mongo_dbmanager
                             .insert_document(name.as_str(), document)
                             .await
                             .unwrap();

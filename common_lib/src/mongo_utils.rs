@@ -56,6 +56,13 @@ impl MongoDBManager {
     }
 
     pub async fn create_collection(&self, name: &str) -> Result<(), Box<dyn Error>> {
+        let collections = self.db.list_collection_names(None).await?;
+
+        if collections.contains(&name.to_string()) {
+            info!("Collection '{}' already exists, skipping creation.", name);
+            return Ok(()); // 如果集合已存在，则返回，不再创建
+        }
+
         self.db.create_collection(name, None).await?;
         Ok(())
     }
@@ -90,9 +97,9 @@ impl MongoDBManager {
     }
 }
 
-use std::sync::Arc;
-
 use crate::rabbit_utils::RabbitMQ;
+use log::info;
+use std::sync::Arc;
 use tokio::sync::{Mutex, MutexGuard, OnceCell};
 
 static DB_MANAGER: OnceCell<Arc<Mutex<MongoDBManager>>> = OnceCell::const_new();

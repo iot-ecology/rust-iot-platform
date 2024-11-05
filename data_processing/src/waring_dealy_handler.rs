@@ -66,6 +66,11 @@ pub async fn handler_waring_delay_once(
         let name = calc_collection_name(script_waring_collection.as_str(), x.id);
 
         mongo_dbmanager
+            .create_collection(name.as_str())
+            .await
+            .unwrap();
+
+        mongo_dbmanager
             .insert_document(name.as_str(), document)
             .await
             .unwrap();
