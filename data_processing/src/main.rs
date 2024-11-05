@@ -1,6 +1,7 @@
 use crate::js_test::test_js;
 use crate::storage_handler::{handler_data_storage_string, pre_handler};
-use crate::waring_handler::handler_waring_string;
+use crate::waring_dealy_handler::handler_waring_delay_string;
+use crate::waring_handler::{handler_waring_string, waring_handler};
 use common_lib::config::{get_config, read_config, Config, InfluxConfig};
 use common_lib::init_logger;
 use common_lib::mongo_utils::{get_mongo, init_mongo, MongoDBManager};
@@ -71,19 +72,27 @@ async fn main() {
         .unwrap();
 
     let channel1 = connection.create_channel().await.unwrap();
-    let wrapper = redis_wrapper.clone();
+    let redis = redis_wrapper.clone();
 
     // pre_handler(guard1, guard, &connection, &channel1).await;
     // waring_handler(option, wrapper, &connection, &channel1, mongoConfig.waring_collection.unwrap()).await;
 
-    let (pre_result, waring_result) = tokio::join!(
+    let (pre_result, waring_result, waring_dealy_handler) = tokio::join!(
         pre_handler(guard1, redis_wrapper, &connection, &channel1),
         waring_handler(
-            option,
-            wrapper,
+            option.clone(),
+            redis.clone(),
             &connection,
             &channel1,
-            mongoConfig.waring_collection.unwrap(),
+            mongoConfig.waring_collection.clone().unwrap(),
+            &mongo_manager_wrapper
+        ),
+        waring_delay_handler(
+            option.clone(),
+            redis.clone(),
+            &connection,
+            &channel1,
+            mongoConfig.script_waring_collection.clone().unwrap(),
             &mongo_manager_wrapper
         )
     );
@@ -92,17 +101,17 @@ async fn main() {
         .await
         .expect("Failed to listen for ctrl-c signal");
 }
-pub async fn waring_handler(
+pub async fn waring_delay_handler(
     influx_config: InfluxConfig,
     guard: RedisWrapper,
     rabbit_conn: &Connection,
     channel1: &Channel,
-    waring_collection: String,
+    script_waring_collection: String,
     mongo_dbmanager: &MongoDBManager,
 ) {
     let mut consumer = channel1
         .basic_consume(
-            "waring_handler",
+            "waring_delay_handler",
             "",
             BasicConsumeOptions::default(),
             FieldTable::default(),
@@ -118,13 +127,13 @@ pub async fn waring_handler(
 
                 let result = String::from_utf8(delivery.data).unwrap();
 
-                match handler_waring_string(
+                match handler_waring_delay_string(
                     result,
                     Context::new().unwrap(),
                     influx_config.clone(),
                     guard.clone(),
                     rabbit_conn,
-                    waring_collection.clone(),
+                    script_waring_collection.clone(),
                     mongo_dbmanager,
                 )
                 .await

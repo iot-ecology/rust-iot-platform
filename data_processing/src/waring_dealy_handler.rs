@@ -1,23 +1,24 @@
+use chrono::Utc;
 use common_lib::models::{DataRow, DataRowList, SignalDelayWaring, SignalDelayWaringParam, Tv};
 use common_lib::redis_handler::{get_redis_instance, RedisWrapper};
+use lapin::Connection;
 use log::info;
 use serde_json::from_str;
 use std::collections::HashMap;
 use std::error::Error;
 
-pub async fn handler_waring_once(
+pub async fn handler_waring_delay_once(
     dt: DataRowList,
-    waring_collection: String,
+    script_waring_collection: String,
+    redis: &RedisWrapper,
+    mongo_dbmanager: &MongoDBManager,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let device_uid_string = &*dt.DeviceUid;
     let iden_code = &*dt.IdentificationCode;
     let push_time = dt.Time;
-    let guard = get_redis_instance().await.unwrap();
 
-    let mapping = get_delay_param(device_uid_string, iden_code, dt.DataRows, guard).await?;
+    let mapping = get_delay_param(device_uid_string, iden_code, dt.DataRows, redis).await?;
     let mut script_param: HashMap<String, Vec<Tv>> = HashMap::new();
-
-    let guard = get_redis_instance().await.unwrap();
 
     for param in &mapping {
         let key = format!(
@@ -26,7 +27,7 @@ pub async fn handler_waring_once(
         );
         info!("key = {}", key);
 
-        let members = guard.get_zset(&key).await.unwrap();
+        let members = redis.get_zset(&key).await.unwrap();
 
         let mut vs = Vec::new();
 
@@ -41,10 +42,33 @@ pub async fn handler_waring_once(
         script_param.insert(param.name.clone(), vs);
     }
 
-    let script = get_delay_script(mapping, guard).await.unwrap();
+    let script = get_delay_script(mapping, redis).await.unwrap();
+    let now = Utc::now();
     for x in script {
-        let js = call_js(x.script, &script_param);
+        let js = call_js(x.script.clone(), &script_param);
         info!("js = {}", js);
+
+        let mut document = HashMap::new();
+        document.insert(
+            "device_uid".to_string(),
+            serde_json::json!(device_uid_string),
+        );
+        document.insert("param".to_string(), serde_json::json!(script_param));
+        document.insert("script".to_string(), serde_json::json!(x.script.clone()));
+        document.insert("value".to_string(), serde_json::json!(js));
+        document.insert("rule_id".to_string(), serde_json::json!(x.id));
+        document.insert(
+            "insert_time".to_string(),
+            serde_json::json!(now.timestamp()),
+        );
+        document.insert("up_time".to_string(), serde_json::json!(dt.Time));
+
+        let name = calc_collection_name(script_waring_collection.as_str(), x.id);
+
+        mongo_dbmanager
+            .insert_document(name.as_str(), document)
+            .await
+            .unwrap();
     }
 
     Ok(())
@@ -54,7 +78,7 @@ pub async fn get_delay_param(
     uid: &str,
     code: &str,
     rows: Vec<DataRow>,
-    guard: MutexGuard<'_, RedisWrapper>,
+    guard: &RedisWrapper,
 ) -> Result<Vec<SignalDelayWaringParam>, Box<dyn std::error::Error>> {
     let values = guard.get_list_all("delay_param").await?;
 
@@ -80,7 +104,7 @@ fn name_in_data_row(name: String, rows: &Vec<DataRow>) -> bool {
 
 async fn get_delay_script(
     mapping: Vec<SignalDelayWaringParam>,
-    redis: MutexGuard<'_, RedisWrapper>,
+    redis: &RedisWrapper,
 ) -> Result<Vec<SignalDelayWaring>, Box<dyn std::error::Error>> {
     let mut res = Vec::new();
 
@@ -114,6 +138,9 @@ async fn get_delay_script(
 
     Ok(unique_res)
 }
+use crate::waring_handler::calc_collection_name;
+use common_lib::config::InfluxConfig;
+use common_lib::mongo_utils::MongoDBManager;
 use quick_js::{Context, JsValue};
 use tokio::sync::MutexGuard;
 
@@ -150,7 +177,7 @@ mod tests {
     use chrono::Utc;
     use common_lib::config::{get_config, read_config};
     use common_lib::init_logger;
-    use common_lib::mongo_utils::init_mongo;
+    use common_lib::mongo_utils::{get_mongo, init_mongo};
     use common_lib::rabbit_utils::init_rabbitmq_with_config;
     use common_lib::redis_handler::init_redis;
 
@@ -184,7 +211,14 @@ mod tests {
             Protocol: Some("MQTT".to_string()),
         };
 
-        handler_waring_once(dt, "asf".to_string()).await.unwrap();
+        handler_waring_delay_once(
+            dt,
+            "asf".to_string(),
+            &get_redis_instance().await.unwrap().clone(),
+            &get_mongo().await.unwrap().clone(),
+        )
+        .await
+        .unwrap();
     }
     #[test]
     fn test_call_js() {
@@ -214,4 +248,27 @@ mod tests {
         // 断言返回结果
         assert!(result); // 期望返回 true
     }
+}
+
+pub async fn handler_waring_delay_string(
+    result: String,
+    jsc: Context,
+    config: InfluxConfig,
+    redis: RedisWrapper,
+    rabbit_conn: &Connection,
+    script_waring_collection: String,
+    mongo_dbmanager: &MongoDBManager,
+) -> Result<(), Box<dyn Error>> {
+    info!("message : {:?}", result);
+
+    // 尝试反序列化 MQTT 消息
+    let dt: Vec<DataRowList> = serde_json::from_str(&result)?;
+
+    for x in dt {
+        handler_waring_delay_once(x, script_waring_collection.clone(), &redis, mongo_dbmanager)
+            .await
+            .unwrap();
+    }
+
+    Ok(())
 }

@@ -1,12 +1,17 @@
 use chrono::Utc;
 use common_lib::models::{DataRowList, MQTTMessage, Signal, SignalWaringConfig};
 use common_lib::redis_handler::RedisWrapper;
-use lapin::options::BasicPublishOptions;
-use lapin::{BasicProperties, Connection};
+use futures_util::StreamExt;
+use lapin::options::BasicAckOptions;
+use lapin::options::{BasicConsumeOptions, BasicPublishOptions};
+use lapin::types::FieldTable;
+use lapin::{BasicProperties, Channel, Connection};
 use log::{debug, error, info};
-use quick_js::Context;
+use quick_js::{Context, ContextError};
 use std::collections::HashMap;
 use std::error::Error;
+use std::sync::Arc;
+use tokio::sync::{Mutex, MutexGuard};
 
 pub async fn handler_waring_once(
     dt: DataRowList,
@@ -98,7 +103,7 @@ pub async fn handler_waring_once(
     Ok(())
 }
 
-fn calc_collection_name(prefix: &str, id: i32) -> String {
+pub fn calc_collection_name(prefix: &str, id: i32) -> String {
     let string = format!("{}_{}", prefix, id % 100);
     return string;
 }
@@ -227,6 +232,71 @@ mod tests {
         .await
         {
             log::error!("Failed to store data row: {:?}", e);
+        }
+    }
+}
+
+pub async fn waring_handler(
+    influx_config: InfluxConfig,
+    guard: RedisWrapper,
+    rabbit_conn: &Connection,
+    channel1: &Channel,
+    waring_collection: String,
+    mongo_dbmanager: &MongoDBManager,
+) {
+    let mut consumer = channel1
+        .basic_consume(
+            "waring_handler",
+            "",
+            BasicConsumeOptions::default(),
+            FieldTable::default(),
+        )
+        .await
+        .unwrap();
+
+    info!("rmq consumer connected, waiting for messages");
+    while let Some(delivery_result) = consumer.next().await {
+        match delivery_result {
+            Ok(delivery) => {
+                info!("received msg: {:?}", delivery);
+
+                let result = String::from_utf8(delivery.data).unwrap();
+
+                match handler_waring_string(
+                    result,
+                    Context::new().unwrap(),
+                    influx_config.clone(),
+                    guard.clone(),
+                    rabbit_conn,
+                    waring_collection.clone(),
+                    mongo_dbmanager,
+                )
+                .await
+                {
+                    Ok(_) => {
+                        info!("msg processed");
+                    }
+                    Err(error) => {
+                        error!("{}", error);
+                    }
+                };
+
+                match channel1
+                    .basic_ack(delivery.delivery_tag, BasicAckOptions::default())
+                    .await
+                {
+                    Ok(_) => {
+                        info!("消息已成功确认。");
+                    }
+                    Err(e) => {
+                        error!("确认消息时发生错误: {}", e);
+                        // 这里可以添加进一步的错误处理逻辑
+                    }
+                }
+            }
+            Err(err) => {
+                error!("Error receiving message: {:?}", err);
+            }
         }
     }
 }
