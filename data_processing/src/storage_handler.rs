@@ -2,7 +2,10 @@ use chrono::Utc;
 use common_lib::config::{get_config, InfluxConfig};
 use common_lib::influxdb_utils::InfluxDBManager;
 use common_lib::models::{DataRowList, DataValue, MQTTMessage, Signal, SignalMapping};
+use common_lib::rabbit_utils::RabbitMQ;
 use common_lib::redis_handler::{get_redis_instance, RedisWrapper};
+use lapin::options::BasicPublishOptions;
+use lapin::{BasicProperties, Channel, Connection};
 use log::{error, info};
 use quick_js::{Context, ContextError};
 use serde::{Deserialize, Serialize};
@@ -263,35 +266,49 @@ pub async fn handler_data_storage_string(
     jsc: Context,
     config: InfluxConfig,
     redis: RedisWrapper,
+    rabbit_conn: &Connection,
 ) -> Result<(), Box<dyn Error>> {
     info!("message : {:?}", result);
+
+    // 尝试反序列化 MQTT 消息
     let mqtt_message: MQTTMessage = serde_json::from_str(&result)?;
 
+    // 获取存储的脚本
     let option = redis
         .get_hash("mqtt_script", mqtt_message.mqtt_client_id.as_str())
-        .await
-        .unwrap();
-    if option.is_some() {
-        let string = option.unwrap();
-        // 将 Context 的创建移到这里
+        .await?;
 
-        jsc.eval(string.as_str()).unwrap();
-        let value = jsc.call_function("main", [mqtt_message.message]).unwrap();
+    if let Some(string) = option {
+        // 在这里创建 JavaScript 上下文
+        jsc.eval(&string)
+            .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+
+        // 调用 main 函数
+        let value = jsc
+            .call_function("main", [mqtt_message.message])
+            .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+
+        // 定义并调用 JavaScript 代码
         let js_code_2 = r#"
         function main2(data) {
             return JSON.stringify(data);
         }"#;
-        jsc.eval(js_code_2).unwrap();
-        let value2 = jsc.call_function("main2", [value]).unwrap();
+        jsc.eval(js_code_2)
+            .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+        let value2 = jsc
+            .call_function("main2", [value])
+            .map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
         let x = value2.as_str().unwrap_or("");
 
         info!("Java Script Result = {:?}", x);
-        let dt: Vec<DataRowList> = from_str(&x).unwrap();
+        let dt: Vec<DataRowList> = from_str(&x).map_err(|e| Box::new(e) as Box<dyn Error>)?;
         info!("{:?}", dt);
-        for x in dt {
+
+        // 存储数据行
+        for data_row in dt {
             storage_data_row(
-                x,
+                data_row,
                 "MQTT",
                 config.host.clone().unwrap().as_str(),
                 config.port.clone().unwrap(),
@@ -300,8 +317,37 @@ pub async fn handler_data_storage_string(
                 config.bucket.clone().unwrap().as_str(),
                 redis.clone(),
             )
-            .await;
+            .await
+            .expect("storage_data_row error");
         }
+
+        // 创建 RabbitMQ 通道
+        let rabbit_channel = rabbit_conn
+            .create_channel()
+            .await
+            .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+
+        // 消息推送
+        for queue in ["waring_handler", "waring_delay_handler", "transmit_handler"].iter() {
+            rabbit_channel
+                .basic_publish(
+                    "",
+                    *queue,
+                    BasicPublishOptions::default(),
+                    x.clone().as_bytes(),
+                    BasicProperties::default(),
+                )
+                .await
+                .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+        }
+
+        // 处理最后推送时间（如果需要的话）
+    } else {
+        info!(
+            "未找到脚本 for mqtt_client_id: {}",
+            mqtt_message.mqtt_client_id
+        );
     }
+
     Ok(())
 }
