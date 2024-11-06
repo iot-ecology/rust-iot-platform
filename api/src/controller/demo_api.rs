@@ -1,4 +1,3 @@
-use crate::db::redis::RedisConnection;
 use r2d2;
 use r2d2::Pool;
 use r2d2_redis::redis::{Commands, RedisResult};

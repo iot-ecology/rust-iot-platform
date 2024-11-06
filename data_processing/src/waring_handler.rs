@@ -181,12 +181,13 @@ use serde_json::from_str;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use common_lib::config::{get_config, read_config};
+    use common_lib::config::{get_config, read_config, read_config_tb};
     use common_lib::init_logger;
     use common_lib::models::DataRow;
     use common_lib::mongo_utils::init_mongo;
     use common_lib::rabbit_utils::init_rabbitmq_with_config;
     use common_lib::redis_handler::{get_redis_instance, init_redis};
+    use common_lib::redis_pool_utils::create_redis_pool_from_config;
     use log::debug;
 
     #[tokio::test]
@@ -221,10 +222,14 @@ mod tests {
 
         let wrapper = get_redis_instance().await.unwrap().clone();
         let guard = get_mongo().await.unwrap().clone();
+        let config1 = read_config_tb("app-local.yml");
+        let pool = create_redis_pool_from_config(&config1.redis_config);
+
+        let redisOp = RedisOp { pool };
         if let Err(e) = handler_waring_once(
             dt,
             mongo_config.waring_collection.unwrap(),
-            &wrapper,
+            &redisOp,
             &guard,
         )
         .await

@@ -415,11 +415,12 @@ fn get_next_time(cron_expr: &str) -> Option<i64> {
 mod tests {
     use super::*;
     use chrono::{NaiveDateTime, TimeZone, Utc};
-    use common_lib::config::{get_config, read_config};
+    use common_lib::config::{get_config, read_config, read_config_tb};
     use common_lib::init_logger;
     use common_lib::mongo_utils::{get_mongo, init_mongo};
     use common_lib::rabbit_utils::init_rabbitmq_with_config;
     use common_lib::redis_handler::{get_redis_instance, init_redis};
+    use common_lib::redis_pool_utils::create_redis_pool_from_config;
 
     #[tokio::test]
     async fn cc() {
@@ -441,10 +442,13 @@ mod tests {
         init_mongo(mongo_config.clone()).await.unwrap();
 
         let mongo_manager_wrapper = get_mongo().await.unwrap();
+        let config1 = read_config_tb("app-local.yml");
+        let pool = create_redis_pool_from_config(&config1.redis_config);
 
+        let redisOp = RedisOp { pool };
         calc_handler(
             s.to_string(),
-            get_redis_instance().await.unwrap().clone(),
+            &redisOp,
             influxdb.bucket.unwrap(),
             influxdb.host.unwrap().as_str(),
             influxdb.port.unwrap(),

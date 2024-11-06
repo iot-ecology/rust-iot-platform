@@ -182,11 +182,12 @@ fn call_js(js: String, param: &HashMap<String, Vec<Tv>>) -> bool {
 mod tests {
     use super::*;
     use chrono::Utc;
-    use common_lib::config::{get_config, read_config};
+    use common_lib::config::{get_config, read_config, read_config_tb};
     use common_lib::init_logger;
     use common_lib::mongo_utils::{get_mongo, init_mongo};
     use common_lib::rabbit_utils::init_rabbitmq_with_config;
     use common_lib::redis_handler::init_redis;
+    use common_lib::redis_pool_utils::create_redis_pool_from_config;
 
     #[tokio::test]
     async fn cc() {
@@ -217,11 +218,14 @@ mod tests {
             Nc: "1".to_string(),
             Protocol: Some("MQTT".to_string()),
         };
+        let config1 = read_config_tb("app-local.yml");
+        let pool = create_redis_pool_from_config(&config1.redis_config);
 
+        let redisOp = RedisOp { pool };
         handler_waring_delay_once(
             dt,
             "asf".to_string(),
-            &get_redis_instance().await.unwrap().clone(),
+            &redisOp,
             &get_mongo().await.unwrap().clone(),
         )
         .await

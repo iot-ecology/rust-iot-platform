@@ -185,11 +185,12 @@ pub fn calc_bucket_name(prefix: &str, protocol: &str, id: u32) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use common_lib::config::{get_config, read_config};
+    use common_lib::config::{get_config, read_config, read_config_tb};
     use common_lib::init_logger;
     use common_lib::models::DataRow;
     use common_lib::rabbit_utils::init_rabbitmq_with_config;
     use common_lib::redis_handler::init_redis;
+    use common_lib::redis_pool_utils::create_redis_pool_from_config;
     use log::info;
 
     #[tokio::test]
@@ -218,7 +219,10 @@ mod tests {
             Nc: "1".to_string(),
             Protocol: Some("MQTT".to_string()),
         };
+        let config1 = read_config_tb("app-local.yml");
+        let pool = create_redis_pool_from_config(&config1.redis_config);
 
+        let redisOp = RedisOp { pool };
         if let Err(e) = storage_data_row(
             dt,
             "MQTT",
@@ -227,7 +231,7 @@ mod tests {
             influxdb.org.unwrap().as_str(),
             influxdb.token.unwrap().as_str(),
             influxdb.bucket.unwrap().as_str(),
-            get_redis_instance().await.unwrap().clone(),
+            &redisOp,
         )
         .await
         {
