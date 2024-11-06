@@ -10,12 +10,17 @@ use lapin::{
 };
 use log::{debug, error, info};
 use quick_js::Context;
+use r2d2::Pool;
+use r2d2_redis::RedisConnectionManager;
 use std::error::Error;
 use std::future::Future;
 use std::sync::Arc;
 use tokio::sync::{Mutex, MutexGuard, OnceCell};
 
 use serde_json::de::Read;
+
+pub type RedisPool = Pool<RedisConnectionManager>;
+
 pub struct RabbitMQ {
     pub connection: Connection,
     pub channel: Channel,

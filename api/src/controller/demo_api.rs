@@ -1,3 +1,4 @@
+use common_lib::rabbit_utils::RedisPool;
 use r2d2;
 use r2d2::Pool;
 use r2d2_redis::redis::{Commands, RedisResult};
@@ -9,7 +10,6 @@ use std::ops::Deref;
 
 const DB_KEY: &'static str = "items";
 
-type RedisPool = Pool<RedisConnectionManager>;
 #[get("/")]
 pub fn index(pool: &rocket::State<RedisPool>) -> &'static str {
     // 使用 Redis 连接池执行操作

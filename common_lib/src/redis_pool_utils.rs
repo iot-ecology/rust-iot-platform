@@ -1,7 +1,8 @@
 use crate::config::RedisConfig;
+use log::{error, info};
 use r2d2::PooledConnection;
 
-use r2d2_redis::redis::Commands;
+use r2d2_redis::redis::{Commands, RedisResult};
 use r2d2_redis::{r2d2, redis, RedisConnectionManager};
 use redis::RedisError;
 
@@ -14,14 +15,53 @@ pub fn create_redis_pool_from_config(config: &RedisConfig) -> r2d2::Pool<RedisCo
     r2d2::Pool::builder().build(manager).unwrap()
 }
 
+#[derive(Debug, Clone)]
 pub struct RedisOp {
     pub pool: r2d2::Pool<RedisConnectionManager>,
 }
 impl RedisOp {
-    fn get_connection(&self) -> PooledConnection<RedisConnectionManager> {
+    pub fn get_connection(&self) -> PooledConnection<RedisConnectionManager> {
         let result = self.pool.get();
         let connection = result.unwrap();
+
         return connection;
+    }
+
+    pub fn acquire_lock(
+        &self,
+        lock_key: &str,
+        lock_value: &str,
+        ttl: u64,
+    ) -> Result<bool, redis::RedisError> {
+        let mut con = self.get_connection();
+
+        let result1 = con.set_nx(lock_key, lock_value);
+        let result: RedisResult<String> = result1;
+        match result {
+            Ok(yes) => {
+                con.expire::<&str, usize>(lock_key, ttl as usize)
+                    .expect("设置过期时间异常");
+                return Ok(true);
+            }
+            Err(e) => {
+                error!("分布式锁上锁失败{}", e);
+
+                return Ok(false);
+            }
+        }
+    }
+
+    fn release_lock(&self, lock_key: &str, lock_value: &str) -> Result<bool, redis::RedisError> {
+        if let Some(result1) = self.get_string(lock_key)? {
+            let x = result1.as_str();
+            info!("x = {}   lock_value = {}", x, lock_value);
+
+            if x == lock_value {
+                self.delete_string(lock_key)?;
+                return Ok(true);
+            }
+        }
+        Ok(false)
     }
 
     // String 操作
@@ -199,8 +239,11 @@ impl RedisOp {
 #[cfg(test)]
 mod tests {
     use crate::config::RedisConfig;
+    use crate::init_logger;
     use crate::redis_pool_utils::{create_redis_pool_from_config, RedisOp};
+    use log::info;
     use r2d2_redis::redis::Commands;
+    use std::env;
     use std::thread;
 
     #[test]
@@ -441,5 +484,17 @@ mod tests {
         let result = redis_op.delete_hash("test_hash");
 
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_acquire_lock() {
+        env::set_var("RUST_LOG", "info");
+        env_logger::init();
+        let redis_op = setup_redis_op();
+        let x = redis_op.acquire_lock("asfaf", "asf", 10000).unwrap();
+        info!("{}", x);
+
+        let result = redis_op.release_lock("asfaf", "asf");
+        info!("{:?}", result.unwrap());
     }
 }

@@ -307,10 +307,7 @@ pub async fn calc_handler(
                                             let collection =
                                                 mongo.db.collection::<Document>(string.as_str());
 
-                                            collection
-                                                .insert_one(&document.clone(), None)
-                                                .await
-                                                .unwrap();
+                                            collection.insert_one(&document.clone()).await.unwrap();
 
                                             // msg
 

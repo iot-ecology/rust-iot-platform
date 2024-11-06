@@ -69,7 +69,26 @@ pub struct CoapMessage {
     pub uid: String,
     pub message: String,
 }
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MqttConfig {
+    #[serde(rename = "broker")]
+    pub broker: String,
 
+    #[serde(rename = "port")]
+    pub port: i32,
+
+    #[serde(rename = "username")]
+    pub username: String,
+
+    #[serde(rename = "password")]
+    pub password: String,
+
+    #[serde(rename = "sub_topic")]
+    pub sub_topic: String,
+
+    #[serde(rename = "client_id")]
+    pub client_id: String,
+}
 impl CoapMessage {
     pub fn to_json_string(&self) -> String {
         serde_json::to_string(self).expect("Failed to serialize CoapMessage")

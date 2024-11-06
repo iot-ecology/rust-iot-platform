@@ -24,3 +24,4 @@ coap = "0.19"
 coap-lite = "0.11.3"
 async-std = "1.13.0"
 rumqttc = "0.24.0"
+rocket = { version = "0.5.1", features = ["json"] }
