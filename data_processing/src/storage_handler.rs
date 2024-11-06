@@ -4,6 +4,7 @@ use common_lib::influxdb_utils::InfluxDBManager;
 use common_lib::models::{DataRowList, DataValue, MQTTMessage, Signal, SignalMapping};
 use common_lib::rabbit_utils::RabbitMQ;
 use common_lib::redis_handler::{get_redis_instance, RedisWrapper};
+use common_lib::redis_pool_utils::RedisOp;
 use futures_util::StreamExt;
 use lapin::options::{BasicAckOptions, BasicConsumeOptions, BasicPublishOptions};
 use lapin::types::FieldTable;
@@ -25,14 +26,14 @@ pub async fn storage_data_row(
     org: &str,
     token: &str,
     bucket_pre: &str,
-    redis: RedisWrapper,
+    redis: &RedisOp,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let device_uid_string = &*dt.DeviceUid;
     let iden_code = &*dt.IdentificationCode;
     let push_time = dt.Time;
 
     // 获取 MQTT 客户端信号
-    let map = match get_mqtt_client_signal(device_uid_string, iden_code, redis.clone()).await {
+    let map = match get_mqtt_client_signal(device_uid_string, iden_code, redis) {
         Ok(map) => map,
         Err(e) => {
             error!("Failed to get MQTT client signal: {:?}", e);
@@ -104,22 +105,20 @@ pub async fn storage_data_row(
 
             info!("signal_delay_warning key = {}", key);
 
-            let currentSize = redis.get_zset_length(key.as_str()).await.unwrap();
+            let currentSize = redis.get_zset_length(key.as_str()).unwrap();
 
             if currentSize >= x1.cache_size {
                 let i = x1.cache_size + 1 - currentSize;
                 if i == 1 {
-                    redis.delete_first_zset_member(key.as_str()).await.unwrap();
+                    redis.delete_first_zset_member(key.as_str()).unwrap();
                     redis
                         .add_zset(key.as_str(), data_value.as_str(), now_timestamp as f64)
-                        .await
                         .unwrap();
                 } else {
                 }
             } else {
                 redis
                     .add_zset(key.as_str(), data_value.as_str(), now_timestamp as f64)
-                    .await
                     .unwrap();
             }
         }
@@ -137,27 +136,20 @@ pub async fn storage_data_row(
         return Err(e);
     }
 
-    set_push_time(
-        protocol,
-        iden_code,
-        device_uid_string,
-        now_timestamp,
-        redis.clone(),
-    )
-    .await;
+    set_push_time(protocol, iden_code, device_uid_string, now_timestamp, redis);
 
     Ok(())
 }
 
-pub async fn get_mqtt_client_signal(
+pub fn get_mqtt_client_signal(
     mqtt_client_id: &str,
     identification_code: &str,
-    redis: RedisWrapper,
+    redis: &RedisOp,
 ) -> Result<HashMap<String, SignalMapping>, Box<dyn std::error::Error>> {
     let key = format!("signal:{}:{}", mqtt_client_id, identification_code);
 
     // 从 Redis 获取列表
-    let result: Vec<String> = redis.get_list_all(key.as_str()).await?;
+    let result = redis.get_list_all(key.as_str()).unwrap();
 
     let mut mapping = HashMap::new();
 
@@ -244,12 +236,12 @@ mod tests {
     }
 }
 
-pub async fn set_push_time(
+pub fn set_push_time(
     protocol: &str,
     identification_code: &str,
     device_uid: &str,
     time_from_unix: i64,
-    redis: RedisWrapper,
+    redis: &RedisOp,
 ) {
     let pre_key = "storage_time";
     let key = format!(
@@ -259,7 +251,6 @@ pub async fn set_push_time(
 
     redis
         .set_string(key.as_str(), time_from_unix.to_string().as_str())
-        .await
         .unwrap();
 }
 
@@ -267,7 +258,7 @@ async fn handler_data_storage_string(
     result: String,
     jsc: Context,
     config: InfluxConfig,
-    redis: RedisWrapper,
+    redis: &RedisOp,
     rabbit_conn: &Connection,
 ) -> Result<(), Box<dyn Error>> {
     info!("message : {:?}", result);
@@ -278,7 +269,7 @@ async fn handler_data_storage_string(
     // 获取存储的脚本
     let option = redis
         .get_hash("mqtt_script", mqtt_message.mqtt_client_id.as_str())
-        .await?;
+        .unwrap();
 
     if let Some(string) = option {
         // 在这里创建 JavaScript 上下文
@@ -318,7 +309,7 @@ async fn handler_data_storage_string(
                 config.org.clone().unwrap().as_str(),
                 config.token.clone().unwrap().as_str(),
                 config.bucket.clone().unwrap().as_str(),
-                redis.clone(),
+                redis,
             )
             .await
             .expect("storage_data_row error");
@@ -357,7 +348,7 @@ async fn handler_data_storage_string(
 
 pub async fn pre_handler(
     guard1: &Config,
-    guard: &RedisWrapper,
+    guard: &RedisOp,
     rabbit_conn: &Connection,
     channel1: &Channel,
 ) {
@@ -383,7 +374,7 @@ pub async fn pre_handler(
                     result,
                     Context::new().unwrap(),
                     guard1.influx_config.clone().unwrap(),
-                    guard.clone(),
+                    guard,
                     rabbit_conn,
                 )
                 .await

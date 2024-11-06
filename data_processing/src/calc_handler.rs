@@ -20,6 +20,7 @@ use std::str::FromStr;
 use crate::waring_dealy_handler::handler_waring_delay_string;
 use crate::waring_handler::calc_collection_name;
 use common_lib::config::InfluxConfig;
+use common_lib::redis_pool_utils::RedisOp;
 use common_lib::time_utils::local_to_utc;
 use lapin::options::{BasicAckOptions, BasicConsumeOptions};
 use lapin::types::FieldTable;
@@ -87,7 +88,7 @@ impl<'de> Deserialize<'de> for LocValue {
 }
 pub async fn calc_handler(
     msg: String,
-    redis_wrapper: RedisWrapper,
+    redis_wrapper: &RedisOp,
     bucket_name: String,
 
     host: &str,
@@ -108,9 +109,7 @@ pub async fn calc_handler(
 
                 let option = redis_wrapper
                     .get_hash("calc_cache", id_str.as_str())
-                    .await
                     .unwrap();
-
                 if let None = option {
                 } else if let Some(result) = option {
                     let ccc_res: Result<CalcCache, serde_json::Error> = from_str(result.as_str());
@@ -122,7 +121,7 @@ pub async fn calc_handler(
                         let k = format!("calc_queue_param:{}", id_value);
 
                         info!("k: {}", k);
-                        let value = redis_wrapper.get_string(k.as_str()).await.unwrap();
+                        let value = redis_wrapper.get_string(k.as_str()).unwrap();
                         if value.is_some() {
                             match value.unwrap().parse::<i64>() {
                                 Ok(pre_time) => {
@@ -320,7 +319,6 @@ pub async fn calc_handler(
                                                     k.as_str(),
                                                     next_time.to_string().as_str(),
                                                 )
-                                                .await
                                                 .unwrap();
                                             redis_wrapper
                                                 .add_zset(
@@ -328,7 +326,6 @@ pub async fn calc_handler(
                                                     msg.as_str(),
                                                     next_time as f64,
                                                 )
-                                                .await
                                                 .unwrap();
                                         }
                                         _ => {
@@ -519,7 +516,7 @@ mod tests {
 
 pub async fn calc_handler_mq(
     influxdb: InfluxConfig,
-    guard: RedisWrapper,
+    guard: &RedisOp,
     rabbit_conn: &Connection,
     channel1: &Channel,
     script_waring_collection: String,
@@ -545,7 +542,7 @@ pub async fn calc_handler_mq(
 
                 calc_handler(
                     result,
-                    guard.clone(),
+                    guard,
                     influxdb.bucket.clone().unwrap(),
                     influxdb.host.clone().unwrap().as_str(),
                     influxdb.port.clone().unwrap(),

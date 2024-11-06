@@ -7,6 +7,7 @@ use common_lib::models::{
 };
 use common_lib::rabbit_utils::RabbitMQ;
 use common_lib::redis_handler::{get_redis_instance, RedisWrapper};
+use common_lib::redis_pool_utils::RedisOp;
 use futures_util::StreamExt;
 use lapin::options::{BasicAckOptions, BasicConsumeOptions, BasicPublishOptions};
 use lapin::types::FieldTable;
@@ -24,7 +25,7 @@ async fn handler_data_storage_string(
     result: String,
     jsc: Context,
     config: InfluxConfig,
-    redis: RedisWrapper,
+    redis: &RedisOp,
     rabbit_conn: &Connection,
 ) -> Result<(), Box<dyn Error>> {
     info!("message : {:?}", result);
@@ -34,7 +35,7 @@ async fn handler_data_storage_string(
     // 获取存储的脚本
     let option = redis
         .get_hash("struct:Http", mqtt_message.uid.as_str())
-        .await?;
+        .unwrap();
 
     if let Some(string) = option {
         // 在这里创建 JavaScript 上下文
@@ -74,7 +75,7 @@ async fn handler_data_storage_string(
                 config.org.clone().unwrap().as_str(),
                 config.token.clone().unwrap().as_str(),
                 config.bucket.clone().unwrap().as_str(),
-                redis.clone(),
+                redis,
             )
             .await
             .expect("storage_data_row error");
@@ -110,7 +111,7 @@ async fn handler_data_storage_string(
 
 pub async fn pre_http_handler(
     guard1: &Config,
-    guard: &RedisWrapper,
+    guard: &RedisOp,
     rabbit_conn: &Connection,
     channel1: &Channel,
 ) {
@@ -136,7 +137,7 @@ pub async fn pre_http_handler(
                     result,
                     Context::new().unwrap(),
                     guard1.influx_config.clone().unwrap(),
-                    guard.clone(),
+                    guard,
                     rabbit_conn,
                 )
                 .await

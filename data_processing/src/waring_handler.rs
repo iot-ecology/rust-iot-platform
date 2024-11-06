@@ -16,15 +16,13 @@ use tokio::sync::{Mutex, MutexGuard};
 pub async fn handler_waring_once(
     dt: DataRowList,
     waring_collection: String,
-    redis: &RedisWrapper,
+    redis: &RedisOp,
     mongo_dbmanager: &MongoDBManager,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let device_uid_string = &*dt.DeviceUid;
     let iden_code = &*dt.IdentificationCode;
     let push_time = dt.Time;
-    let mapping = get_mapping_signal_waring_config(device_uid_string, iden_code, redis)
-        .await
-        .unwrap();
+    let mapping = get_mapping_signal_waring_config(device_uid_string, iden_code, redis).unwrap();
     let now = common_lib::time_utils::local_to_utc();
 
     for x in dt.DataRows {
@@ -110,14 +108,14 @@ pub fn calc_collection_name(prefix: &str, id: i32) -> String {
     return string;
 }
 
-async fn get_mapping_signal_waring_config(
+fn get_mapping_signal_waring_config(
     device_uid_string: &str,
     iden_code: &str,
-    redis_wrapper: &RedisWrapper,
+    redis_wrapper: &RedisOp,
 ) -> Result<HashMap<String, Vec<SignalWaringConfig>>, Box<dyn std::error::Error>> {
     let key = format!("signal:{}:{}", device_uid_string, iden_code);
     debug!("key = {}", key);
-    let vec = redis_wrapper.get_list_all(key.as_str()).await.unwrap();
+    let vec = redis_wrapper.get_list_all(key.as_str()).unwrap();
     let mut mapping: HashMap<String, Vec<SignalWaringConfig>> = HashMap::new();
     for str_signal in vec {
         let signal: Signal = match serde_json::from_str(&str_signal) {
@@ -127,10 +125,7 @@ async fn get_mapping_signal_waring_config(
 
         let key_warning = format!("waring:{}", signal.id);
         debug!("key_warning = {}", key_warning);
-        let warnings = redis_wrapper
-            .get_list_all(key_warning.as_str())
-            .await
-            .unwrap();
+        let warnings = redis_wrapper.get_list_all(key_warning.as_str()).unwrap();
 
         let mut swcs: Vec<SignalWaringConfig> = vec![];
         for sw in warnings {
@@ -157,7 +152,7 @@ pub async fn handler_waring_string(
     result: String,
     jsc: Context,
     config: InfluxConfig,
-    redis: RedisWrapper,
+    redis: &RedisOp,
     rabbit_conn: &Connection,
     waring_collection: String,
     mongo_dbmanager: &MongoDBManager,
@@ -168,7 +163,7 @@ pub async fn handler_waring_string(
     let dt: Vec<DataRowList> = serde_json::from_str(&result)?;
 
     for x in dt {
-        handler_waring_once(x, waring_collection.clone(), &redis, mongo_dbmanager)
+        handler_waring_once(x, waring_collection.clone(), redis, mongo_dbmanager)
             .await
             .unwrap();
     }
@@ -179,6 +174,7 @@ pub async fn handler_waring_string(
 use crate::storage_handler::storage_data_row;
 use common_lib::config::InfluxConfig;
 use common_lib::mongo_utils::{get_mongo, MongoDBManager};
+use common_lib::redis_pool_utils::RedisOp;
 use serde::{Deserialize, Serialize};
 use serde_json::from_str;
 
@@ -240,7 +236,7 @@ mod tests {
 
 pub async fn waring_handler(
     influx_config: InfluxConfig,
-    guard: RedisWrapper,
+    guard: &RedisOp,
     rabbit_conn: &Connection,
     channel1: &Channel,
     waring_collection: String,
@@ -268,7 +264,7 @@ pub async fn waring_handler(
                     result,
                     Context::new().unwrap(),
                     influx_config.clone(),
-                    guard.clone(),
+                    guard,
                     rabbit_conn,
                     waring_collection.clone(),
                     mongo_dbmanager,

@@ -14,14 +14,14 @@ use std::error::Error;
 pub async fn handler_waring_delay_once(
     dt: DataRowList,
     script_waring_collection: String,
-    redis: &RedisWrapper,
+    redis: &RedisOp,
     mongo_dbmanager: &MongoDBManager,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let device_uid_string = &*dt.DeviceUid;
     let iden_code = &*dt.IdentificationCode;
     let push_time = dt.Time;
 
-    let mapping = get_delay_param(device_uid_string, iden_code, dt.DataRows, redis).await?;
+    let mapping = get_delay_param(device_uid_string, iden_code, dt.DataRows, redis).unwrap();
     let mut script_param: HashMap<String, Vec<Tv>> = HashMap::new();
 
     for param in &mapping {
@@ -31,7 +31,7 @@ pub async fn handler_waring_delay_once(
         );
         info!("key = {}", key);
 
-        let members = redis.get_zset(&key).await.unwrap();
+        let members = redis.get_zset(&key).unwrap();
 
         let mut vs = Vec::new();
 
@@ -46,7 +46,7 @@ pub async fn handler_waring_delay_once(
         script_param.insert(param.name.clone(), vs);
     }
 
-    let script = get_delay_script(mapping, redis).await.unwrap();
+    let script = get_delay_script(mapping, redis).unwrap();
     let now = common_lib::time_utils::local_to_utc();
     for x in script {
         let js = call_js(x.script.clone(), &script_param);
@@ -80,13 +80,13 @@ pub async fn handler_waring_delay_once(
     Ok(())
 }
 
-pub async fn get_delay_param(
+pub fn get_delay_param(
     uid: &str,
     code: &str,
     rows: Vec<DataRow>,
-    guard: &RedisWrapper,
+    guard: &RedisOp,
 ) -> Result<Vec<SignalDelayWaringParam>, Box<dyn std::error::Error>> {
-    let values = guard.get_list_all("delay_param").await?;
+    let values = guard.get_list_all("delay_param").unwrap();
 
     let mut mapping = Vec::new();
     for value in values {
@@ -108,16 +108,16 @@ fn name_in_data_row(name: String, rows: &Vec<DataRow>) -> bool {
     rows.iter().any(|row| row.Name == name)
 }
 
-async fn get_delay_script(
+fn get_delay_script(
     mapping: Vec<SignalDelayWaringParam>,
-    redis: &RedisWrapper,
+    redis: &RedisOp,
 ) -> Result<Vec<SignalDelayWaring>, Box<dyn std::error::Error>> {
     let mut res = Vec::new();
 
     for param in mapping {
         let id = param.signal_delay_waring_id;
         let key = "signal_delay_config";
-        let val: Option<String> = redis.get_hash(key, &id.to_string()).await?;
+        let val = redis.get_hash(key, &id.to_string()).unwrap();
 
         if let Some(value) = val {
             match from_str::<SignalDelayWaring>(&value) {
@@ -147,6 +147,7 @@ async fn get_delay_script(
 use crate::waring_handler::calc_collection_name;
 use common_lib::config::InfluxConfig;
 use common_lib::mongo_utils::MongoDBManager;
+use common_lib::redis_pool_utils::RedisOp;
 use quick_js::{Context, JsValue};
 use tokio::sync::MutexGuard;
 
@@ -260,7 +261,7 @@ pub async fn handler_waring_delay_string(
     result: String,
     jsc: Context,
     config: InfluxConfig,
-    redis: RedisWrapper,
+    redis: &RedisOp,
     rabbit_conn: &Connection,
     script_waring_collection: String,
     mongo_dbmanager: &MongoDBManager,
@@ -271,7 +272,7 @@ pub async fn handler_waring_delay_string(
     let dt: Vec<DataRowList> = serde_json::from_str(&result)?;
 
     for x in dt {
-        handler_waring_delay_once(x, script_waring_collection.clone(), &redis, mongo_dbmanager)
+        handler_waring_delay_once(x, script_waring_collection.clone(), redis, mongo_dbmanager)
             .await
             .unwrap();
     }
@@ -280,7 +281,7 @@ pub async fn handler_waring_delay_string(
 }
 pub async fn waring_delay_handler(
     influx_config: InfluxConfig,
-    guard: RedisWrapper,
+    guard: &RedisOp,
     rabbit_conn: &Connection,
     channel1: &Channel,
     script_waring_collection: String,
@@ -308,7 +309,7 @@ pub async fn waring_delay_handler(
                     result,
                     Context::new().unwrap(),
                     influx_config.clone(),
-                    guard.clone(),
+                    guard,
                     rabbit_conn,
                     script_waring_collection.clone(),
                     mongo_dbmanager,

@@ -5,11 +5,12 @@ use crate::storage_handler::pre_handler;
 use crate::waring_dealy_handler::waring_delay_handler;
 use crate::waring_handler::waring_handler;
 use crate::ws_handler::pre_ws_handler;
-use common_lib::config::{get_config, read_config};
+use common_lib::config::{get_config, read_config, read_config_tb, RedisConfig};
 use common_lib::init_logger;
 use common_lib::mongo_utils::{get_mongo, init_mongo};
 use common_lib::rabbit_utils::{get_rabbitmq_instance, init_rabbitmq_with_config};
 use common_lib::redis_handler::{get_redis_instance, init_redis};
+use common_lib::redis_pool_utils::{create_redis_pool_from_config, RedisOp};
 use futures_util::StreamExt;
 use lapin::types::FieldTable;
 use lapin::{options::QueueDeclareOptions, Channel, Connection, ConnectionProperties};
@@ -28,6 +29,7 @@ mod ws_handler;
 async fn main() {
     init_logger();
     read_config("app-local.yml").await.unwrap();
+    let config1 = read_config_tb("app-local.yml");
     let guard1 = get_config().await.unwrap();
     init_redis(guard1.redis_config.clone()).await.unwrap();
     init_rabbitmq_with_config(guard1.mq_config.clone())
@@ -74,6 +76,10 @@ async fn main() {
     // pre_handler(guard1, guard, &connection, &channel1).await;
     // waring_handler(option, wrapper, &connection, &channel1, mongoConfig.waring_collection.unwrap()).await;
 
+    let pool = create_redis_pool_from_config(&config1.redis_config);
+
+    let redisOp = RedisOp { pool };
+
     let (
         pre_result,
         pre_coap_handler,
@@ -83,13 +89,13 @@ async fn main() {
         waring_dealy_handler,
         calc_handler_mq,
     ) = tokio::join!(
-        pre_handler(&guard1, &redis_wrapper, &connection, &channel1),
-        pre_coap_handler(&guard1, &redis_wrapper, &connection, &channel1),
-        pre_http_handler(&guard1, &redis_wrapper, &connection, &channel1),
-        pre_ws_handler(&guard1, &redis_wrapper, &connection, &channel1),
+        pre_handler(&guard1, &redisOp, &connection, &channel1),
+        pre_coap_handler(&guard1, &redisOp, &connection, &channel1),
+        pre_http_handler(&guard1, &redisOp, &connection, &channel1),
+        pre_ws_handler(&guard1, &redisOp, &connection, &channel1),
         waring_handler(
             option.clone(),
-            redis.clone(),
+            &redisOp,
             &connection,
             &channel1,
             mongoConfig.waring_collection.clone().unwrap(),
@@ -97,7 +103,7 @@ async fn main() {
         ),
         waring_delay_handler(
             option.clone(),
-            redis.clone(),
+            &redisOp,
             &connection,
             &channel1,
             mongoConfig.script_waring_collection.clone().unwrap(),
@@ -105,7 +111,7 @@ async fn main() {
         ),
         calc_handler_mq(
             option.clone(),
-            redis.clone(),
+            &redisOp,
             &connection,
             &channel1,
             mongoConfig.collection.clone().unwrap(),
