@@ -1,7 +1,10 @@
 use crate::calc_handler::calc_handler_mq;
+use crate::coap_handler::pre_coap_handler;
+use crate::http_handler::pre_http_handler;
 use crate::storage_handler::pre_handler;
 use crate::waring_dealy_handler::waring_delay_handler;
 use crate::waring_handler::waring_handler;
+use crate::ws_handler::pre_ws_handler;
 use common_lib::config::{get_config, read_config};
 use common_lib::init_logger;
 use common_lib::mongo_utils::{get_mongo, init_mongo};
@@ -13,10 +16,13 @@ use lapin::{options::QueueDeclareOptions, Channel, Connection, ConnectionPropert
 use std::error::Error;
 
 mod calc_handler;
+mod coap_handler;
+mod http_handler;
 mod js_test;
 mod storage_handler;
 mod waring_dealy_handler;
 mod waring_handler;
+mod ws_handler;
 
 #[tokio::main]
 async fn main() {
@@ -68,8 +74,19 @@ async fn main() {
     // pre_handler(guard1, guard, &connection, &channel1).await;
     // waring_handler(option, wrapper, &connection, &channel1, mongoConfig.waring_collection.unwrap()).await;
 
-    let (pre_result, waring_result, waring_dealy_handler, calc_handler_mq) = tokio::join!(
-        pre_handler(guard1, redis_wrapper, &connection, &channel1),
+    let (
+        pre_result,
+        pre_coap_handler,
+        pre_http_handler,
+        pre_ws_handler,
+        waring_result,
+        waring_dealy_handler,
+        calc_handler_mq,
+    ) = tokio::join!(
+        pre_handler(&guard1, &redis_wrapper, &connection, &channel1),
+        pre_coap_handler(&guard1, &redis_wrapper, &connection, &channel1),
+        pre_http_handler(&guard1, &redis_wrapper, &connection, &channel1),
+        pre_ws_handler(&guard1, &redis_wrapper, &connection, &channel1),
         waring_handler(
             option.clone(),
             redis.clone(),

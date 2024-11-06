@@ -263,7 +263,7 @@ pub async fn set_push_time(
         .unwrap();
 }
 
-pub async fn handler_data_storage_string(
+async fn handler_data_storage_string(
     result: String,
     jsc: Context,
     config: InfluxConfig,
@@ -308,7 +308,8 @@ pub async fn handler_data_storage_string(
         info!("{:?}", dt);
 
         // 存储数据行
-        for data_row in dt {
+        for mut data_row in dt {
+            data_row.Protocol = Some("MQTT".to_string());
             storage_data_row(
                 data_row,
                 "MQTT",
@@ -343,7 +344,7 @@ pub async fn handler_data_storage_string(
                 .map_err(|e| Box::new(e) as Box<dyn Error>)?;
         }
 
-        // 处理最后推送时间（如果需要的话）
+        // fixme: 处理最后推送时间（如果需要的话）
     } else {
         info!(
             "未找到脚本 for mqtt_client_id: {}",
@@ -355,8 +356,8 @@ pub async fn handler_data_storage_string(
 }
 
 pub async fn pre_handler(
-    guard1: MutexGuard<'_, Config>,
-    guard: MutexGuard<'_, RedisWrapper>,
+    guard1: &Config,
+    guard: &RedisWrapper,
     rabbit_conn: &Connection,
     channel1: &Channel,
 ) {
