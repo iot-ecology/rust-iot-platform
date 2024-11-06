@@ -12,7 +12,7 @@ use crate::ctr::RemoveMqttClient;
 use common_lib::config::{get_config, read_config, read_config_tb};
 use common_lib::rabbit_utils::init_rabbitmq_with_config;
 use common_lib::redis_handler::init_redis;
-use common_lib::redis_pool_utils::create_redis_pool_from_config;
+use common_lib::redis_pool_utils::{create_redis_pool_from_config, RedisOp};
 use rocket::{launch, routes};
 use tokio::runtime::Runtime;
 
@@ -24,9 +24,12 @@ fn rocket() -> _ {
     let rt = Runtime::new().unwrap();
     let config1 = read_config_tb("app-local.yml");
 
+    let pool = create_redis_pool_from_config(&config1.redis_config);
+
+    let redis_op = RedisOp { pool };
     // 构建并启动 Rocket 应用
     rocket::build()
-        .manage(create_redis_pool_from_config(&config1.redis_config))
+        .manage(redis_op)
         .configure(rocket::Config {
             port: config1.node_info.port,
             ..Default::default()
