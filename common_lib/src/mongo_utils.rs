@@ -16,27 +16,25 @@ pub struct MongoDBManager {
 
 impl MongoDBManager {
     pub async fn new(config: MongoConfig) -> Result<Self, Box<dyn Error>> {
-        let mut client_options = ClientOptions::parse_with_resolver_config(
-            &format!(
-                "mongodb://{}:{}/",
-                config.host.as_deref().unwrap_or("localhost"),
-                config.port.unwrap_or(27017)
-            ),
-            ResolverConfig::cloudflare(),
-        )
-        .await?;
+        let uri = format!(
+            "mongodb://{}:{}@{}:{}/?maxPoolSize=20",
+            config.username.unwrap(),
+            config.password.unwrap(),
+            config.host.unwrap(),
+            config.port.unwrap(),
+        );
+        let mut client_options = ClientOptions::parse(uri).await?;
+        // let credential = Credential::builder()
+        //     .username(Some("your_username".to_string()))
+        //     .password(Some("your_password".to_string()))
+        //     .mechanism(Some(mongodb::options::AuthMechanism::ScramSha1))
+        //     .build();
 
-        if let (Some(username), Some(password)) = (config.username, config.password) {
-            client_options.credential = Some(
-                mongodb::options::Credential::builder()
-                    .username(username)
-                    .password(password)
-                    .build(),
-            );
-        }
+        // client_options.credential = Some(credential);
 
         let client = Client::with_options(client_options)?;
-        let db = client.database(config.db.as_deref().unwrap_or("test"));
+        let option = config.db.clone();
+        let db = client.database(option.unwrap().as_ref());
 
         Ok(MongoDBManager { client, db })
     }
@@ -51,19 +49,19 @@ impl MongoDBManager {
         document: HashMap<String, serde_json::Value>,
     ) -> Result<(), Box<dyn Error>> {
         let collection = self.collection(collection_name);
-        collection.insert_one(document, None).await?;
+        collection.insert_one(document).await?;
         Ok(())
     }
 
     pub async fn create_collection(&self, name: &str) -> Result<(), Box<dyn Error>> {
-        let collections = self.db.list_collection_names(None).await?;
+        let collections = self.db.list_collection_names().await?;
 
         if collections.contains(&name.to_string()) {
             info!("Collection '{}' already exists, skipping creation.", name);
             return Ok(()); // 如果集合已存在，则返回，不再创建
         }
 
-        self.db.create_collection(name, None).await?;
+        self.db.create_collection(name).await?;
         Ok(())
     }
 
@@ -82,7 +80,7 @@ impl MongoDBManager {
             })
             .unwrap_or_default();
 
-        let mut cursor = collection.find(filter, None).await?;
+        let mut cursor = collection.find(filter).await?;
         let mut results = Vec::new();
 
         while let Some(doc) = cursor.next().await {
