@@ -6,3 +6,25 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+r2d2 = "0.8.10"
+r2d2_redis = "0.14.0"
+log = "0.4.22"
+common_lib = { path = "../common_lib" }
+chrono = "0.4.38"
+config = "0.14.1"
+log4rs = "1.0"
+tokio = { version = "1.41.0", features = ["full"] }
+quick-js = "0.4.1"
+serde_json = "1.0.132"
+serde = { version = "1.0.213", features = ["derive"] }
+lapin = { version = "2.5.0", features = ["default"] }
+futures-lite = "2.3.0"
+
+futures-util = "0.3.31"
+cron = "0.12.1"
+
+chrono-tz = "0.10.0"
+influxdb2-structmap = "0.2"
+bson = "2.3"
+http = "1.1.0"
+rocket = { version = "0.5.1", features = ["json"] }

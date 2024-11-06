@@ -77,6 +77,15 @@ pub async fn read_config(file_path: &str) -> Result<(), Box<dyn std::error::Erro
     Ok(())
 }
 
+pub fn read_config_tb(file_path: &str) -> Config {
+    let mut file = File::open(file_path).unwrap();
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).unwrap();
+    let config: Config = serde_yaml::from_str(&contents).unwrap();
+
+    config
+}
+
 pub async fn get_config() -> Result<MutexGuard<'static, Config>, Box<dyn std::error::Error>> {
     let instance = CONFIG_INSTANCE
         .get()

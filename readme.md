@@ -15,3 +15,7 @@ Rust IoT 项目是基于 [GoIoT](https://gitee.com/pychfarm_admin/go-iot-platfor
 - 多协议支持
 - 数据处理支持
 - 通知支持
+
+
+## Todo
+- [] redis 线程池改造

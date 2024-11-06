@@ -29,3 +29,6 @@ futures = { version = "0.3.31", default-features = false }
 mongodb = "2.0.0"
 quick-js = "0.4.1"
 chrono-tz = "0.5.2"
+
+r2d2_redis = "0.14.0"
+r2d2 = "0.8.10"
