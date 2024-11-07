@@ -40,7 +40,7 @@ impl TcpMessage {
         serde_json::to_string(self).expect("Failed to serialize TcpMessage")
     }
 }
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct HttpMessage {
     pub uid: String,
     pub message: String,
@@ -52,7 +52,7 @@ impl HttpMessage {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WsMessage {
     pub uid: String,
     pub message: String,
@@ -64,12 +64,12 @@ impl WsMessage {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CoapMessage {
     pub uid: String,
     pub message: String,
 }
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MqttConfig {
     #[serde(rename = "broker")]
     pub broker: String,

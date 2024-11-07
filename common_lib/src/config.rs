@@ -10,7 +10,7 @@ pub struct NodeInfo {
     pub name: String,
     #[serde(rename = "type")]
     pub node_type: String,
-    pub size: u8,
+    pub size: i64,
 }
 
 #[derive(Debug, Deserialize, Clone)]

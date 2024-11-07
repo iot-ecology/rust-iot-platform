@@ -10,7 +10,7 @@ use tokio::{task, time};
 
 static CLIENTS: OnceCell<Arc<Mutex<HashMap<String, AsyncClient>>>> = OnceCell::new();
 
-fn init_mqtt_map() -> Result<(), Box<dyn Error>> {
+pub fn init_mqtt_map() -> Result<(), Box<dyn Error>> {
     let clients = Arc::new(Mutex::new(HashMap::new()));
     CLIENTS.set(clients).unwrap();
     Ok(())
@@ -21,7 +21,7 @@ fn get_client(client_name: &str) -> Option<AsyncClient> {
     clients_lock.get(client_name).cloned()
 }
 
-async fn create_client(
+pub async fn create_client(
     client_name: &str,
     topic: &str,
     username: &str,
@@ -125,7 +125,7 @@ mod tests {
     }
 }
 
-async fn event_loop(client_name: &str, mut eventloop: rumqttc::EventLoop) {
+pub async fn event_loop(client_name: &str, mut eventloop: rumqttc::EventLoop) {
     loop {
         match eventloop.poll().await {
             Ok(event) => {

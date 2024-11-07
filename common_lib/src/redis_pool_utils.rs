@@ -36,7 +36,7 @@ impl RedisOp {
         let mut con = self.get_connection();
 
         let result1 = con.set_nx(lock_key, lock_value);
-        let result: RedisResult<String> = result1;
+        let result: RedisResult<i32> = result1;
         match result {
             Ok(yes) => {
                 con.expire::<&str, usize>(lock_key, ttl as usize)
@@ -208,6 +208,10 @@ impl RedisOp {
         }
     }
 
+    pub fn hash_exists(&self, key: &str, field: &str) -> Result<bool, RedisError> {
+        let mut con = self.get_connection();
+        con.hexists(key, field)
+    }
     /// 获取哈希字段的长度
     pub fn get_hash_length(&self, key: &str) -> Result<Option<usize>, RedisError> {
         let mut con = self.get_connection();
@@ -496,5 +500,13 @@ mod tests {
 
         let result = redis_op.release_lock("asfaf", "asf");
         info!("{:?}", result.unwrap());
+    }
+    #[test]
+    fn test_hash_exists() {
+        env::set_var("RUST_LOG", "info");
+        env_logger::init();
+        let redis_op = setup_redis_op();
+        let x = redis_op.hash_exists("asfaf", "asf").unwrap();
+        info!("{}", x);
     }
 }

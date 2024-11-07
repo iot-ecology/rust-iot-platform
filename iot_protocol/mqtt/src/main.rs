@@ -1,4 +1,5 @@
 mod ctr;
+mod mqtt_sample;
 
 use crate::ctr::create_mqtt_client_http;
 use crate::ctr::GetNoUseMqttConfig;
@@ -19,7 +20,7 @@ use tokio::runtime::Runtime;
 #[launch]
 fn rocket() -> _ {
     common_lib::init_logger(); // 初始化日志记录
-
+    crate::mqtt_sample::init_mqtt_map();
     // 创建异步运行时
     let rt = Runtime::new().unwrap();
     let config1 = read_config_tb("app-local.yml");
@@ -30,6 +31,7 @@ fn rocket() -> _ {
     // 构建并启动 Rocket 应用
     rocket::build()
         .manage(redis_op)
+        .manage(config1.clone())
         .configure(rocket::Config {
             port: config1.node_info.port,
             ..Default::default()
@@ -47,5 +49,5 @@ fn rocket() -> _ {
                 PubCreateMqttClientHttp,
                 PubRemoveMqttClient,
             ],
-        ) // 挂载路由
+        )
 }
