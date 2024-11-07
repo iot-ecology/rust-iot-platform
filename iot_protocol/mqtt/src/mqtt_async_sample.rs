@@ -51,17 +51,18 @@ async fn disconnect_client(client_name: String) {
     }
 }
 
-fn handler_event(
+pub fn handler_event(
     event: &Result<Event, ConnectionError>,
     topic: &str,
+    client_name: &str,
 ) -> Option<Result<(), Box<dyn Error>>> {
     match event {
         Ok(Event::Incoming(Incoming::Publish(publish))) => {
             let payload_str =
                 std::str::from_utf8(&publish.payload).unwrap_or_else(|_| "<Invalid UTF-8>");
             info!(
-                "Received message on topic = {}: message = {:?}",
-                topic, payload_str
+                "Received message on client_name = {} topic = {}: message = {:?}",
+                client_name, topic, payload_str
             );
         }
         Ok(Event::Incoming(Incoming::ConnAck(connack))) => {
@@ -125,19 +126,22 @@ mod tests {
     }
 }
 
-pub async fn event_loop(client_name: &str, mut eventloop: rumqttc::EventLoop) {
+pub async fn event_loop(topic: String, mut eventloop: rumqttc::EventLoop, client_name: String) {
     loop {
         match eventloop.poll().await {
             Ok(event) => {
                 // 处理事件
-                if let Some(err) = handler_event(&Ok(event), client_name) {
+                if let Some(err) = handler_event(&Ok(event), topic.as_str(), client_name.as_str()) {
                     if let Err(e) = err {
                         error!("Error handling event: {:?}", e);
                     }
                 }
             }
             Err(e) => {
-                error!("Error polling eventloop for {}: {:?}", client_name, e);
+                error!(
+                    "Error polling eventloop for client_name = {} topic =  {}: {:?}",
+                    client_name, topic, e
+                );
             }
         }
     }

@@ -1,4 +1,4 @@
-use crate::mqtt_sample::{create_client, event_loop};
+use crate::mqtt_async_sample::{create_client, event_loop};
 use common_lib::config::{Config, NodeInfo};
 use common_lib::models::MqttConfig;
 use common_lib::redis_pool_utils::RedisOp;
@@ -10,13 +10,16 @@ use rocket::fairing::AdHoc;
 use rocket::http::{Method, Status};
 use rocket::serde::json::Json;
 use rocket::tokio::time::Duration;
+use rocket::yansi::Paint;
 use rocket::{get, post, State};
 use rocket::{Request, Response};
+use rumqttc::{Client, ConnectionError, Event, Incoming, MqttOptions, QoS};
 use serde_json::json;
 use std::future::poll_fn;
+use tokio::task;
 
 #[get("/beat")]
-pub fn HttpBeat(pool: &rocket::State<RedisOp>) -> &'static str {
+pub async fn HttpBeat(pool: &rocket::State<RedisOp>) -> &'static str {
     "ok"
 }
 
@@ -39,25 +42,75 @@ pub async fn create_mqtt_client_http(
                 "status": 400,
                 "message": "已经存在客户端id"
             });
-            rocket::response::status::Custom(Status::BadRequest, Json(response))
+            return rocket::response::status::Custom(Status::BadRequest, Json(response));
         } else {
-            let size: i64 = create_mqtt_client(&mqtt_config, &redis_op, &config.node_info);
-            let response = json!({
-                "status": 400,
-                "message": "已经存在客户端id"
-            });
-            rocket::response::status::Custom(Status::BadRequest, Json(response))
+            let usz = create_mqtt_client(&mqtt_config, &redis_op, &config.node_info).await;
+
+            if usz == -1 {
+                let response = json!({
+                    "status": 400,
+                    "message": "达到最大客户端数量"
+                });
+                redis_op.release_lock(&key, &key).unwrap();
+                return rocket::response::status::Custom(Status::BadRequest, Json(response));
+            } else if usz == -2 {
+                let response = json!({
+                    "status": 400,
+                    "message": "MQTT客户端配置异常"
+                });
+                redis_op.release_lock(&key, &key).unwrap();
+                return rocket::response::status::Custom(Status::BadRequest, Json(response));
+            } else {
+                addNoUseConfig(&mqtt_config, redis_op);
+                bindNode(&mqtt_config, config.node_info.name.clone(), redis_op);
+                let response = json!({
+                    "status": 200,
+                    "message": "创建成功"
+                });
+                redis_op.release_lock(&key, &key).unwrap();
+                return rocket::response::status::Custom(Status::BadRequest, Json(response));
+            }
         }
     } else {
         let response = json!({
             "status": 400,
-            "message": "已经存在客户端id"
+            "message": "上锁异常"
         });
         rocket::response::status::Custom(Status::BadRequest, Json(response))
     }
 }
 
-pub fn create_mqtt_client(
+pub fn addNoUseConfig(mqtt_config: &MqttConfig, redis_op: &RedisOp) {
+    redis_op
+        .set_hash(
+            "mqtt_config:no",
+            mqtt_config.client_id.as_str(),
+            serde_json::to_string(mqtt_config).unwrap().as_str(),
+        )
+        .expect("add no use config 异常");
+}
+pub fn bindNode(mqtt_config: &MqttConfig, node_name: String, redis_op: &RedisOp) {
+    let binding = serde_json::to_string(mqtt_config).unwrap();
+
+    let x = binding.as_str();
+    let key = format!("node_bind:{}", node_name);
+    redis_op.add_set(key.as_str(), x);
+
+    RemoveNoUseConfig(mqtt_config, redis_op);
+    AddUseConfig(mqtt_config, redis_op);
+}
+
+pub fn AddUseConfig(mqtt_config: &MqttConfig, redis_op: &RedisOp) {
+    let binding = serde_json::to_string(mqtt_config).unwrap();
+    let x = binding.as_str();
+    redis_op
+        .set_hash("mqtt_config:use", mqtt_config.client_id.as_str(), x)
+        .expect("add use config 异常");
+}
+pub fn RemoveNoUseConfig(mqtt_config: &MqttConfig, redis_op: &RedisOp) {
+    redis_op.delete_hash_field("mqtt_config:no", mqtt_config.client_id.as_str());
+}
+pub async fn create_mqtt_client(
     mqtt_config: &MqttConfig,
     redis_op: &RedisOp,
     node_info: &NodeInfo,
@@ -67,28 +120,43 @@ pub fn create_mqtt_client(
     let result = redis_op.get_zset_length(key.as_str()).unwrap_or(0) as i64;
 
     if node_info.size > result {
-        let min = create_mqtt_client_min(mqtt_config);
+        let min = create_mqtt_client_min(mqtt_config).await;
         info!("min = {}", min);
-        return result + 1;
+        if min {
+            return result + 1;
+        } else {
+            return -2;
+        }
     } else {
         return -1;
     }
 }
-pub fn create_mqtt_client_min(mqtt_config: &MqttConfig) -> bool {
-    let cc = mqtt_config.clone();
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    let (client1, mut eventloop1) = match rt.block_on() {
-        Ok(result) => result,
-        Err(e) => {
-            eprintln!("Failed to create MQTT client: {:?}", e);
-            return false;
-        }
-    };
-    rt.spawn(async move {
-        event_loop(cc.client_id.as_str(), eventloop1).await;
-    });
 
-    true
+pub async fn create_mqtt_client_min(mqtt_config: &MqttConfig) -> bool {
+    match create_client(
+        mqtt_config.client_id.as_str(),
+        mqtt_config.sub_topic.as_str(),
+        mqtt_config.username.as_str(),
+        mqtt_config.password.as_str(),
+        mqtt_config.broker.as_str(),
+        mqtt_config.port as u16,
+    )
+    .await
+    {
+        Ok((client1, mut eventloop1)) => {
+            let sub_topic = mqtt_config.sub_topic.clone(); // 克隆以获得所有权
+            tokio::spawn(event_loop(
+                sub_topic,
+                eventloop1,
+                mqtt_config.client_id.clone(),
+            )); // 传递所有权
+            true
+        }
+        Err(_) => {
+            // 捕获错误并返回 false
+            false
+        }
+    }
 }
 
 pub fn check_has_config(mqtt_client_id: String, redis_op: &RedisOp) -> bool {

@@ -51,7 +51,11 @@ impl RedisOp {
         }
     }
 
-    fn release_lock(&self, lock_key: &str, lock_value: &str) -> Result<bool, redis::RedisError> {
+    pub fn release_lock(
+        &self,
+        lock_key: &str,
+        lock_value: &str,
+    ) -> Result<bool, redis::RedisError> {
         if let Some(result1) = self.get_string(lock_key)? {
             let x = result1.as_str();
             info!("x = {}   lock_value = {}", x, lock_value);
@@ -237,6 +241,11 @@ impl RedisOp {
             Ok(_) => Ok(()),
             Err(e) => Err(e),
         }
+    }
+
+    pub fn add_set(&self, key: &str, value: &str) -> Result<(), RedisError> {
+        let mut con = self.get_connection();
+        con.sadd::<&str, &str, ()>(key, value)
     }
 }
 
