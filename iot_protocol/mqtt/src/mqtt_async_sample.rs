@@ -42,7 +42,7 @@ pub async fn create_client(
     port: u16,
 ) -> Result<(AsyncClient, rumqttc::EventLoop), Box<dyn Error>> {
     let mut mqttoptions = MqttOptions::new(client_name, ip, port);
-    mqttoptions.set_keep_alive(Duration::from_secs(5));
+    // mqttoptions.set_keep_alive(Duration::from_secs(5));
     mqttoptions.set_credentials(username, password);
     let (client, eventloop) = AsyncClient::new(mqttoptions.clone(), 10);
     client.subscribe(topic, QoS::AtMostOnce).await?;
@@ -118,6 +118,49 @@ pub async fn handler_event(
     }
     None
 }
+pub async fn handler_event2(
+    event: &Result<Event, ConnectionError>,
+    topic: &str,
+    client_name: &str,
+) -> Option<Result<(), Box<dyn Error>>> {
+    match event {
+        Ok(Event::Incoming(Incoming::Publish(publish))) => {
+            let payload_str =
+                std::str::from_utf8(&publish.payload).unwrap_or_else(|_| "<Invalid UTF-8>");
+            info!(
+                "Received message on client_name = {} topic = {}: message = {:?}",
+                client_name.clone(),
+                topic,
+                payload_str
+            );
+
+            let mqttMsg = MQTTMessage {
+                mqtt_client_id: client_name.to_string(),
+                message: payload_str.to_string(),
+            };
+        }
+        Ok(Event::Incoming(Incoming::ConnAck(connack))) => {
+            debug!("Connection Acknowledged: {:?}", connack);
+        }
+        Ok(Event::Incoming(Incoming::SubAck(suback))) => {
+            info!(
+                "Subscribe Acknowledged: pkid={}, return_codes={:?}",
+                suback.pkid, suback.return_codes
+            );
+        }
+        Ok(Event::Incoming(Incoming::PingResp)) => {
+            info!("Ping Response received");
+        }
+        Ok(v) => {
+            debug!("Other Event = {:?}", v);
+        }
+        Err(e) => {
+            error!("Error = {:?}", e);
+            return Some(Ok(()));
+        }
+    }
+    None
+}
 
 #[cfg(test)]
 mod tests {
@@ -165,7 +208,9 @@ pub async fn event_loop(topic: String, mut eventloop: rumqttc::EventLoop, client
             return;
         }
     };
-    let channel = rabbitmq_instance.connection.create_channel().await.unwrap();
+    let mut rabbitmq = rabbitmq_instance.lock().await;
+
+    let channel = rabbitmq.connection.create_channel().await.unwrap();
 
     loop {
         match eventloop.poll().await {

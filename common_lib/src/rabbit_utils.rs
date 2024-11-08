@@ -224,12 +224,12 @@ impl RabbitMQ {
     }
 }
 
-static RABBIT_MQ_INSTANCE: OnceCell<Mutex<RabbitMQ>> = OnceCell::const_new();
-
+static RABBIT_MQ_INSTANCE: OnceCell<Arc<Mutex<RabbitMQ>>> = OnceCell::const_new();
 pub async fn init_rabbitmq(url: &str) -> Result<(), Box<dyn Error>> {
     let rabbit = RabbitMQ::new(url).await?;
+    let rabbit_arc = Arc::new(Mutex::new(rabbit));
     RABBIT_MQ_INSTANCE
-        .set(Mutex::new(rabbit))
+        .set(rabbit_arc)
         .map_err(|_| "RabbitMQ instance already initialized")?;
     Ok(())
 }
@@ -240,17 +240,17 @@ pub async fn init_rabbitmq_with_config(config: MqConfig) -> Result<(), Box<dyn E
         config.username, config.password, config.host, config.port
     );
     let rabbit = RabbitMQ::new(url.as_str()).await?;
+    let rabbit_arc = Arc::new(Mutex::new(rabbit));
     RABBIT_MQ_INSTANCE
-        .set(Mutex::new(rabbit))
+        .set(rabbit_arc)
         .map_err(|_| "RabbitMQ instance already initialized")?;
     Ok(())
 }
 
-pub async fn get_rabbitmq_instance() -> Result<MutexGuard<'static, RabbitMQ>, Box<dyn Error>> {
+pub async fn get_rabbitmq_instance() -> Result<Arc<Mutex<RabbitMQ>>, Box<dyn Error>> {
     let instance = RABBIT_MQ_INSTANCE.get().ok_or("RabbitMQ not initialized")?;
-    Ok(instance.lock().await)
+    Ok(Arc::clone(instance))
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;

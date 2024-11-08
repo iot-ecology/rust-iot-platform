@@ -32,3 +32,6 @@ loggers:
     appenders:
       - console
     additive: false
+
+
+#https://docs.rs/log4rs/latest/log4rs/encode/pattern/index.html#formatters

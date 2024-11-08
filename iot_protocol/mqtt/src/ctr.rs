@@ -57,7 +57,6 @@ pub async fn create_mqtt_client_http(
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
     info!("mqtt_config = {:?}", mqtt_config);
     info!("config = {:?}", config);
-    let rabbit = get_rabbitmq_instance().await.unwrap();
 
     let key = format!("mqtt_create:{}", mqtt_config.client_id);
     let x = redis_op.acquire_lock(&key, &key, 100).unwrap();
@@ -154,6 +153,8 @@ pub async fn create_mqtt_client(
 
     let result = redis_op.get_zset_length(key.as_str()).unwrap_or(0) as i64;
 
+    let mqtt_config = Arc::new(Mutex::new(mqtt_config.clone()));
+
     if node_info.size > result {
         let min = create_mqtt_client_min(mqtt_config).await;
         info!("min = {}", min);
@@ -166,27 +167,40 @@ pub async fn create_mqtt_client(
         return -1;
     }
 }
+use std::sync::Arc;
+use tokio::runtime::Runtime;
+use tokio::sync::Mutex;
 
-pub async fn create_mqtt_client_min(mqtt_config: &MqttConfig) -> bool {
+pub async fn create_mqtt_client_min(mqtt_config: Arc<Mutex<MqttConfig>>) -> bool {
+    // 获取锁并使用锁中的数据
+    let mqtt_config = mqtt_config.lock().await;
+
+    // 克隆数据
+    let client_id = mqtt_config.client_id.clone();
+    let sub_topic = mqtt_config.sub_topic.clone();
+    let username = mqtt_config.username.clone();
+    let password = mqtt_config.password.clone();
+    let broker = mqtt_config.broker.clone();
+    let port = mqtt_config.port;
+
     match create_client(
-        mqtt_config.client_id.as_str(),
-        mqtt_config.sub_topic.as_str(),
-        mqtt_config.username.as_str(),
-        mqtt_config.password.as_str(),
-        mqtt_config.broker.as_str(),
-        mqtt_config.port as u16,
+        client_id.as_str(),
+        sub_topic.as_str(),
+        username.as_str(),
+        password.as_str(),
+        broker.as_str(),
+        port as u16,
     )
     .await
     {
         Ok((client1, mut eventloop1)) => {
-            put_client(mqtt_config.clone().client_id, client1);
+            put_client(client_id.clone(), client1);
 
-            let sub_topic = mqtt_config.sub_topic.clone(); // 克隆以获得所有权
-            tokio::spawn(event_loop(
-                sub_topic,
-                eventloop1,
-                mqtt_config.client_id.clone(),
-            )); // 传递所有权
+            // 创建新的线程并在独立运行时中运行事件循环
+            std::thread::spawn(move || {
+                let rt = Runtime::new().expect("Failed to create runtime");
+                rt.block_on(event_loop(sub_topic, eventloop1, client_id));
+            });
             true
         }
         Err(_) => {
