@@ -19,8 +19,17 @@ pub fn init_mqtt_map() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn get_client(client_name: &str) -> Option<AsyncClient> {
+pub fn put_client(name: String, client: AsyncClient) {
+    let mut clients_lock = CLIENTS.get().unwrap().lock().unwrap();
+    clients_lock.insert(name, client);
+}
+
+pub fn get_client(client_name: &str) -> Option<AsyncClient> {
     let clients_lock = CLIENTS.get().unwrap().lock().unwrap();
+    info!("size = {}", clients_lock.len());
+    clients_lock.keys().for_each(|key| {
+        info!("client_name = {}", key);
+    });
     clients_lock.get(client_name).cloned()
 }
 
@@ -33,8 +42,8 @@ pub async fn create_client(
     port: u16,
 ) -> Result<(AsyncClient, rumqttc::EventLoop), Box<dyn Error>> {
     let mut mqttoptions = MqttOptions::new(client_name, ip, port);
+    mqttoptions.set_keep_alive(Duration::from_secs(5));
     mqttoptions.set_credentials(username, password);
-
     let (client, eventloop) = AsyncClient::new(mqttoptions.clone(), 10);
     client.subscribe(topic, QoS::AtMostOnce).await?;
 
@@ -124,9 +133,9 @@ mod tests {
 
         // 创建两个 MQTT 客户端
         let (client1, mut eventloop1) =
-            create_client("test-1", "/tt1", "admin", "admin", "localhost", 1883).await?;
+            create_client("test-1", "/tt1", "admin", "public", "localhost", 1883).await?;
         let (client2, mut eventloop2) =
-            create_client("test-2", "/tt2", "admin", "admin", "localhost", 1883).await?;
+            create_client("test-2", "/tt2", "admin", "public", "localhost", 1883).await?;
 
         let client_name_clone = "test-1".to_string();
         // 模拟 10 秒后断开 client1
@@ -136,8 +145,8 @@ mod tests {
         });
 
         // 启动事件循环任务
-        tokio::spawn(event_loop("/tt1", eventloop1));
-        tokio::spawn(event_loop("/tt2", eventloop2));
+        // tokio::spawn(event_loop("/tt1".to_string(), eventloop1,"".to_string()));
+        // tokio::spawn(event_loop("/tt2".to_string(), eventloop2,"".to_string()));
 
         // 等待 ctrl-c 信号
         tokio::signal::ctrl_c()

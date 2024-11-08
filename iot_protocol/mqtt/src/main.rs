@@ -5,7 +5,6 @@ mod mqtt_sync_sample;
 mod service_instace;
 
 use crate::beat::ListenerBeat;
-use crate::ctr::GetNoUseMqttConfig;
 use crate::ctr::GetUseMqttConfig;
 use crate::ctr::HttpBeat;
 use crate::ctr::NodeList;
@@ -14,6 +13,7 @@ use crate::ctr::PubCreateMqttClientHttp;
 use crate::ctr::PubRemoveMqttClient;
 use crate::ctr::RemoveMqttClient;
 use crate::ctr::{create_mqtt_client_http, AddNoUseConfig};
+use crate::ctr::{GetNoUseMqttConfig, HttpBeat2};
 use crate::service_instace::{noHandlerConfig, register_task, CBeat};
 use common_lib::config::{get_config, read_config, read_config_tb, MqConfig, NodeInfo};
 use common_lib::models::MqttConfig;
@@ -83,12 +83,14 @@ fn rocket() -> _ {
         .manage(config1.clone())
         .configure(rocket::Config {
             port: node_info_for_rocket.port,
+            log_level: rocket::config::LogLevel::Off,
             ..Default::default()
         })
         .mount(
             "/",
             routes![
                 HttpBeat,
+                HttpBeat2,
                 create_mqtt_client_http,
                 NodeList,
                 NodeUsingStatus,

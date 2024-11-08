@@ -119,20 +119,12 @@ pub fn SendCreateMqttMessage(node: &NodeInfo, param: &str) -> bool {
             let status = response.status();
             let body = response.text().unwrap_or_else(|_| String::from(""));
 
-            debug!("Response Status: {:?}, Body: {}", status, body);
+            info!("Response Status: {:?}, Body: {}", status, body);
 
-            match serde_json::from_str::<serde_json::Value>(&body) {
-                Ok(json) => {
-                    if let Some(status_code) = json.get("status").and_then(|v| v.as_f64()) {
-                        return status_code == 200.0;
-                    }
-                    warn!("'status' not found or invalid in response body.");
-                    false
-                }
-                Err(e) => {
-                    error!("Error parsing JSON: {}", e);
-                    false
-                }
+            if body.as_str() == "ok" {
+                return true;
+            } else {
+                return false;
             }
         }
         Err(err) => {

@@ -10,11 +10,12 @@ appenders:
         level: info
   file:
     kind: file
-    path: info.log
+    path: "info.log"
     encoder:
       pattern: "{d(%+)(local)} PID: {P}, TID: {i} [{t}] {h({f}:{L})} {m}{n}"
 
 root:
+  level: info
   appenders:
     - console
 
@@ -24,3 +25,10 @@ loggers:
     appenders:
       - file
     additive: true
+
+  # 设置 Rocket 日志级别为 off
+  rocket:
+    level: off
+    appenders:
+      - console
+    additive: false

@@ -1,4 +1,4 @@
-use crate::mqtt_async_sample::{create_client, event_loop};
+use crate::mqtt_async_sample::{create_client, event_loop, get_client, put_client};
 use common_lib::config::{Config, NodeInfo};
 use common_lib::models::MqttConfig;
 use common_lib::rabbit_utils::{get_rabbitmq_instance, RabbitMQ};
@@ -9,12 +9,13 @@ use r2d2_redis::redis::RedisError;
 use r2d2_redis::RedisConnectionManager;
 use rocket::fairing::AdHoc;
 use rocket::http::{Method, Status};
+use rocket::response::status;
 use rocket::serde::json::Json;
 use rocket::tokio::time::Duration;
 use rocket::yansi::Paint;
 use rocket::{get, post, State};
 use rocket::{Request, Response};
-use rumqttc::{Client, ConnectionError, Event, Incoming, MqttOptions, QoS};
+use rumqttc::{AsyncClient, Client, ConnectionError, Event, Incoming, MqttOptions, QoS};
 use serde_json::json;
 use std::future::poll_fn;
 use std::string::String;
@@ -22,14 +23,30 @@ use tokio::sync::MutexGuard;
 use tokio::task;
 
 #[get("/beat")]
-pub async fn HttpBeat(pool: &rocket::State<RedisOp>) -> rocket::response::status::Custom<&str> {
-    let rabbit = get_rabbitmq_instance().await.unwrap();
-
-    rabbit
-        .publish("", "queue1", "hello12")
-        .await
-        .expect("publish message failed");
+pub fn HttpBeat(pool: &rocket::State<RedisOp>) -> rocket::response::status::Custom<&str> {
     return rocket::response::status::Custom(Status::Ok, "ok");
+}
+
+#[get("/bb?<client_id>")]
+pub async fn HttpBeat2(
+    pool: &State<RedisOp>,
+    client_id: Option<String>,
+) -> status::Custom<&'static str> {
+    info!("client_id = {:?}", client_id);
+
+    if let Some(client_id) = client_id {
+        match get_client(&client_id) {
+            None => {}
+            Some(once) => {
+                info!("Client found, disconnecting...");
+                once.disconnect().await.unwrap();
+            }
+        }
+    } else {
+        info!("No client_id provided");
+    }
+
+    status::Custom(Status::Ok, "ok")
 }
 
 #[post("/create_mqtt", format = "json", data = "<mqtt_config>")]
@@ -82,6 +99,7 @@ pub async fn create_mqtt_client_http(
             }
         }
     } else {
+        error!("上锁异常 ,{}", key);
         let response = json!({
             "status": 400,
             "message": "上锁异常"
@@ -161,6 +179,8 @@ pub async fn create_mqtt_client_min(mqtt_config: &MqttConfig) -> bool {
     .await
     {
         Ok((client1, mut eventloop1)) => {
+            put_client(mqtt_config.clone().client_id, client1);
+
             let sub_topic = mqtt_config.sub_topic.clone(); // 克隆以获得所有权
             tokio::spawn(event_loop(
                 sub_topic,
