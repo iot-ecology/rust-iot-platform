@@ -1,8 +1,10 @@
+mod beat;
 mod ctr;
 mod mqtt_async_sample;
 mod mqtt_sync_sample;
 mod service_instace;
 
+use crate::beat::ListenerBeat;
 use crate::ctr::GetNoUseMqttConfig;
 use crate::ctr::GetUseMqttConfig;
 use crate::ctr::HttpBeat;
@@ -12,19 +14,21 @@ use crate::ctr::PubCreateMqttClientHttp;
 use crate::ctr::PubRemoveMqttClient;
 use crate::ctr::RemoveMqttClient;
 use crate::ctr::{create_mqtt_client_http, AddNoUseConfig};
-use crate::service_instace::register_task;
-use common_lib::config::{get_config, read_config, read_config_tb};
+use crate::service_instace::{noHandlerConfig, register_task, CBeat};
+use common_lib::config::{get_config, read_config, read_config_tb, NodeInfo};
 use common_lib::models::MqttConfig;
 use common_lib::rabbit_utils::init_rabbitmq_with_config;
 use common_lib::redis_handler::init_redis;
 use common_lib::redis_pool_utils::{create_redis_pool_from_config, RedisOp};
-use log::error;
+use log::{debug, error};
 use r2d2_redis::redis::RedisError;
+use reqwest::blocking::Client;
 use rocket::{launch, routes};
 use serde_json::from_str;
 use std::sync::Arc;
 use std::thread;
 use tokio::runtime::Runtime;
+use tracing_subscriber::fmt::format;
 
 #[launch]
 fn rocket() -> _ {
@@ -45,12 +49,27 @@ fn rocket() -> _ {
     let node_info_for_task = Arc::clone(&node_info);
 
     // 启动 register_task 的线程
+    ListenerBeat(&redis_op_for_task, config1.redis_config.db);
     thread::spawn(move || {
         register_task(&node_info_for_task, &redis_op_for_task);
     });
 
-    // 执行其他启动逻辑
+    let node_info2 = Arc::new(config1.node_info.clone());
+    let node_info_for_task2 = Arc::clone(&node_info2);
+    let redis_op_for_task2 = redis_op.clone();
+
+    thread::spawn(move || {
+        CBeat(&node_info_for_task2, &redis_op_for_task2);
+    });
+
+    let node_info3 = Arc::new(config1.node_info.clone());
+    let node_info_for_task3 = Arc::clone(&node_info3);
+    let redis_op_for_task3 = redis_op.clone();
+
     beforeStart(&redis_op, &config1.clone());
+
+    thread::spawn(move || noHandlerConfig(&node_info_for_task3, &redis_op_for_task3));
+
     let node_info_for_rocket = config1.node_info.clone();
 
     // 构建 Rocket 实例
@@ -179,6 +198,78 @@ pub fn GetBindClientId(nodeName: String, redis_op: &RedisOp) -> Vec<String> {
         Err(e) => {
             error!("{}", e);
             return vec![];
+        }
+    }
+}
+
+pub fn GetThisTypeService(node_type: String, redis_op: &RedisOp) -> Vec<NodeInfo> {
+    // 从 Redis 中获取哈希表的所有值
+    let result = redis_op.get_hash_all_value(&format!("register:{}", node_type));
+
+    // 结果容器
+    let mut nodes = Vec::new();
+
+    match result {
+        Ok(values) => {
+            for value in values {
+                match from_str::<NodeInfo>(&value) {
+                    Ok(node_info) => {
+                        nodes.push(node_info);
+                    }
+                    Err(parse_error) => {
+                        error!("Failed to parse NodeInfo: {}", parse_error);
+                    }
+                }
+            }
+        }
+        Err(error) => {
+            error!("Failed to retrieve nodes from Redis: {}", error);
+            return vec![];
+        }
+    }
+
+    nodes
+}
+
+pub fn processHeartbeats(service: Vec<NodeInfo>, redis_op: &RedisOp) {
+    for x in service {
+        if !send_beat(&x, "beat") {
+            redis_op
+                .delete_hash_field(
+                    format!("register:{}", x.node_type).as_str(),
+                    x.name.as_str(),
+                )
+                .unwrap();
+            HandlerOffNode(x.node_type, redis_op);
+        }
+    }
+}
+
+pub fn send_beat(node: &NodeInfo, param: &str) -> bool {
+    debug!(
+        "Sending heartbeat request, node info: {:?}, params: {}",
+        node, param
+    );
+
+    let url = format!("http://{}:{}/beat", node.host, node.port);
+    let client = Client::new();
+
+    // Create GET request with JSON content-type
+    let resp = client
+        .get(&url)
+        .header("Content-Type", "application/json")
+        .body(param.to_string())
+        .send();
+
+    match resp {
+        Ok(response) => {
+            let status = response.status();
+            debug!("Response Status: {:?}", status);
+            status == reqwest::StatusCode::OK
+        }
+        Err(err) => {
+            error!("Error sending request: {}", err);
+            false
         }
     }
 }

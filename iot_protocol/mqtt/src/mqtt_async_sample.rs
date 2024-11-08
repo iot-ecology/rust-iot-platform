@@ -55,6 +55,7 @@ pub fn handler_event(
     event: &Result<Event, ConnectionError>,
     topic: &str,
     client_name: &str,
+    &cg
 ) -> Option<Result<(), Box<dyn Error>>> {
     match event {
         Ok(Event::Incoming(Incoming::Publish(publish))) => {
@@ -75,7 +76,7 @@ pub fn handler_event(
             );
         }
         Ok(Event::Incoming(Incoming::PingResp)) => {
-            println!("Ping Response received");
+            info!("Ping Response received");
         }
         Ok(v) => {
             debug!("Other Event = {:?}", v);

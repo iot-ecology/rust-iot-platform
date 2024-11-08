@@ -1,5 +1,5 @@
 use crate::config::RedisConfig;
-use log::{error, info};
+use log::{debug, error, info};
 use r2d2::PooledConnection;
 
 use r2d2_redis::redis::{Commands, RedisResult};
@@ -64,7 +64,7 @@ impl RedisOp {
     ) -> Result<bool, redis::RedisError> {
         if let Some(result1) = self.get_string(lock_key)? {
             let x = result1.as_str();
-            info!("x = {}   lock_value = {}", x, lock_value);
+            debug!("x = {}   lock_value = {}", x, lock_value);
 
             if x == lock_value {
                 self.delete_string(lock_key)?;
@@ -262,6 +262,10 @@ impl RedisOp {
     pub fn get_set(&self, key: &str) -> Result<Vec<String>, RedisError> {
         let mut con = self.get_connection();
         con.smembers(key)
+    }
+    pub fn get_set_length(&self, key: &str) -> Result<i64, RedisError> {
+        let mut con = self.get_connection();
+        con.scard(key)
     }
 
     pub fn delete_set_member(&self, key: &str, v: &str) -> Result<(), RedisError> {

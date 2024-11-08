@@ -16,11 +16,12 @@ use rocket::{Request, Response};
 use rumqttc::{Client, ConnectionError, Event, Incoming, MqttOptions, QoS};
 use serde_json::json;
 use std::future::poll_fn;
+use std::string::String;
 use tokio::task;
 
 #[get("/beat")]
-pub async fn HttpBeat(pool: &rocket::State<RedisOp>) -> &'static str {
-    "ok"
+pub async fn HttpBeat(pool: &rocket::State<RedisOp>) -> rocket::response::status::Custom<&str> {
+    return rocket::response::status::Custom(Status::Ok, "ok");
 }
 
 #[post("/create_mqtt", format = "json", data = "<mqtt_config>")]
@@ -62,7 +63,7 @@ pub async fn create_mqtt_client_http(
                 return rocket::response::status::Custom(Status::Ok, Json(response));
             } else {
                 AddNoUseConfig(&mqtt_config, redis_op);
-                bindNode(&mqtt_config, config.node_info.name.clone(), redis_op);
+                BindNode(&mqtt_config, config.node_info.name.clone(), redis_op);
                 let response = json!({
                     "status": 200,
                     "message": "创建成功"
@@ -89,12 +90,14 @@ pub fn AddNoUseConfig(mqtt_config: &MqttConfig, redis_op: &RedisOp) {
         )
         .expect("add no use config 异常");
 }
-pub fn bindNode(mqtt_config: &MqttConfig, node_name: String, redis_op: &RedisOp) {
+pub fn BindNode(mqtt_config: &MqttConfig, node_name: String, redis_op: &RedisOp) {
     let binding = serde_json::to_string(mqtt_config).unwrap();
 
     let x = binding.as_str();
     let key = format!("node_bind:{}", node_name);
-    redis_op.add_set(key.as_str(), x);
+    redis_op
+        .add_set(key.as_str(), mqtt_config.client_id.as_str())
+        .unwrap();
 
     RemoveNoUseConfig(mqtt_config, redis_op);
     AddUseConfig(mqtt_config, redis_op);
@@ -108,7 +111,11 @@ pub fn AddUseConfig(mqtt_config: &MqttConfig, redis_op: &RedisOp) {
         .expect("add use config 异常");
 }
 pub fn RemoveNoUseConfig(mqtt_config: &MqttConfig, redis_op: &RedisOp) {
-    redis_op.delete_hash_field("mqtt_config:no", mqtt_config.client_id.as_str());
+    info!("mqtt_config = {:?}", mqtt_config);
+
+    redis_op
+        .delete_hash_field("mqtt_config:no", mqtt_config.client_id.as_str())
+        .expect("TODO: panic message");
 }
 pub async fn create_mqtt_client(
     mqtt_config: &MqttConfig,
@@ -116,6 +123,7 @@ pub async fn create_mqtt_client(
     node_info: &NodeInfo,
 ) -> i64 {
     let key = format!("node_bind:{}", node_info.name);
+    info!("key = {:?}", key);
 
     let result = redis_op.get_zset_length(key.as_str()).unwrap_or(0) as i64;
 
@@ -170,6 +178,15 @@ pub fn check_has_config(mqtt_client_id: String, redis_op: &RedisOp) -> bool {
     };
 }
 
+pub fn GetNoUseConfig(redis_op: &RedisOp) -> Vec<String> {
+    return match redis_op.get_hash_all_value("mqtt_config:no") {
+        Ok(x) => x,
+        Err(error) => {
+            error!("redis error: {}", error);
+            vec![]
+        }
+    };
+}
 #[get("/node_list")]
 pub fn NodeList(pool: &rocket::State<RedisOp>) -> &'static str {
     "Counter updated"
