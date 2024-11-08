@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::Read;
 use tokio::sync::{Mutex, MutexGuard, OnceCell};
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct NodeInfo {
     pub host: String,
     pub port: u16,
@@ -13,7 +13,7 @@ pub struct NodeInfo {
     pub size: i64,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct RedisConfig {
     pub host: String,
     pub port: u16,

@@ -20,6 +20,12 @@ pub struct RedisOp {
     pub pool: r2d2::Pool<RedisConnectionManager>,
 }
 impl RedisOp {
+    pub fn delete(&self, key: &str) -> Result<(), RedisError> {
+        let mut con = self.get_connection();
+        con.del::<&str, ()>(key)?;
+        Ok(())
+    }
+
     pub fn get_connection(&self) -> PooledConnection<RedisConnectionManager> {
         let result = self.pool.get();
         let connection = result.unwrap();
@@ -210,6 +216,11 @@ impl RedisOp {
             Ok(value) => Ok(value),
             Err(e) => Err(e),
         }
+    }
+    pub fn get_hash_all_value(&self, key: &str) -> Result<Vec<String>, RedisError> {
+        let mut con = self.get_connection();
+
+        con.hvals(key)
     }
 
     pub fn hash_exists(&self, key: &str, field: &str) -> Result<bool, RedisError> {
@@ -542,5 +553,13 @@ mod tests {
         env_logger::init();
         let redis_op = setup_redis_op();
         redis_op.delete_set_member("get_set", "1").unwrap()
+    }
+    #[test]
+    fn test_get_hash_all() {
+        env::set_var("RUST_LOG", "info");
+        env_logger::init();
+        let redis_op = setup_redis_op();
+        let result = redis_op.get_hash_all("mqtt_config:use");
+        info!("{:?}", result.unwrap());
     }
 }

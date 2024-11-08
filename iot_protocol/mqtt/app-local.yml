@@ -1,9 +1,9 @@
 node_info:
   host: 127.0.0.1
-  port: 3332
-  name: tcp-01
-  type: coap-server
-  size: 1
+  port: 8081
+  name: mccc
+  type: mqtt
+  size: 3000
 redis_config:
   host: 127.0.0.1
   port: 6379

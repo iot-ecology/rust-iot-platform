@@ -61,7 +61,7 @@ pub async fn create_mqtt_client_http(
                 redis_op.release_lock(&key, &key).unwrap();
                 return rocket::response::status::Custom(Status::Ok, Json(response));
             } else {
-                addNoUseConfig(&mqtt_config, redis_op);
+                AddNoUseConfig(&mqtt_config, redis_op);
                 bindNode(&mqtt_config, config.node_info.name.clone(), redis_op);
                 let response = json!({
                     "status": 200,
@@ -80,7 +80,7 @@ pub async fn create_mqtt_client_http(
     }
 }
 
-pub fn addNoUseConfig(mqtt_config: &MqttConfig, redis_op: &RedisOp) {
+pub fn AddNoUseConfig(mqtt_config: &MqttConfig, redis_op: &RedisOp) {
     redis_op
         .set_hash(
             "mqtt_config:no",
