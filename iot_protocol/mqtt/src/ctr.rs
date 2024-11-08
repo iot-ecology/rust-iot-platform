@@ -42,7 +42,7 @@ pub async fn create_mqtt_client_http(
                 "status": 400,
                 "message": "已经存在客户端id"
             });
-            return rocket::response::status::Custom(Status::BadRequest, Json(response));
+            return rocket::response::status::Custom(Status::Ok, Json(response));
         } else {
             let usz = create_mqtt_client(&mqtt_config, &redis_op, &config.node_info).await;
 
@@ -52,14 +52,14 @@ pub async fn create_mqtt_client_http(
                     "message": "达到最大客户端数量"
                 });
                 redis_op.release_lock(&key, &key).unwrap();
-                return rocket::response::status::Custom(Status::BadRequest, Json(response));
+                return rocket::response::status::Custom(Status::Ok, Json(response));
             } else if usz == -2 {
                 let response = json!({
                     "status": 400,
                     "message": "MQTT客户端配置异常"
                 });
                 redis_op.release_lock(&key, &key).unwrap();
-                return rocket::response::status::Custom(Status::BadRequest, Json(response));
+                return rocket::response::status::Custom(Status::Ok, Json(response));
             } else {
                 addNoUseConfig(&mqtt_config, redis_op);
                 bindNode(&mqtt_config, config.node_info.name.clone(), redis_op);
@@ -68,7 +68,7 @@ pub async fn create_mqtt_client_http(
                     "message": "创建成功"
                 });
                 redis_op.release_lock(&key, &key).unwrap();
-                return rocket::response::status::Custom(Status::BadRequest, Json(response));
+                return rocket::response::status::Custom(Status::Ok, Json(response));
             }
         }
     } else {
@@ -76,7 +76,7 @@ pub async fn create_mqtt_client_http(
             "status": 400,
             "message": "上锁异常"
         });
-        rocket::response::status::Custom(Status::BadRequest, Json(response))
+        rocket::response::status::Custom(Status::Ok, Json(response))
     }
 }
 

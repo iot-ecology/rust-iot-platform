@@ -247,6 +247,16 @@ impl RedisOp {
         let mut con = self.get_connection();
         con.sadd::<&str, &str, ()>(key, value)
     }
+
+    pub fn get_set(&self, key: &str) -> Result<Vec<String>, RedisError> {
+        let mut con = self.get_connection();
+        con.smembers(key)
+    }
+
+    pub fn delete_set_member(&self, key: &str, v: &str) -> Result<(), RedisError> {
+        let mut con = self.get_connection();
+        con.srem(key, v)
+    }
 }
 
 #[cfg(test)]
@@ -517,5 +527,20 @@ mod tests {
         let redis_op = setup_redis_op();
         let x = redis_op.hash_exists("asfaf", "asf").unwrap();
         info!("{}", x);
+    }
+    #[test]
+    fn test_get_set() {
+        env::set_var("RUST_LOG", "info");
+        env_logger::init();
+        let redis_op = setup_redis_op();
+        let x = redis_op.get_set("get_set").unwrap();
+        info!("{:?}", x);
+    }
+    #[test]
+    fn test_remove() {
+        env::set_var("RUST_LOG", "info");
+        env_logger::init();
+        let redis_op = setup_redis_op();
+        redis_op.delete_set_member("get_set", "1").unwrap()
     }
 }
