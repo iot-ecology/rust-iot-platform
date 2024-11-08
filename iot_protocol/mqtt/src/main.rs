@@ -15,7 +15,7 @@ use crate::ctr::PubRemoveMqttClient;
 use crate::ctr::RemoveMqttClient;
 use crate::ctr::{create_mqtt_client_http, AddNoUseConfig};
 use crate::service_instace::{noHandlerConfig, register_task, CBeat};
-use common_lib::config::{get_config, read_config, read_config_tb, NodeInfo};
+use common_lib::config::{get_config, read_config, read_config_tb, MqConfig, NodeInfo};
 use common_lib::models::MqttConfig;
 use common_lib::rabbit_utils::init_rabbitmq_with_config;
 use common_lib::redis_handler::init_redis;
@@ -23,13 +23,16 @@ use common_lib::redis_pool_utils::{create_redis_pool_from_config, RedisOp};
 use log::{debug, error};
 use r2d2_redis::redis::RedisError;
 use reqwest::blocking::Client;
+use rocket::{
+    fairing::{Fairing, Info, Kind},
+    Build, Rocket, State,
+};
 use rocket::{launch, routes};
 use serde_json::from_str;
 use std::sync::Arc;
 use std::thread;
 use tokio::runtime::Runtime;
 use tracing_subscriber::fmt::format;
-
 #[launch]
 fn rocket() -> _ {
     // 初始化日志
@@ -47,7 +50,6 @@ fn rocket() -> _ {
 
     let node_info = Arc::new(config1.node_info.clone());
     let node_info_for_task = Arc::clone(&node_info);
-
     // 启动 register_task 的线程
     ListenerBeat(&redis_op_for_task, config1.redis_config.db);
     thread::spawn(move || {
@@ -74,6 +76,9 @@ fn rocket() -> _ {
 
     // 构建 Rocket 实例
     rocket::build()
+        .attach(RabbitMQFairing {
+            config: config1.mq_config.clone(),
+        })
         .manage(redis_op)
         .manage(config1.clone())
         .configure(rocket::Config {
@@ -95,6 +100,7 @@ fn rocket() -> _ {
             ],
         )
 }
+
 fn beforeStart(redis_op: &RedisOp, config: &common_lib::config::Config) {
     HandlerOffNode(config.node_info.name.clone(), redis_op);
     // go BeatTask(globalConfig.NodeInfo)
@@ -270,6 +276,31 @@ pub fn send_beat(node: &NodeInfo, param: &str) -> bool {
         Err(err) => {
             error!("Error sending request: {}", err);
             false
+        }
+    }
+}
+
+pub struct RabbitMQFairing {
+    pub config: MqConfig,
+}
+
+#[rocket::async_trait]
+impl Fairing for RabbitMQFairing {
+    fn info(&self) -> Info {
+        Info {
+            name: "RabbitMQ Initializer",
+            kind: Kind::Ignite,
+        }
+    }
+
+    async fn on_ignite(&self, rocket: Rocket<Build>) -> Result<Rocket<Build>, Rocket<Build>> {
+        let result = init_rabbitmq_with_config(self.config.clone()).await;
+        match result {
+            Ok(_) => Ok(rocket),
+            Err(e) => {
+                eprintln!("Failed to initialize RabbitMQ: {:?}", e);
+                Err(rocket)
+            }
         }
     }
 }

@@ -1,4 +1,6 @@
 use common_lib::init_logger;
+use common_lib::models::MQTTMessage;
+use common_lib::rabbit_utils::{get_rabbitmq_instance, RabbitMQ};
 use log::{debug, error, info};
 use once_cell::sync::OnceCell;
 use rumqttc::{AsyncClient, ConnectionError, Event, Incoming, MqttOptions, QoS};
@@ -6,6 +8,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use tokio::sync::MutexGuard;
 use tokio::{task, time};
 
 static CLIENTS: OnceCell<Arc<Mutex<HashMap<String, AsyncClient>>>> = OnceCell::new();
@@ -50,12 +53,13 @@ async fn disconnect_client(client_name: String) {
         info!("Disconnected client: {}", client_name);
     }
 }
+use lapin::{Channel, Connection};
 
-pub fn handler_event(
+pub async fn handler_event(
     event: &Result<Event, ConnectionError>,
     topic: &str,
     client_name: &str,
-    &cg
+    rabbit: &Channel,
 ) -> Option<Result<(), Box<dyn Error>>> {
     match event {
         Ok(Event::Incoming(Incoming::Publish(publish))) => {
@@ -63,8 +67,25 @@ pub fn handler_event(
                 std::str::from_utf8(&publish.payload).unwrap_or_else(|_| "<Invalid UTF-8>");
             info!(
                 "Received message on client_name = {} topic = {}: message = {:?}",
-                client_name, topic, payload_str
+                client_name.clone(),
+                topic,
+                payload_str
             );
+
+            let mqttMsg = MQTTMessage {
+                mqtt_client_id: client_name.to_string(),
+                message: payload_str.to_string(),
+            };
+            rabbit
+                .basic_publish(
+                    "",
+                    "pre_handler",
+                    lapin::options::BasicPublishOptions::default(),
+                    mqttMsg.to_json_string().as_str().as_bytes(),
+                    lapin::BasicProperties::default(),
+                )
+                .await
+                .expect("publish message failed");
         }
         Ok(Event::Incoming(Incoming::ConnAck(connack))) => {
             debug!("Connection Acknowledged: {:?}", connack);
@@ -128,21 +149,31 @@ mod tests {
 }
 
 pub async fn event_loop(topic: String, mut eventloop: rumqttc::EventLoop, client_name: String) {
+    let rabbitmq_instance = match get_rabbitmq_instance().await {
+        Ok(instance) => instance,
+        Err(e) => {
+            error!("Failed to get RabbitMQ instance: {:?}", e);
+            return;
+        }
+    };
+    let channel = rabbitmq_instance.connection.create_channel().await.unwrap();
+
     loop {
         match eventloop.poll().await {
             Ok(event) => {
                 // 处理事件
-                if let Some(err) = handler_event(&Ok(event), topic.as_str(), client_name.as_str()) {
-                    if let Err(e) = err {
-                        error!("Error handling event: {:?}", e);
-                    }
+                if let Some(Err(e)) =
+                    handler_event(&Ok(event), &topic, &client_name, &channel).await
+                {
+                    error!("Error handling event: {:?}", e);
                 }
             }
             Err(e) => {
                 error!(
-                    "Error polling eventloop for client_name = {} topic =  {}: {:?}",
+                    "Error polling eventloop for client_name = {} topic = {}: {:?}",
                     client_name, topic, e
                 );
+                // 可以根据需要在此处增加重连逻辑
             }
         }
     }

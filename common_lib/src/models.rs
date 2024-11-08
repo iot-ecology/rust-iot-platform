@@ -17,6 +17,13 @@ pub struct MQTTMessage {
     pub mqtt_client_id: String,
     pub message: String,
 }
+
+impl MQTTMessage {
+    pub fn to_json_string(&self) -> String {
+        serde_json::to_string(self).expect("Failed to serialize MQTTMessage")
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DataRow {
     pub Name: String,  // 数据行名称

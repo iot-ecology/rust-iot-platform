@@ -1,6 +1,7 @@
 use crate::mqtt_async_sample::{create_client, event_loop};
 use common_lib::config::{Config, NodeInfo};
 use common_lib::models::MqttConfig;
+use common_lib::rabbit_utils::{get_rabbitmq_instance, RabbitMQ};
 use common_lib::redis_pool_utils::RedisOp;
 use log::{error, info};
 use r2d2::Pool;
@@ -17,10 +18,17 @@ use rumqttc::{Client, ConnectionError, Event, Incoming, MqttOptions, QoS};
 use serde_json::json;
 use std::future::poll_fn;
 use std::string::String;
+use tokio::sync::MutexGuard;
 use tokio::task;
 
 #[get("/beat")]
 pub async fn HttpBeat(pool: &rocket::State<RedisOp>) -> rocket::response::status::Custom<&str> {
+    let rabbit = get_rabbitmq_instance().await.unwrap();
+
+    rabbit
+        .publish("", "queue1", "hello12")
+        .await
+        .expect("publish message failed");
     return rocket::response::status::Custom(Status::Ok, "ok");
 }
 
@@ -32,6 +40,7 @@ pub async fn create_mqtt_client_http(
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
     info!("mqtt_config = {:?}", mqtt_config);
     info!("config = {:?}", config);
+    let rabbit = get_rabbitmq_instance().await.unwrap();
 
     let key = format!("mqtt_create:{}", mqtt_config.client_id);
     let x = redis_op.acquire_lock(&key, &key, 100).unwrap();
