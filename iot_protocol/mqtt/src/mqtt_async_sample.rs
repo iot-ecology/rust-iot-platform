@@ -69,7 +69,6 @@ pub async fn handler_event(
     topic: &str,
     client_name: &str,
 ) -> Option<Result<(), Box<dyn Error>>> {
-    // 获取 RabbitMQ 实例
     let rabbitmq_instance = match get_rabbitmq_instance().await {
         Ok(instance) => instance,
         Err(e) => {
@@ -84,7 +83,7 @@ pub async fn handler_event(
         Ok(ch) => ch,
         Err(e) => {
             error!("Failed to create channel: {:?}", e);
-            return Some(Err(Box::new(e))); // 修改返回 Some(Err(...))
+            return Some(Err(Box::new(e)));
         }
     };
 

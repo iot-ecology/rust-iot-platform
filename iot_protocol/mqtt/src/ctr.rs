@@ -17,6 +17,7 @@ use rocket::{get, post, State};
 use rocket::{Request, Response};
 use rumqttc::{AsyncClient, Client, ConnectionError, Event, Incoming, MqttOptions, QoS};
 use serde_json::json;
+use std::collections::HashMap;
 use std::future::poll_fn;
 use std::string::String;
 use tokio::sync::MutexGuard;
@@ -167,6 +168,8 @@ pub async fn create_mqtt_client(
         return -1;
     }
 }
+use crate::{GetBindClientId, GetThisTypeService, GetUseConfig};
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::runtime::Runtime;
 use tokio::sync::Mutex;
@@ -231,23 +234,185 @@ pub fn GetNoUseConfig(redis_op: &RedisOp) -> Vec<String> {
     };
 }
 #[get("/node_list")]
-pub fn NodeList(pool: &rocket::State<RedisOp>) -> &'static str {
-    "Counter updated"
+pub fn NodeList(pool: &rocket::State<RedisOp>, config: &State<Config>) -> Json<serde_json::Value> {
+    let service = GetThisTypeService(config.node_info.node_type.clone(), pool);
+    Json(json!({
+        "status": 200,
+        "message": "创建成功",
+        "data": service
+    }))
 }
 
 #[get("/node_using_status")]
-pub fn NodeUsingStatus(pool: &rocket::State<RedisOp>) -> &'static str {
-    "Counter updated"
+pub fn NodeUsingStatus(
+    pool: &rocket::State<RedisOp>,
+    config: &State<Config>,
+) -> Result<Json<HashMap<String, serde_json::Value>>, status::Custom<&'static str>> {
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct NodeInfo {
+        pub name: String,
+        pub size: i64,
+        pub client_ids: Vec<String>,
+        pub client_infos: Vec<MqttConfig>,
+        pub max_size: i64,
+    }
+
+    // 获取服务对象
+    let service = GetThisTypeService(config.node_info.node_type.clone(), pool);
+
+    let mut node_infos: Vec<NodeInfo> = Vec::new();
+
+    for info in service {
+        let node_name = info.name.clone();
+        let size = match pool.get_zset_length(&format!("node_bind:{}", node_name)) {
+            Ok(len) => len as i64,
+            Err(_) => 0,
+        };
+
+        // 获取 ClientInfos 列表
+        let mut mc: Vec<MqttConfig> = Vec::new();
+        let client_ids = GetBindClientId(node_name.clone(), pool); // 传递引用避免所有权转移
+
+        for el in &client_ids {
+            match GetUseConfig(el.clone(), pool) {
+                None => {}
+                Some(v) => {
+                    let config: MqttConfig = match serde_json::from_str(&v) {
+                        Ok(config) => config,
+                        Err(e) => {
+                            eprintln!("HandlerOffNode JSON 解析错误: {:?}", e);
+                            continue;
+                        }
+                    };
+                    mc.push(config);
+                }
+            }
+        }
+
+        // 添加到 NodeInfo 列表
+        node_infos.push(NodeInfo {
+            name: node_name,
+            size,
+            max_size: info.size,
+            client_ids: client_ids.clone(), // 克隆避免所有权问题
+            client_infos: mc,
+        });
+    }
+
+    let mut response = HashMap::new();
+    response.insert("status".to_string(), json!(200));
+    response.insert("message".to_string(), json!("成功"));
+    response.insert("data".to_string(), json!(node_infos));
+
+    Ok(Json(response))
 }
 
-#[get("/mqtt_config")]
-pub fn GetUseMqttConfig(pool: &rocket::State<RedisOp>) -> &'static str {
-    "Counter updated"
+#[get("/get_use_mqtt_config?<id>")]
+pub async fn get_use_mqtt_config(
+    id: Option<String>,
+    pool: &rocket::State<RedisOp>,
+) -> Result<
+    Json<HashMap<&'static str, serde_json::Value>>,
+    status::Custom<Json<HashMap<&'static str, serde_json::Value>>>,
+> {
+    info!("id = {:?}", id);
+
+    let id = match id {
+        Some(id) => id,
+        None => {
+            let mut response = HashMap::new();
+            response.insert("status", json!(400));
+            response.insert("message", json!("Missing 'id' query parameter"));
+            response.insert("data", json!(null));
+            return Err(status::Custom(Status::Ok, Json(response)));
+        }
+    };
+
+    let option = GetUseConfig(id, pool);
+    match option {
+        None => {
+            let mut response = HashMap::new();
+            response.insert("status", json!(400));
+            response.insert("message", json!("Config Nont Fount"));
+            response.insert("data", json!(null));
+            return Err(status::Custom(Status::Ok, Json(response)));
+        }
+        Some(config_json) => {
+            let config: MqttConfig = match serde_json::from_str(&config_json) {
+                Ok(config) => config,
+                Err(e) => {
+                    eprintln!("Error unmarshalling JSON: {:?}", e);
+                    let mut response = HashMap::new();
+                    response.insert("status", json!(500));
+                    response.insert("message", json!("Failed to parse configuration"));
+                    response.insert("data", json!(null));
+                    return Err(status::Custom(Status::InternalServerError, Json(response)));
+                }
+            };
+
+            // 构建响应
+            let mut response = HashMap::new();
+            response.insert("status", json!(200));
+            response.insert("message", json!("Success"));
+            response.insert("data", json!(config));
+
+            Ok(Json(response))
+        }
+    }
 }
 
-#[get("/no_mqtt_config")]
-pub fn GetNoUseMqttConfig(pool: &rocket::State<RedisOp>) -> &'static str {
-    "Counter updated"
+#[get("/no_mqtt_config?<id>")]
+pub fn GetNoUseMqttConfig(
+    id: Option<String>,
+    pool: &rocket::State<RedisOp>,
+) -> Result<
+    Json<HashMap<&'static str, serde_json::Value>>,
+    status::Custom<Json<HashMap<&'static str, serde_json::Value>>>,
+> {
+    info!("id = {:?}", id);
+
+    let id = match id {
+        Some(id) => id,
+        None => {
+            let mut response = HashMap::new();
+            response.insert("status", json!(400));
+            response.insert("message", json!("Missing 'id' query parameter"));
+            response.insert("data", json!(null));
+            return Err(status::Custom(Status::Ok, Json(response)));
+        }
+    };
+
+    let option = GetNoUseMqttConfig(id, pool);
+    match option {
+        None => {
+            let mut response = HashMap::new();
+            response.insert("status", json!(400));
+            response.insert("message", json!("Config Nont Fount"));
+            response.insert("data", json!(null));
+            return Err(status::Custom(Status::Ok, Json(response)));
+        }
+        Some(config_json) => {
+            let config: MqttConfig = match serde_json::from_str(&config_json) {
+                Ok(config) => config,
+                Err(e) => {
+                    eprintln!("Error unmarshalling JSON: {:?}", e);
+                    let mut response = HashMap::new();
+                    response.insert("status", json!(500));
+                    response.insert("message", json!("Failed to parse configuration"));
+                    response.insert("data", json!(null));
+                    return Err(status::Custom(Status::InternalServerError, Json(response)));
+                }
+            };
+
+            // 构建响应
+            let mut response = HashMap::new();
+            response.insert("status", json!(200));
+            response.insert("message", json!("Success"));
+            response.insert("data", json!(config));
+
+            Ok(Json(response))
+        }
+    }
 }
 
 #[get("/remove_mqtt_client")]

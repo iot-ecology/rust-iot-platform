@@ -5,14 +5,13 @@ mod mqtt_sync_sample;
 mod service_instace;
 
 use crate::beat::ListenerBeat;
-use crate::ctr::GetUseMqttConfig;
-use crate::ctr::HttpBeat;
 use crate::ctr::NodeList;
 use crate::ctr::NodeUsingStatus;
 use crate::ctr::PubCreateMqttClientHttp;
 use crate::ctr::PubRemoveMqttClient;
 use crate::ctr::RemoveMqttClient;
 use crate::ctr::{create_mqtt_client_http, AddNoUseConfig};
+use crate::ctr::{get_use_mqtt_config, HttpBeat};
 use crate::ctr::{GetNoUseMqttConfig, HttpBeat2};
 use crate::service_instace::{noHandlerConfig, register_task, CBeat};
 use common_lib::config::{get_config, read_config, read_config_tb, MqConfig, NodeInfo};
@@ -95,7 +94,7 @@ fn rocket() -> _ {
                 create_mqtt_client_http,
                 NodeList,
                 NodeUsingStatus,
-                GetUseMqttConfig,
+                get_use_mqtt_config,
                 GetNoUseMqttConfig,
                 RemoveMqttClient,
                 PubCreateMqttClientHttp,
@@ -106,10 +105,6 @@ fn rocket() -> _ {
 
 fn beforeStart(redis_op: &RedisOp, config: &common_lib::config::Config) {
     HandlerOffNode(config.node_info.name.clone(), redis_op);
-    // go BeatTask(globalConfig.NodeInfo)
-    // go ListenerBeat()
-    // go CBeat()
-    // go timerNoHandlerConfig()
 }
 
 pub fn HandlerOffNode(node_name: String, redis_op: &RedisOp) {
