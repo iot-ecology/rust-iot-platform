@@ -68,33 +68,54 @@ pub async fn handler_event(
     event: &Result<Event, ConnectionError>,
     topic: &str,
     client_name: &str,
-    rabbit: &Channel,
 ) -> Option<Result<(), Box<dyn Error>>> {
+    // 获取 RabbitMQ 实例
+    let rabbitmq_instance = match get_rabbitmq_instance().await {
+        Ok(instance) => instance,
+        Err(e) => {
+            error!("Failed to get RabbitMQ instance: {:?}", e);
+            return Some(Err(e));
+        }
+    };
+    let mut rabbitmq = rabbitmq_instance.lock().await;
+
+    // 创建 channel
+    let channel = match rabbitmq.connection.create_channel().await {
+        Ok(ch) => ch,
+        Err(e) => {
+            error!("Failed to create channel: {:?}", e);
+            return Some(Err(Box::new(e))); // 修改返回 Some(Err(...))
+        }
+    };
+
+    // 匹配不同事件类型
     match event {
         Ok(Event::Incoming(Incoming::Publish(publish))) => {
             let payload_str =
                 std::str::from_utf8(&publish.payload).unwrap_or_else(|_| "<Invalid UTF-8>");
             info!(
                 "Received message on client_name = {} topic = {}: message = {:?}",
-                client_name.clone(),
-                topic,
-                payload_str
+                client_name, topic, payload_str
             );
 
-            let mqttMsg = MQTTMessage {
+            let mqtt_msg = MQTTMessage {
                 mqtt_client_id: client_name.to_string(),
                 message: payload_str.to_string(),
             };
-            rabbit
+
+            if let Err(e) = channel
                 .basic_publish(
                     "",
                     "pre_handler",
                     lapin::options::BasicPublishOptions::default(),
-                    mqttMsg.to_json_string().as_str().as_bytes(),
+                    mqtt_msg.to_json_string().as_bytes(),
                     lapin::BasicProperties::default(),
                 )
                 .await
-                .expect("publish message failed");
+            {
+                error!("Failed to publish message: {:?}", e);
+                return Some(Err(Box::new(e))); // 发布消息失败时返回 Some(Err(...))
+            }
         }
         Ok(Event::Incoming(Incoming::ConnAck(connack))) => {
             debug!("Connection Acknowledged: {:?}", connack);
@@ -113,10 +134,10 @@ pub async fn handler_event(
         }
         Err(e) => {
             error!("Error = {:?}", e);
-            return Some(Ok(()));
+            return Some(Err(Box::from(e.to_string())));
         }
     }
-    None
+    Some(Ok(())) // 执行完成返回 Some(Ok(()))
 }
 pub async fn handler_event2(
     event: &Result<Event, ConnectionError>,
@@ -201,24 +222,11 @@ mod tests {
 }
 
 pub async fn event_loop(topic: String, mut eventloop: rumqttc::EventLoop, client_name: String) {
-    let rabbitmq_instance = match get_rabbitmq_instance().await {
-        Ok(instance) => instance,
-        Err(e) => {
-            error!("Failed to get RabbitMQ instance: {:?}", e);
-            return;
-        }
-    };
-    let mut rabbitmq = rabbitmq_instance.lock().await;
-
-    let channel = rabbitmq.connection.create_channel().await.unwrap();
-
     loop {
         match eventloop.poll().await {
             Ok(event) => {
                 // 处理事件
-                if let Some(Err(e)) =
-                    handler_event(&Ok(event), &topic, &client_name, &channel).await
-                {
+                if let Some(Err(e)) = handler_event(&Ok(event), &topic, &client_name).await {
                     error!("Error handling event: {:?}", e);
                 }
             }

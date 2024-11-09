@@ -225,6 +225,7 @@ impl RabbitMQ {
 }
 
 static RABBIT_MQ_INSTANCE: OnceCell<Arc<Mutex<RabbitMQ>>> = OnceCell::const_new();
+
 pub async fn init_rabbitmq(url: &str) -> Result<(), Box<dyn Error>> {
     let rabbit = RabbitMQ::new(url).await?;
     let rabbit_arc = Arc::new(Mutex::new(rabbit));
