@@ -126,7 +126,7 @@ pub async fn handler_event(
             );
         }
         Ok(Event::Incoming(Incoming::PingResp)) => {
-            info!("Ping Response received");
+            debug!("Ping Response received");
         }
         Ok(v) => {
             debug!("Other Event = {:?}", v);
@@ -169,7 +169,7 @@ pub async fn handler_event2(
             );
         }
         Ok(Event::Incoming(Incoming::PingResp)) => {
-            info!("Ping Response received");
+            debug!("Ping Response received");
         }
         Ok(v) => {
             debug!("Other Event = {:?}", v);

@@ -16,7 +16,7 @@ use rocket::yansi::Paint;
 use rocket::{get, post, State};
 use rocket::{Request, Response};
 use rumqttc::{AsyncClient, Client, ConnectionError, Event, Incoming, MqttOptions, QoS};
-use serde_json::json;
+use serde_json::{json, to_string};
 use std::collections::HashMap;
 use std::future::poll_fn;
 use std::string::String;
@@ -117,6 +117,11 @@ pub fn AddNoUseConfig(mqtt_config: &MqttConfig, redis_op: &RedisOp) {
         )
         .expect("add no use config 异常");
 }
+
+pub fn GetNoUseConfigById(id: String, pool: &State<RedisOp>) -> Option<String> {
+    pool.get_hash("mqtt_config:no", id.as_str())
+        .expect("get no use config by id")
+}
 pub fn BindNode(mqtt_config: &MqttConfig, node_name: String, redis_op: &RedisOp) {
     let binding = serde_json::to_string(mqtt_config).unwrap();
 
@@ -168,6 +173,7 @@ pub async fn create_mqtt_client(
         return -1;
     }
 }
+use crate::service_instace::PubCreateMqttClientOp;
 use crate::{GetBindClientId, GetThisTypeService, GetUseConfig};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -382,7 +388,7 @@ pub fn GetNoUseMqttConfig(
         }
     };
 
-    let option = GetNoUseMqttConfig(id, pool);
+    let option = GetNoUseConfigById(id, pool);
     match option {
         None => {
             let mut response = HashMap::new();
@@ -420,11 +426,26 @@ pub fn RemoveMqttClient(pool: &rocket::State<RedisOp>) -> &'static str {
     "Counter updated"
 }
 
-#[post("/public_create_mqtt")]
-pub fn PubCreateMqttClientHttp(pool: &rocket::State<RedisOp>) -> &'static str {
-    "Counter updated"
-}
+#[post("/public_create_mqtt", format = "json", data = "<mqtt_config>")]
+pub fn PubCreateMqttClientHttp(
+    pool: &State<RedisOp>,
+    config: &State<Config>,
+    mqtt_config: Json<MqttConfig>,
+) -> Json<serde_json::Value> {
+    // 将 mqtt_config 转换为 JSON 字符串
+    let string = match serde_json::to_string(&mqtt_config.into_inner()) {
+        Ok(s) => s,
+        Err(_) => {
+            return Json(json!({ "status": 500, "message": "Failed to serialize MQTT config" }))
+        }
+    };
 
+    // 调用 PubCreateMqttClientOp 函数并根据返回结果处理
+    match PubCreateMqttClientOp(string, pool, config.node_info.node_type.clone()) {
+        1 => Json(json!({ "status": 200, "message": "创建成功" })),
+        _ => Json(json!({ "status": 400, "message": "创建失败" })),
+    }
+}
 #[get("/public_remove_mqtt_client")]
 pub fn PubRemoveMqttClient(pool: &rocket::State<RedisOp>) -> &'static str {
     "Counter updated"
