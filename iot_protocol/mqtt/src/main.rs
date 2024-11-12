@@ -1,10 +1,10 @@
 mod beat;
 mod ctr;
 mod mqtt_async_sample;
-mod mqtt_sync_sample;
 mod service_instace;
 
 use crate::beat::ListenerBeat;
+use crate::ctr::GetNoUseMqttConfig;
 use crate::ctr::NodeList;
 use crate::ctr::NodeUsingStatus;
 use crate::ctr::PubCreateMqttClientHttp;
@@ -12,7 +12,6 @@ use crate::ctr::PubRemoveMqttClient;
 use crate::ctr::RemoveMqttClient;
 use crate::ctr::{create_mqtt_client_http, AddNoUseConfig};
 use crate::ctr::{get_use_mqtt_config, HttpBeat};
-use crate::ctr::{GetNoUseMqttConfig, HttpBeat2};
 use crate::service_instace::{noHandlerConfig, register_task, CBeat};
 use common_lib::config::{get_config, read_config, read_config_tb, MqConfig, NodeInfo};
 use common_lib::models::MqttConfig;
@@ -37,7 +36,6 @@ use tracing_subscriber::fmt::format;
 fn rocket() -> _ {
     // 初始化日志
     common_lib::init_logger();
-    crate::mqtt_async_sample::init_mqtt_map();
     let rt = Runtime::new().unwrap();
 
     // 读取配置
@@ -90,7 +88,6 @@ fn rocket() -> _ {
             "/",
             routes![
                 HttpBeat,
-                HttpBeat2,
                 create_mqtt_client_http,
                 NodeList,
                 NodeUsingStatus,

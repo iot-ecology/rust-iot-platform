@@ -1,4 +1,4 @@
-use crate::mqtt_async_sample::{create_client, event_loop, get_client, put_client};
+use crate::mqtt_async_sample::{create_client, event_loop, shutdown_client};
 use common_lib::config::{Config, NodeInfo};
 use common_lib::models::MqttConfig;
 use common_lib::rabbit_utils::{get_rabbitmq_instance, RabbitMQ};
@@ -18,6 +18,7 @@ use rocket::{Request, Response};
 use rumqttc::{AsyncClient, Client, ConnectionError, Event, Incoming, MqttOptions, QoS};
 use serde_json::{json, to_string};
 use std::collections::HashMap;
+use std::error::Error;
 use std::future::poll_fn;
 use std::string::String;
 use tokio::sync::MutexGuard;
@@ -35,18 +36,7 @@ pub async fn HttpBeat2(
 ) -> status::Custom<&'static str> {
     info!("client_id = {:?}", client_id);
 
-    if let Some(client_id) = client_id {
-        match get_client(&client_id) {
-            None => {}
-            Some(once) => {
-                info!("Client found, disconnecting...");
-                once.disconnect().await.unwrap();
-            }
-        }
-    } else {
-        info!("No client_id provided");
-    }
-
+    shutdown_client(client_id.unwrap().as_str());
     status::Custom(Status::Ok, "ok")
 }
 
@@ -202,19 +192,12 @@ pub async fn create_mqtt_client_min(mqtt_config: Arc<Mutex<MqttConfig>>) -> bool
     )
     .await
     {
-        Ok((client1, mut eventloop1)) => {
-            put_client(client_id.clone(), client1);
-
-            // 创建新的线程并在独立运行时中运行事件循环
-            std::thread::spawn(move || {
-                let rt = Runtime::new().expect("Failed to create runtime");
-                rt.block_on(event_loop(sub_topic, eventloop1, client_id));
-            });
-            true
+        Ok(_) => {
+            return true;
         }
-        Err(_) => {
-            // 捕获错误并返回 false
-            false
+        Err(e) => {
+            error!("create mqtt client error: {}", e);
+            return false;
         }
     }
 }

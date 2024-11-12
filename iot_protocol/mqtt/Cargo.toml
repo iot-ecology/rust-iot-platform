@@ -29,3 +29,4 @@ r2d2 = "0.8.10"
 r2d2_redis = "0.14.0"
 reqwest = { version = "0.11", features = ["json","blocking"] }
 lapin = { version = "2.5.0", features = ["default"] }
+lazy_static = "1.5.0"

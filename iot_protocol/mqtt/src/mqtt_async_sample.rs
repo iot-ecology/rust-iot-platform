@@ -3,36 +3,41 @@ use common_lib::models::MQTTMessage;
 use common_lib::rabbit_utils::{get_rabbitmq_instance, RabbitMQ};
 use log::{debug, error, info};
 use once_cell::sync::OnceCell;
-use rumqttc::{AsyncClient, ConnectionError, Event, Incoming, MqttOptions, QoS};
+use rumqttc::{AsyncClient, ConnectionError, Event, Incoming, MqttOptions, Outgoing, QoS};
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use tokio::sync::MutexGuard;
+use tokio::sync::{broadcast, MutexGuard};
+use tokio::task::JoinHandle;
 use tokio::{task, time};
 
-static CLIENTS: OnceCell<Arc<Mutex<HashMap<String, AsyncClient>>>> = OnceCell::new();
-
-pub fn init_mqtt_map() -> Result<(), Box<dyn Error>> {
-    let clients = Arc::new(Mutex::new(HashMap::new()));
-    CLIENTS.set(clients).unwrap();
-    Ok(())
+pub struct MqttClientState {
+    client: AsyncClient,
+    shutdown_tx: broadcast::Sender<()>,
+    eventloop_handle: JoinHandle<()>,
 }
 
-pub fn put_client(name: String, client: AsyncClient) {
-    let mut clients_lock = CLIENTS.get().unwrap().lock().unwrap();
-    clients_lock.insert(name, client);
+lazy_static::lazy_static! {
+    static ref CLIENT_MANAGER: Arc<Mutex<HashMap<String, MqttClientState>>> = Arc::new(Mutex::new(HashMap::new()));
 }
 
-pub fn get_client(client_name: &str) -> Option<AsyncClient> {
-    let clients_lock = CLIENTS.get().unwrap().lock().unwrap();
-    info!("size = {}", clients_lock.len());
-    clients_lock.keys().for_each(|key| {
-        info!("client_name = {}", key);
-    });
-    clients_lock.get(client_name).cloned()
-}
+pub async fn shutdown_client(client_id: &str) -> Result<(), Box<dyn Error>> {
+    let mut clients = CLIENT_MANAGER.lock();
 
+    if let Some(state) = clients?.remove(client_id) {
+        state.client.disconnect().await?;
+
+        state.shutdown_tx.send(())?;
+
+        state.eventloop_handle.await?;
+
+        info!("Client {} successfully shut down", client_id);
+        Ok(())
+    } else {
+        Err("Client not found".into())
+    }
+}
 pub async fn create_client(
     client_name: &str,
     topic: &str,
@@ -40,29 +45,137 @@ pub async fn create_client(
     password: &str,
     ip: &str,
     port: u16,
-) -> Result<(AsyncClient, rumqttc::EventLoop), Box<dyn Error>> {
+) -> Result<(AsyncClient,), Box<dyn Error>> {
     let mut mqttoptions = MqttOptions::new(client_name, ip, port);
-    // mqttoptions.set_keep_alive(Duration::from_secs(5));
     mqttoptions.set_credentials(username, password);
-    let (client, eventloop) = AsyncClient::new(mqttoptions.clone(), 10);
+    let (client, mut eventloop) = AsyncClient::new(mqttoptions.clone(), 10);
     client.subscribe(topic, QoS::AtMostOnce).await?;
+    let (shutdown_tx, mut shutdown_rx) = broadcast::channel(1);
 
-    let mut clients_lock = CLIENTS.get().unwrap().lock().unwrap();
-    clients_lock.insert(client_name.to_string(), client.clone());
+    // 将 `client_name` 和 `topic` 转换为 `String`
+    let client_name = client_name.to_string();
+    let topic = topic.to_string();
 
-    Ok((client, eventloop))
+    // Clone the client_name to move into the async task
+    let client_name_clone = client_name.clone();
+
+    let eventloop_handle = tokio::spawn({
+        let client = client.clone();
+        async move {
+            loop {
+                tokio::select! {
+                                _ = shutdown_rx.recv() => {
+                                    info!("Shutdown signal received, stopping event loop");
+                                    break;
+                                }
+                                notification = eventloop.poll() => {
+                                    match notification {
+                                        Ok(event) => {
+                                            match event {
+                                                Event::Incoming(incoming) => {
+                                                    match incoming {
+                                                        Incoming::Publish(publish) => {
+                                                            let payload_str = std::str::from_utf8(&publish.payload)
+                                                                .unwrap_or_else(|_| "<Invalid UTF-8>");
+                                                            info!(
+                                                                "Received message on client_name = {} topic = {}: message = {:?}",
+                                                                client_name_clone, topic, payload_str
+                                                            );
+
+                                                            // 构建 MQTTMessage 并发布到 RabbitMQ
+                                                            let mqtt_msg = MQTTMessage {
+                                                                mqtt_client_id: client_name_clone.clone(),
+                                                                message: payload_str.to_string(),
+                                                            };
+
+                                                     let rabbitmq_instance = match get_rabbitmq_instance().await {
+                    Ok(instance) => instance,
+                    Err(e) => {
+                        error!("Failed to get RabbitMQ instance: {:?}", e);
+                  continue;
+                    }
+                };
+                let mut rabbitmq = rabbitmq_instance.lock().await;
+
+                // 创建 channel
+                let channel = match rabbitmq.connection.create_channel().await {
+                    Ok(ch) => ch,
+                    Err(e) => {
+                        error!("Failed to create channel: {:?}", e);
+                             continue;
+
+                    }
+                };
+
+
+                                                            if let Err(e) = channel
+                                                                .basic_publish(
+                                                                    "",
+                                                                    "pre_handler",
+                                                                    BasicPublishOptions::default(),
+                                                                    mqtt_msg.to_json_string().as_bytes(),
+                                                                    BasicProperties::default(),
+                                                                )
+                                                                .await
+                                                            {
+                                                                error!("Failed to publish message: {:?}", e);
+                                                            }
+                                                        }
+                                                        Incoming::ConnAck(_) => {
+                                                            info!("Connected to broker");
+                                                        }
+                                                        Incoming::SubAck(_) => {
+                                                            info!("Subscription acknowledged");
+                                                        }
+                                                        _ => {
+                                                            info!("Other incoming event: {:?}", incoming);
+                                                        }
+                                                    }
+                                                }
+                                                Event::Outgoing(outgoing) => {
+                                                    match outgoing {
+                                                        Outgoing::PingReq => {
+                                                            info!("Ping request sent");
+                                                        }
+                                                        Outgoing::PingResp => {
+                                                            info!("Ping response received");
+                                                        }
+                                                        _ => {
+                                                            info!("Other outgoing event: {:?}", outgoing);
+                                                        }
+                                                    }
+                                                }
+                                                _ => {
+                                                    info!("Other event: {:?}", event);
+                                                }
+                                            }
+                                        }
+                                        Err(e) => {
+                                            error!("Error: {:?}", e);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+            }
+        }
+    });
+
+    let mut clients = CLIENT_MANAGER.lock();
+    clients?.insert(
+        client_name.clone(),
+        MqttClientState {
+            client: client.clone(),
+            shutdown_tx,
+            eventloop_handle,
+        },
+    );
+
+    Ok((client,))
 }
 
-async fn disconnect_client(client_name: String) {
-    if let Some(client) = {
-        let mut clients_lock = CLIENTS.get().unwrap().lock().unwrap();
-        clients_lock.remove(&client_name)
-    } {
-        client.disconnect().await.unwrap();
-        info!("Disconnected client: {}", client_name);
-    }
-}
-use lapin::{Channel, Connection};
+use lapin::options::BasicPublishOptions;
+use lapin::{BasicProperties, Channel, Connection};
 
 pub async fn handler_event(
     event: &Result<Event, ConnectionError>,
@@ -180,44 +293,6 @@ pub async fn handler_event2(
         }
     }
     None
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::error::Error;
-    use tokio::time::{self, Duration};
-
-    #[tokio::test]
-    async fn test_mqtt_client_connections() -> Result<(), Box<dyn Error>> {
-        // 初始化 logger 和 MQTT 映射
-        init_logger();
-        init_mqtt_map()?;
-
-        // 创建两个 MQTT 客户端
-        let (client1, mut eventloop1) =
-            create_client("test-1", "/tt1", "admin", "public", "localhost", 1883).await?;
-        let (client2, mut eventloop2) =
-            create_client("test-2", "/tt2", "admin", "public", "localhost", 1883).await?;
-
-        let client_name_clone = "test-1".to_string();
-        // 模拟 10 秒后断开 client1
-        tokio::spawn(async move {
-            time::sleep(Duration::from_secs(10)).await;
-            disconnect_client(client_name_clone).await;
-        });
-
-        // 启动事件循环任务
-        // tokio::spawn(event_loop("/tt1".to_string(), eventloop1,"".to_string()));
-        // tokio::spawn(event_loop("/tt2".to_string(), eventloop2,"".to_string()));
-
-        // 等待 ctrl-c 信号
-        tokio::signal::ctrl_c()
-            .await
-            .expect("Failed to listen for ctrl-c signal");
-
-        Ok(())
-    }
 }
 
 pub async fn event_loop(topic: String, mut eventloop: rumqttc::EventLoop, client_name: String) {
