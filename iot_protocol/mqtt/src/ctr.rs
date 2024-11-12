@@ -405,19 +405,15 @@ pub fn GetNoUseMqttConfig(
     }
 }
 
-#[get("/remove_mqtt_client?<client_id>")]
+#[get("/remove_mqtt_client?<id>")]
 pub async fn RemoveMqttClient(
     pool: &rocket::State<RedisOp>,
     config: &State<Config>,
 
-    client_id: Option<String>,
+    id: Option<String>,
 ) -> Json<serde_json::Value> {
-    StopMqttClient2(
-        client_id.clone().unwrap(),
-        pool,
-        config.node_info.name.clone(),
-    );
-    shutdown_client(client_id.unwrap().as_str());
+    StopMqttClient2(id.clone().unwrap(), pool, config.node_info.name.clone());
+    shutdown_client(id.unwrap().as_str());
 
     Json(json!({ "status": 200, "message": "Success","data":"已停止" }))
 }
@@ -474,23 +470,34 @@ pub async fn PubCreateMqttClientHttp(
     }
 }
 
-#[get("/public_remove_mqtt_client?<client_id>")]
-pub fn PubRemoveMqttClient(
+#[get("/public_remove_mqtt_client?<id>")]
+pub async fn PubRemoveMqttClient(
     pool: &rocket::State<RedisOp>,
     config: &State<Config>,
 
-    client_id: Option<String>,
+    id: Option<String>,
 ) -> Json<serde_json::Value> {
-    let s = FindMqttClient(client_id.clone().unwrap(), pool);
+    let s = FindMqttClient(id.clone().unwrap(), pool);
+    info!("s = {}", s);
+
     if s == String::new() {
+        // 如果没有找到客户端，返回节点未找到
         Json(json!({ "status": 200, "message": "节点未找到" }))
     } else {
+        // 查找节点信息
         let o = getNodeInfo(s.to_string(), pool, config);
         match o {
             None => Json(json!({ "status": 200, "message": "节点未找到" })),
             Some(v) => {
-                sendRemoveMqttClient(&v, client_id.clone().unwrap());
-                Json(json!({ "status": 200, "message": "删除成功" }))
+                // 异步删除 MQTT 客户端
+                let success = sendRemoveMqttClient(&v, id.clone().unwrap()).await;
+
+                // 根据删除操作的结果返回不同的消息
+                if success {
+                    Json(json!({ "status": 200, "message": "删除成功" }))
+                } else {
+                    Json(json!({ "status": 500, "message": "删除失败" }))
+                }
             }
         }
     }
@@ -502,17 +509,22 @@ fn getNodeInfo(
     config: &State<Config>,
 ) -> Option<NodeInfo> {
     let k = format!("register:{}", config.node_info.node_type.clone());
+    info!("key = {}", k);
+
     let option = pool.get_hash(k.as_str(), node_name.as_str()).unwrap();
 
     match option {
         None => {
-            // 返回 None，表示没有找到对应的节点信息
+            info!("节点未找到");
             return None;
         }
         Some(v) => {
             // 尝试解析 JSON，如果失败，返回 None
             match serde_json::from_str(&v) {
-                Ok(node_info) => Some(node_info),
+                Ok(node_info) => {
+                    info!("node_info = {:?}", node_info);
+                    Some(node_info)
+                }
                 Err(e) => {
                     eprintln!("HandlerOffNode JSON 解析错误: {:?}", e);
                     None
@@ -528,7 +540,7 @@ fn FindMqttClient(client_id: String, pool: &State<RedisOp>) -> String {
         let vec1 = pool.get_set(x.as_str()).unwrap();
         for x2 in vec1 {
             if x2.as_str() == client_id.as_str() {
-                return x2.replace("node_bind:", "");
+                return x.replace("node_bind:", "");
             }
         }
     }

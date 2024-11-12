@@ -190,22 +190,23 @@ pub async fn send_create_mqtt_message(node: &NodeInfo, param: &str) -> bool {
         }
     }
 }
-pub fn sendRemoveMqttClient(node: &NodeInfo, id: String) -> bool {
+pub async fn sendRemoveMqttClient(node: &NodeInfo, id: String) -> bool {
     let url = format!(
         "http://{}:{}/remove_mqtt_client?id={}",
         node.host, node.port, id
     );
-    let client = Client::new();
+    let client = reqwest::Client::new();
     // Send POST request
     let resp = client
         .get(&url)
         .header("Content-Type", "application/json")
-        .send();
+        .send()
+        .await;
 
     match resp {
         Ok(response) => {
             let status = response.status();
-            let body = response.text().unwrap_or_else(|_| String::from(""));
+            let body = response.text().await.unwrap_or_else(|_| String::from(""));
 
             info!("Response Status: {:?}, Body: {}", status, body);
 
