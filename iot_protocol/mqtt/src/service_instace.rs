@@ -83,7 +83,7 @@ pub fn noHandlerConfig(f: &NodeInfo, redis_op: &RedisOp) {
 }
 
 pub fn PubCreateMqttClientOp(config: String, redis_op: &RedisOp, node_type: String) -> i32 {
-    let option = GetSizeLose("".to_string(), redis_op, node_type);
+    let option = get_size_lose("".to_string(), redis_op, node_type);
 
     info!("option  = {:?}", option);
 
@@ -138,7 +138,7 @@ pub async fn pub_create_mqtt_client_op(
     redis_op: &RedisOp,
     node_type: String,
 ) -> i32 {
-    let option = GetSizeLose("".to_string(), redis_op, node_type);
+    let option = get_size_lose("".to_string(), redis_op, node_type);
 
     info!("option = {:?}", option);
 
@@ -190,7 +190,7 @@ pub async fn send_create_mqtt_message(node: &NodeInfo, param: &str) -> bool {
         }
     }
 }
-pub async fn sendRemoveMqttClient(node: &NodeInfo, id: String) -> bool {
+pub async fn send_remove_mqtt_client(node: &NodeInfo, id: String) -> bool {
     let url = format!(
         "http://{}:{}/remove_mqtt_client?id={}",
         node.host, node.port, id
@@ -223,8 +223,8 @@ pub async fn sendRemoveMqttClient(node: &NodeInfo, id: String) -> bool {
     }
 }
 
-pub fn GetSizeLose(
-    passNodeName: String,
+pub fn get_size_lose(
+    pass_node_name: String,
     redis_op: &RedisOp,
     node_type: String,
 ) -> Option<NodeInfo> {
@@ -233,10 +233,10 @@ pub fn GetSizeLose(
     if vec.len() == 0 {
         return None;
     }
-    let mut minSize = -1;
-    let mut minNodeInfo: Option<NodeInfo> = Option::None;
+    let mut min_size = -1;
+    let mut min_node_info: Option<NodeInfo> = Option::None;
     for v in vec {
-        if v.name.as_str() == passNodeName.as_str() {
+        if v.name.as_str() == pass_node_name.as_str() {
             continue;
         }
 
@@ -244,16 +244,16 @@ pub fn GetSizeLose(
             .get_set_length(format!("node_bind:{}", v.name).as_str())
             .unwrap_or(0);
         if i < v.size {
-            if minNodeInfo.is_none() || v.size < minSize {
-                minSize = v.size;
-                minNodeInfo = Option::Some(v);
+            if min_node_info.is_none() || v.size < min_size {
+                min_size = v.size;
+                min_node_info = Option::Some(v);
             }
         } else {
             continue;
         }
     }
 
-    minNodeInfo
+    min_node_info
 }
 
 pub fn register_task(f: &NodeInfo, redis_op: &RedisOp) {

@@ -1,5 +1,5 @@
 use crate::mqtt_async_sample::{create_client, event_loop, shutdown_client};
-use crate::service_instace::{pub_create_mqtt_client_op, sendRemoveMqttClient};
+use crate::service_instace::{pub_create_mqtt_client_op, send_remove_mqtt_client};
 use common_lib::config::{Config, NodeInfo};
 use common_lib::models::MqttConfig;
 use common_lib::rabbit_utils::{get_rabbitmq_instance, RabbitMQ};
@@ -490,7 +490,7 @@ pub async fn PubRemoveMqttClient(
             None => Json(json!({ "status": 200, "message": "节点未找到" })),
             Some(v) => {
                 // 异步删除 MQTT 客户端
-                let success = sendRemoveMqttClient(&v, id.clone().unwrap()).await;
+                let success = send_remove_mqtt_client(&v, id.clone().unwrap()).await;
 
                 // 根据删除操作的结果返回不同的消息
                 if success {

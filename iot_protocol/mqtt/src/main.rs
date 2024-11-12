@@ -15,7 +15,7 @@ use crate::ctr::{get_use_mqtt_config, HttpBeat};
 use crate::service_instace::{noHandlerConfig, register_task, CBeat};
 use common_lib::config::{get_config, read_config, read_config_tb, MqConfig, NodeInfo};
 use common_lib::models::MqttConfig;
-use common_lib::rabbit_utils::init_rabbitmq_with_config;
+use common_lib::rabbit_utils::{init_rabbitmq_with_config, RabbitMQFairing};
 use common_lib::redis_handler::init_redis;
 use common_lib::redis_pool_utils::{create_redis_pool_from_config, RedisOp};
 use log::{debug, error};
@@ -271,31 +271,6 @@ pub fn send_beat(node: &NodeInfo, param: &str) -> bool {
         Err(err) => {
             error!("Error sending request: {}", err);
             false
-        }
-    }
-}
-
-pub struct RabbitMQFairing {
-    pub config: MqConfig,
-}
-
-#[rocket::async_trait]
-impl Fairing for RabbitMQFairing {
-    fn info(&self) -> Info {
-        Info {
-            name: "RabbitMQ Initializer",
-            kind: Kind::Ignite,
-        }
-    }
-
-    async fn on_ignite(&self, rocket: Rocket<Build>) -> Result<Rocket<Build>, Rocket<Build>> {
-        let result = init_rabbitmq_with_config(self.config.clone()).await;
-        match result {
-            Ok(_) => Ok(rocket),
-            Err(e) => {
-                eprintln!("Failed to initialize RabbitMQ: {:?}", e);
-                Err(rocket)
-            }
         }
     }
 }

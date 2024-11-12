@@ -17,6 +17,11 @@ use std::future::Future;
 use std::sync::Arc;
 use tokio::sync::{Mutex, MutexGuard, OnceCell};
 
+use rocket::{
+    fairing::{Fairing, Info, Kind},
+    Build, Rocket, State,
+};
+use rocket::{launch, routes};
 use serde_json::de::Read;
 
 pub type RedisPool = Pool<RedisConnectionManager>;
@@ -252,6 +257,32 @@ pub async fn get_rabbitmq_instance() -> Result<Arc<Mutex<RabbitMQ>>, Box<dyn Err
     let instance = RABBIT_MQ_INSTANCE.get().ok_or("RabbitMQ not initialized")?;
     Ok(Arc::clone(instance))
 }
+
+pub struct RabbitMQFairing {
+    pub config: MqConfig,
+}
+
+#[rocket::async_trait]
+impl Fairing for RabbitMQFairing {
+    fn info(&self) -> Info {
+        Info {
+            name: "RabbitMQ Initializer",
+            kind: Kind::Ignite,
+        }
+    }
+
+    async fn on_ignite(&self, rocket: Rocket<Build>) -> Result<Rocket<Build>, Rocket<Build>> {
+        let result = init_rabbitmq_with_config(self.config.clone()).await;
+        match result {
+            Ok(_) => Ok(rocket),
+            Err(e) => {
+                eprintln!("Failed to initialize RabbitMQ: {:?}", e);
+                Err(rocket)
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -261,10 +292,9 @@ mod tests {
         init_rabbitmq("amqp://guest:guest@localhost:5672").await?;
 
         let rabbit = get_rabbitmq_instance().await?;
-
+        let x = rabbit.lock().await;
         loop {
-            rabbit
-                .publish("", "queue1", "hello12")
+            x.publish("", "queue1", "hello12")
                 .await
                 .expect("publish message failed");
             tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
