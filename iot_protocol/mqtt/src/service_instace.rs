@@ -105,8 +105,8 @@ pub fn SendCreateMqttMessage(node: &NodeInfo, param: &str) -> bool {
     );
 
     let url = format!("http://{}:{}/create_mqtt", node.host, node.port);
-    let client = Client::new();
-    // Send POST request
+    let client = reqwest::blocking::Client::new(); // 使用 blocking client
+
     let resp = client
         .post(&url)
         .header("Content-Type", "application/json")
@@ -133,6 +133,63 @@ pub fn SendCreateMqttMessage(node: &NodeInfo, param: &str) -> bool {
     }
 }
 
+pub async fn pub_create_mqtt_client_op(
+    config: String,
+    redis_op: &RedisOp,
+    node_type: String,
+) -> i32 {
+    let option = GetSizeLose("".to_string(), redis_op, node_type);
+
+    info!("option = {:?}", option);
+
+    match option {
+        Some(x) => {
+            if send_create_mqtt_message(&x, &config).await {
+                1
+            } else {
+                -1
+            }
+        }
+        None => -1,
+    }
+}
+
+pub async fn send_create_mqtt_message(node: &NodeInfo, param: &str) -> bool {
+    info!(
+        "Sending create MQTT client request, node info: {:?}, params: {}",
+        node, param
+    );
+
+    let url = format!("http://{}:{}/create_mqtt", node.host, node.port);
+    let client = reqwest::Client::new(); // 使用异步客户端
+
+    // 使用 await 等待异步操作
+    let resp = client
+        .post(&url)
+        .header("Content-Type", "application/json")
+        .body(param.to_string())
+        .send()
+        .await; // 在这里加上 await
+
+    match resp {
+        Ok(response) => {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_else(|_| String::from(""));
+
+            info!("Response Status: {:?}, Body: {}", status, body);
+
+            if body == "ok" {
+                true
+            } else {
+                false
+            }
+        }
+        Err(err) => {
+            error!("Error sending request: {}", err);
+            false
+        }
+    }
+}
 pub fn sendRemoveMqttClient(node: &NodeInfo, id: String) -> bool {
     let url = format!(
         "http://{}:{}/remove_mqtt_client?id={}",

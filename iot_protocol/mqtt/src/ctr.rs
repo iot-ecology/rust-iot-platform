@@ -1,5 +1,5 @@
 use crate::mqtt_async_sample::{create_client, event_loop, shutdown_client};
-use crate::service_instace::sendRemoveMqttClient;
+use crate::service_instace::{pub_create_mqtt_client_op, sendRemoveMqttClient};
 use common_lib::config::{Config, NodeInfo};
 use common_lib::models::MqttConfig;
 use common_lib::rabbit_utils::{get_rabbitmq_instance, RabbitMQ};
@@ -432,8 +432,29 @@ fn StopMqttClient2(client_id: String, pool: &State<RedisOp>, node_name: String) 
     );
 }
 
+// #[post("/public_create_mqtt", format = "json", data = "<mqtt_config>")]
+// pub fn PubCreateMqttClientHttp(
+//     pool: &State<RedisOp>,
+//     config: &State<Config>,
+//     mqtt_config: Json<MqttConfig>,
+// ) -> Json<serde_json::Value> {
+//     // 将 mqtt_config 转换为 JSON 字符串
+//     let string = match serde_json::to_string(&mqtt_config.into_inner()) {
+//         Ok(s) => s,
+//         Err(_) => {
+//             return Json(json!({ "status": 500, "message": "Failed to serialize MQTT config" }))
+//         }
+//     };
+//
+//     // 调用 PubCreateMqttClientOp 函数并根据返回结果处理
+//     match PubCreateMqttClientOp(string, pool, config.node_info.node_type.clone()) {
+//         1 => Json(json!({ "status": 200, "message": "创建成功" })),
+//         _ => Json(json!({ "status": 400, "message": "创建失败" })),
+//     }
+// }
+
 #[post("/public_create_mqtt", format = "json", data = "<mqtt_config>")]
-pub fn PubCreateMqttClientHttp(
+pub async fn PubCreateMqttClientHttp(
     pool: &State<RedisOp>,
     config: &State<Config>,
     mqtt_config: Json<MqttConfig>,
@@ -447,11 +468,12 @@ pub fn PubCreateMqttClientHttp(
     };
 
     // 调用 PubCreateMqttClientOp 函数并根据返回结果处理
-    match PubCreateMqttClientOp(string, pool, config.node_info.node_type.clone()) {
+    match pub_create_mqtt_client_op(string, pool, config.node_info.node_type.clone()).await {
         1 => Json(json!({ "status": 200, "message": "创建成功" })),
         _ => Json(json!({ "status": 400, "message": "创建失败" })),
     }
 }
+
 #[get("/public_remove_mqtt_client?<client_id>")]
 pub fn PubRemoveMqttClient(
     pool: &rocket::State<RedisOp>,
