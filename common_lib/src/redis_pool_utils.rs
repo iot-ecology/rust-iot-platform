@@ -567,7 +567,7 @@ mod tests {
         env::set_var("RUST_LOG", "info");
         env_logger::init();
         let redis_op = setup_redis_op();
-        let result = redis_op.get_hash_all("mqtt_config:use");
+        let result = redis_op.get_hash_all_value("mqtt_config:use");
         info!("{:?}", result.unwrap());
     }
 }

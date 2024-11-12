@@ -58,6 +58,17 @@ pub struct Config {
     pub mq_config: MqConfig,
     pub influx_config: Option<InfluxConfig>,
     pub mongo_config: Option<MongoConfig>,
+    pub mysql_config: Option<MySQLConfig>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MySQLConfig {
+    pub username: String,
+    pub password: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub host: Option<String>,
+    pub port: u16,
+    pub dbname: String,
 }
 
 // 全局配置实例
