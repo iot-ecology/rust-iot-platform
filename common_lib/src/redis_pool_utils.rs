@@ -33,6 +33,10 @@ impl RedisOp {
         return connection;
     }
 
+    pub fn keys(&self, key: &str) -> Result<Vec<String>, redis::RedisError> {
+        let mut con = self.get_connection();
+        con.keys(key)
+    }
     pub fn acquire_lock(
         &self,
         lock_key: &str,

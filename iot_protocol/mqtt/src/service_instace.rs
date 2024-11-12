@@ -98,9 +98,8 @@ pub fn PubCreateMqttClientOp(config: String, redis_op: &RedisOp, node_type: Stri
         None => -1,
     }
 }
-
 pub fn SendCreateMqttMessage(node: &NodeInfo, param: &str) -> bool {
-    debug!(
+    info!(
         "Sending create MQTT client request, node info: {:?}, params: {}",
         node, param
     );
@@ -112,6 +111,38 @@ pub fn SendCreateMqttMessage(node: &NodeInfo, param: &str) -> bool {
         .post(&url)
         .header("Content-Type", "application/json")
         .body(param.to_string())
+        .send();
+
+    match resp {
+        Ok(response) => {
+            let status = response.status();
+            let body = response.text().unwrap_or_else(|_| String::from(""));
+
+            info!("Response Status: {:?}, Body: {}", status, body);
+
+            if body.as_str() == "ok" {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        Err(err) => {
+            error!("Error sending request: {}", err);
+            false
+        }
+    }
+}
+
+pub fn sendRemoveMqttClient(node: &NodeInfo, id: String) -> bool {
+    let url = format!(
+        "http://{}:{}/remove_mqtt_client?id={}",
+        node.host, node.port, id
+    );
+    let client = Client::new();
+    // Send POST request
+    let resp = client
+        .get(&url)
+        .header("Content-Type", "application/json")
         .send();
 
     match resp {
