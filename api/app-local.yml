@@ -27,7 +27,7 @@ mysql_config:
   password: root123@
   host: 127.0.0.1
   port: 3306
-  dbname: iot
+  dbname: iot-copy
 mongo_config:
   host: 127.0.0.1
   port: 27017

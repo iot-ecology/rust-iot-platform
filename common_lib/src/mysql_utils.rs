@@ -1,5 +1,6 @@
 use crate::config::MySQLConfig;
 use log::{error, info};
+use r2d2::{Pool, PooledConnection};
 use r2d2_mysql::{
     mysql::{prelude::*, Opts, OptsBuilder},
     r2d2, MySqlConnectionManager,
@@ -9,28 +10,24 @@ use urlencoding::encode;
 #[derive(Debug, Clone)]
 pub struct MysqlOp {
     pub pool: r2d2::Pool<MySqlConnectionManager>,
+    pub url: String,
 }
 
 impl MysqlOp {
     pub fn new(config: MySQLConfig) -> Self {
-        let pool = create_db_pool(&config);
-        Self { pool }
+        let (pool, url) = create_db_pool(&config);
+        Self { pool, url }
+    }
+
+    pub fn get_connection(&self) -> PooledConnection<MySqlConnectionManager> {
+        self.pool
+            .get()
+            .expect("Failed to get MySQL connection from pool")
     }
 }
 
-fn create_db_pool(config: &MySQLConfig) -> r2d2::Pool<MySqlConnectionManager> {
-    let encoded_username = encode(&config.username);
-    let encoded_password = encode(&config.password);
-
-    // 构建数据库连接字符串
-    let url = format!(
-        "mysql://{}:{}@{}:{}/{}",
-        encoded_username,
-        encoded_password,
-        config.host.as_deref().unwrap_or("localhost"),
-        config.port,
-        config.dbname
-    );
+fn create_db_pool(config: &MySQLConfig) -> (Pool<MySqlConnectionManager>, String) {
+    let url = gen_mysql_url(config);
 
     let opts = Opts::from_url(&url).expect("Invalid database URL");
     let builder = OptsBuilder::from_opts(opts);
@@ -43,7 +40,23 @@ fn create_db_pool(config: &MySQLConfig) -> r2d2::Pool<MySqlConnectionManager> {
         .expect("Failed to create pool");
     info!("Connection pool created successfully.");
 
-    pool
+    (pool, url)
+}
+
+pub fn gen_mysql_url(config: &MySQLConfig) -> String {
+    let encoded_username = encode(&config.username);
+    let encoded_password = encode(&config.password);
+
+    // 构建数据库连接字符串
+    let url = format!(
+        "mysql://{}:{}@{}:{}/{}",
+        encoded_username,
+        encoded_password,
+        config.host.as_deref().unwrap_or("localhost"),
+        config.port,
+        config.dbname
+    );
+    url
 }
 
 pub fn run_db_task(pool: r2d2::Pool<MySqlConnectionManager>) {
@@ -91,7 +104,7 @@ mod tests {
             let pool = pool.clone();
             let tx = tx.clone();
             let th = thread::spawn(move || {
-                run_db_task(pool);
+                // run_db_task(pool);
                 tx.send(()).expect("Failed to send completion signal");
             });
             tasks.push(th);

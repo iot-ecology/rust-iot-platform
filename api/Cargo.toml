@@ -30,5 +30,9 @@ http = "1.1.0"
 rocket = { version = "0.5.1", features = ["json"] }
 
 
-mysql = "20.0"
-r2d2_mysql = "24"
+mysql = "25.0.1"
+r2d2_mysql = "25.0.0"
+regex = "1.11.1"
+
+sqlx = { version = "0.8.2", features = ["mysql", "chrono","runtime-tokio-native-tls"] }
+serde_with = "3.11.0"
