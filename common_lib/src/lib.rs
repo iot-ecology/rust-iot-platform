@@ -7,6 +7,7 @@ pub mod rabbit_utils;
 pub mod redis_handler;
 pub mod redis_lock;
 pub mod redis_pool_utils;
+pub mod sql_utils;
 pub mod time_utils;
 
 pub fn init_logger() {
