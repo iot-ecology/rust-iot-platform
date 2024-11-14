@@ -40,3 +40,4 @@ mysql = "25.0.1"
 r2d2_mysql = "25.0.0"
 regex = "1.11.1"
 sqlx = { version = "0.8.2", features = ["mysql", "chrono","runtime-tokio-native-tls"] }
+async-trait = "0.1.83"

@@ -1,4 +1,5 @@
 use chrono::{DateTime, NaiveDateTime, Utc};
+use log::debug;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::{FromRow, MySql, MySqlPool, Pool, Row};
 use std::fmt::Debug;
@@ -68,15 +69,15 @@ where
 #[derive(Debug)]
 pub struct PaginationParams {
     pub page: u64,
-    pub per_page: u64,
+    pub size: u64,
 }
 
 #[derive(Debug)]
 pub struct PaginationResult<T> {
-    pub items: Vec<T>,
+    pub data: Vec<T>,
     pub total: i64,
     pub page: u64,
-    pub per_page: u64,
+    pub size: u64,
     pub total_pages: u64,
 }
 
@@ -147,7 +148,7 @@ pub async fn paginate<T>(
 where
     T: for<'r> FromRow<'r, sqlx::mysql::MySqlRow> + Send + Unpin + Debug,
 {
-    let offset = (pagination.page - 1) * pagination.per_page;
+    let offset = (pagination.page - 1) * pagination.size;
 
     let mut where_clause = String::new();
     let mut bindings: Vec<String> = Vec::new();
@@ -160,9 +161,8 @@ where
 
     let mut query = format!("SELECT * FROM {} WHERE 1=1", table_name);
     query.push_str(&where_clause);
-    query.push_str(&format!(" LIMIT {} OFFSET {}", pagination.per_page, offset));
+    query.push_str(&format!(" LIMIT {} OFFSET {}", pagination.size, offset));
 
-    // 构建计数查询
     let mut count_query = format!("SELECT COUNT(1) FROM {} WHERE 1=1", table_name);
     count_query.push_str(&where_clause);
 
@@ -178,15 +178,181 @@ where
     }
     let (total,): (i64,) = count_query_builder.fetch_one(pool).await?;
 
-    let total_pages = ((total as f64) / (pagination.per_page as f64)).ceil() as u64;
+    let total_pages = ((total as f64) / (pagination.size as f64)).ceil() as u64;
 
     Ok(PaginationResult {
-        items,
+        data: items,
         total,
         page: pagination.page,
-        per_page: pagination.per_page,
+        size: pagination.size,
         total_pages,
     })
+}
+pub async fn list<T>(
+    pool: &Pool<MySql>,
+    table_name: &str,
+    filters: Vec<Filter>,
+) -> Result<Vec<T>, sqlx::Error>
+where
+    T: for<'r> FromRow<'r, sqlx::mysql::MySqlRow> + Send + Unpin + Debug,
+{
+    let mut where_clause = String::new();
+    let mut bindings: Vec<String> = Vec::new();
+
+    for filter in filters.iter() {
+        let (condition, values) = filter.to_sql();
+        where_clause.push_str(&format!(" AND {}", condition));
+        bindings.extend(values);
+    }
+
+    let mut query = format!("SELECT * FROM {} WHERE 1=1", table_name);
+    query.push_str(&where_clause);
+
+    let mut query_builder = sqlx::query_as::<_, T>(&query);
+    for value in bindings.iter() {
+        query_builder = query_builder.bind(value);
+    }
+    let items = query_builder.fetch_all(pool).await?;
+
+    Ok(items)
+}
+
+pub async fn by_id<T>(pool: &Pool<MySql>, table_name: &str, id: String) -> Result<T, sqlx::Error>
+where
+    T: for<'r> FromRow<'r, sqlx::mysql::MySqlRow> + Send + Unpin + Debug,
+{
+    let mut query = format!("SELECT * FROM {} WHERE 1=1 and id = ?", table_name);
+
+    let mut query_builder = sqlx::query_as::<_, T>(&query);
+    let result = query_builder.bind(id).fetch_one(pool).await;
+
+    result
+}
+
+pub async fn delete_by_id(
+    pool: &Pool<MySql>,
+    table_name: &str,
+    id: u64,
+) -> Result<(), sqlx::Error> {
+    let query = format!("UPDATE {} SET deleted_at = NOW() WHERE id = ?", table_name);
+
+    sqlx::query(&query).bind(id).execute(pool).await?;
+
+    Ok(())
+}
+
+pub async fn update_by_id<T>(
+    pool: &Pool<MySql>,
+    table_name: &str,
+    id: u64,
+    updates: Vec<(&str, String)>,
+) -> Result<T, sqlx::Error>
+where
+    T: for<'r> FromRow<'r, sqlx::mysql::MySqlRow> + Send + Unpin + Debug,
+{
+    let mut set_clause = String::new();
+    let mut bindings: Vec<String> = Vec::new();
+
+    for (field, value) in updates.iter() {
+        if !set_clause.is_empty() {
+            set_clause.push_str(", ");
+        }
+        set_clause.push_str(&format!("{} = ?", field));
+        bindings.push(value.clone());
+    }
+
+    set_clause.push_str(", updated_at = NOW()");
+
+    let query = format!("UPDATE {} SET {} WHERE id = ?", table_name, set_clause);
+    println!("Update query: {}", query);
+    println!("Bindings: {:?}", bindings);
+
+    let mut query_builder = sqlx::query(&query);
+    for value in bindings.iter() {
+        println!("{}", value);
+        query_builder = query_builder.bind(value);
+    }
+    query_builder = query_builder.bind(id);
+
+    let affected_rows = query_builder.execute(pool).await?;
+
+    if affected_rows.rows_affected() == 0 {
+        return Err(sqlx::Error::RowNotFound);
+    }
+
+    let select_query = format!("SELECT * FROM {} WHERE id = ?", table_name);
+    let updated_record = sqlx::query_as::<_, T>(&select_query)
+        .bind(id)
+        .fetch_one(pool)
+        .await?;
+
+    Ok(updated_record)
+}
+
+#[async_trait::async_trait]
+pub trait CrudOperations<T> {
+    async fn create(&self, pool: &Pool<MySql>, item: T) -> Result<(), sqlx::Error>;
+    async fn update(&self, pool: &Pool<MySql>, id: u64, item: T) -> Result<(), sqlx::Error>;
+    async fn delete(&self, pool: &Pool<MySql>, id: u64) -> Result<(), sqlx::Error>;
+    async fn page(
+        &self,
+        pool: &Pool<MySql>,
+        filters: Vec<Filter>,
+        pagination: PaginationParams,
+    ) -> Result<PaginationResult<T>, sqlx::Error>;
+    async fn list(&self, pool: &Pool<MySql>, filters: Vec<Filter>) -> Result<Vec<T>, sqlx::Error>;
+}
+
+pub async fn insert<T>(
+    pool: &Pool<MySql>,
+    table_name: &str,
+    updates: Vec<(&str, String)>,
+) -> Result<T, sqlx::Error>
+where
+    T: for<'r> FromRow<'r, sqlx::mysql::MySqlRow> + Send + Unpin + Debug,
+{
+    let mut columns = String::new();
+    let mut values = String::new();
+    let mut bindings: Vec<String> = Vec::new();
+
+    // 遍历 updates 列表，构建列名和值的字符串
+    for (i, (field, value)) in updates.iter().enumerate() {
+        if i > 0 {
+            columns.push_str(", ");
+            values.push_str(", ");
+        }
+        columns.push_str(field);
+        values.push_str("?");
+        bindings.push(value.clone());
+    }
+
+    columns.push_str(", created_at");
+    values.push_str(", NOW()");
+
+    let query = format!(
+        "INSERT INTO {} ({}) VALUES ({})",
+        table_name, columns, values
+    );
+
+    println!("Insert query: {}", query);
+    println!("Bindings: {:?}", bindings);
+
+    // 执行插入操作
+    let mut query_builder = sqlx::query(&query);
+    for value in bindings.iter() {
+        query_builder = query_builder.bind(value);
+    }
+
+    // 执行插入
+    query_builder.execute(pool).await?;
+
+    // 插入后获取新插入的记录
+    let select_query = format!("SELECT * FROM {} ORDER BY id DESC LIMIT 1", table_name);
+    let inserted_record = sqlx::query_as::<_, T>(&select_query)
+        .fetch_one(pool)
+        .await?;
+
+    Ok(inserted_record)
 }
 
 #[tokio::test]
@@ -195,10 +361,7 @@ async fn test_get_paginated() {
         .await
         .unwrap();
 
-    let pagination = PaginationParams {
-        page: 1,
-        per_page: 10,
-    };
+    let pagination = PaginationParams { page: 1, size: 10 };
 
     let filters = vec![
         Filter {
@@ -223,7 +386,19 @@ async fn test_get_paginated() {
         "Total records: {}, Pages: {}",
         result.total, result.total_pages
     );
-    for item in result.items {
+    for item in result.data {
         println!("User: {:?}", item);
     }
+    let updates = vec![("username", "new_username".to_string())];
+    let x = update_by_id::<User>(&pool, "users", 1, updates)
+        .await
+        .unwrap();
+    println!("{:?}", x);
+    let updates = vec![
+        ("username", "new_user".to_string()),
+        ("password", "new_pass".to_string()),
+        ("email", "new_email@example.com".to_string()),
+    ];
+    let user = insert::<User>(&pool, "users", updates).await.unwrap();
+    println!("User: {:?}", user);
 }

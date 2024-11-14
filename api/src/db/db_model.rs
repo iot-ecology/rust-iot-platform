@@ -4,26 +4,30 @@ use sqlx::{FromRow, Row};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User {
+    #[serde(rename = "ID")]
     pub id: u64,
     pub username: Option<String>,
     pub password: Option<String>,
     pub email: Option<String>,
     pub status: Option<String>,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
+        rename = "UpdatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub updated_at: Option<chrono::NaiveDateTime>,
+    pub updated_at: Option<NaiveDateTime>,
     #[serde(
+        rename = "DeletedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub deleted_at: Option<chrono::NaiveDateTime>,
+    pub deleted_at: Option<NaiveDateTime>,
 }
 impl FromRow<'_, sqlx::mysql::MySqlRow> for User {
     fn from_row(row: &'_ sqlx::mysql::MySqlRow) -> Result<Self, sqlx::Error> {
@@ -50,12 +54,14 @@ pub struct CalcParam {
     pub signal_id: Option<i64>,
     pub reduce: Option<String>,
     pub calc_rule_id: Option<i64>,
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -94,12 +100,14 @@ pub struct CalcRule {
     pub offset: Option<i64>,
     pub start: Option<bool>,
     pub mock_value: Option<String>,
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -130,12 +138,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for CalcRule {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CassandraTransmitBind {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -177,12 +187,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for CassandraTransmitBind {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CassandraTransmit {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -218,12 +230,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for CassandraTransmit {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ClickhouseTransmitBind {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -264,12 +278,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for ClickhouseTransmitBind {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ClickhouseTransmit {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -310,12 +326,14 @@ pub struct CoapHandler {
     pub username: Option<String>,
     pub password: Option<String>,
     pub script: Option<String>,
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -347,12 +365,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for CoapHandler {
 pub struct Dashboard {
     pub name: Option<String>,
     pub config: Option<String>,
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -380,12 +400,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for Dashboard {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Dept {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -415,12 +437,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for Dept {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DeviceBindMqttClient {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -451,12 +475,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for DeviceBindMqttClient {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DeviceBindTcpHandler {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -487,12 +513,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for DeviceBindTcpHandler {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DeviceGroupBindMqttClient {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -523,12 +551,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for DeviceGroupBindMqttClient {
 pub struct DeviceGroupDevice {
     pub device_info_id: Option<u64>,
     pub device_group_id: Option<u64>,
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -557,12 +587,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for DeviceGroupDevice {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DeviceGroup {
     pub name: Option<String>,
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -610,12 +642,14 @@ pub struct DeviceInfo {
     pub push_interval: Option<i64>,
     pub error_rate: Option<f64>,
     pub protocol: Option<String>,
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -654,12 +688,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for DeviceInfo {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DingDing {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -693,12 +729,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for DingDing {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FeiShu {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -737,12 +775,14 @@ pub struct HttpHandler {
     pub username: Option<String>,
     pub password: Option<String>,
     pub script: Option<String>,
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -773,12 +813,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for HttpHandler {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct InfluxDbTransmitBind {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -822,12 +864,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for InfluxDbTransmitBind {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct InfluxDbTransmit {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -861,12 +905,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for InfluxDbTransmit {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MessageList {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -900,12 +946,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for MessageList {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MessageTypeBindRole {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -934,12 +982,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for MessageTypeBindRole {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MongoTransmitBind {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -981,12 +1031,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for MongoTransmitBind {
 #[derive(Serialize, Deserialize, Debug)]
 
 pub struct MongoTransmit {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1022,12 +1074,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for MongoTransmit {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MqttClient {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1070,12 +1124,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for MqttClient {
 #[derive(Serialize, Deserialize, Debug)]
 
 pub struct MysqlTransmitBind {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1115,12 +1171,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for MysqlTransmitBind {
 #[derive(Serialize, Deserialize, Debug)]
 
 pub struct MysqlTransmit {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1159,12 +1217,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for MysqlTransmit {
 #[derive(Serialize, Deserialize, Debug)]
 
 pub struct ProductPlan {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1196,12 +1256,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for ProductPlan {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ProductionPlan {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1245,6 +1307,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for ProductionPlan {
 #[derive(Serialize, Deserialize, Debug)]
 
 pub struct Product {
+    #[serde(rename = "ID")]
     pub id: u64,
     pub name: Option<String>,
     pub description: Option<String>,
@@ -1258,10 +1321,11 @@ pub struct Product {
     pub tags: Option<String>,
     pub image_url: Option<String>,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1299,6 +1363,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for Product {
 #[derive(Serialize, Deserialize, Debug)]
 
 pub struct RepairRecord {
+    #[serde(rename = "ID")]
     pub id: u64,
     pub device_group_group_id: Option<u64>,
     pub device_info_id: Option<u64>,
@@ -1311,10 +1376,11 @@ pub struct RepairRecord {
     pub cost: Option<f64>,
     pub description: Option<String>,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1347,15 +1413,17 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for RepairRecord {
 #[derive(Serialize, Deserialize, Debug)]
 
 pub struct Role {
+    #[serde(rename = "ID")]
     pub id: u64,
     pub name: Option<String>,
     pub description: Option<String>,
     pub can_del: Option<bool>,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1385,16 +1453,18 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for Role {
 #[derive(Serialize, Deserialize, Debug)]
 
 pub struct ShipmentProductDetail {
+    #[serde(rename = "ID")]
     pub id: u64,
     pub shipment_record_id: Option<u64>,
     pub product_id: Option<u64>,
     pub device_info_id: Option<u64>,
     pub quantity: Option<u64>,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1424,6 +1494,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for ShipmentProductDetail {
 #[derive(Serialize, Deserialize, Debug)]
 
 pub struct ShipmentRecord {
+    #[serde(rename = "ID")]
     pub id: u64,
     #[serde(
         serialize_with = "serialize_naive_datetime",
@@ -1438,10 +1509,11 @@ pub struct ShipmentRecord {
     pub status: Option<String>,
     pub description: Option<String>,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1476,6 +1548,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for ShipmentRecord {
 #[derive(Serialize, Deserialize, Debug)]
 
 pub struct SignalDelayWaringParam {
+    #[serde(rename = "ID")]
     pub id: u64,
     pub protocol: Option<String>,
     pub identification_code: Option<String>,
@@ -1485,10 +1558,11 @@ pub struct SignalDelayWaringParam {
     pub signal_id: Option<u64>,
     pub signal_delay_waring_id: Option<u64>,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1522,14 +1596,16 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for SignalDelayWaringParam {
 #[derive(Serialize, Deserialize, Debug)]
 
 pub struct SignalDelayWaring {
+    #[serde(rename = "ID")]
     pub id: u64,
     pub name: Option<String>,
     pub script: Option<String>,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1557,6 +1633,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for SignalDelayWaring {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SignalWaringConfig {
+    #[serde(rename = "ID")]
     pub id: u64,
     pub signal_id: Option<u64>,
     pub min: Option<f64>,
@@ -1566,10 +1643,11 @@ pub struct SignalWaringConfig {
     pub identification_code: Option<String>,
     pub device_uid: Option<u64>,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1603,6 +1681,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for SignalWaringConfig {
 #[derive(Serialize, Deserialize, Debug)]
 
 pub struct Signal {
+    #[serde(rename = "ID")]
     pub id: u64,
     pub protocol: Option<String>,
     pub identification_code: Option<String>,
@@ -1613,10 +1692,11 @@ pub struct Signal {
     pub unit: Option<String>,
     pub cache_size: Option<u64>,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1650,6 +1730,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for Signal {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SimCard {
+    #[serde(rename = "ID")]
     pub id: u64,
     pub access_number: String,
     pub iccid: String,
@@ -1659,12 +1740,13 @@ pub struct SimCard {
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub expiration: chrono::NaiveDateTime,
+    pub expiration: Option<chrono::NaiveDateTime>,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1695,15 +1777,17 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for SimCard {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SimUseHistory {
+    #[serde(rename = "ID")]
     pub id: u64,
     pub sim_id: Option<u64>,
     pub device_info_id: Option<u64>,
     pub description: Option<String>,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1732,6 +1816,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for SimUseHistory {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TcpHandler {
+    #[serde(rename = "ID")]
     pub id: u64,
     pub device_info_id: Option<u64>,
     pub username: Option<String>,
@@ -1739,10 +1824,11 @@ pub struct TcpHandler {
     pub name: Option<String>,
     pub script: Option<String>,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1774,14 +1860,16 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for TcpHandler {
 #[derive(Serialize, Deserialize, Debug)]
 
 pub struct UserBindDeviceInfo {
+    #[serde(rename = "ID")]
     pub id: u64,
     pub user_id: Option<u64>,
     pub device_id: Option<u64>,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1809,14 +1897,16 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for UserBindDeviceInfo {
 #[derive(Serialize, Deserialize, Debug)]
 
 pub struct UserDept {
+    #[serde(rename = "ID")]
     pub id: u64,
     pub user_id: Option<u64>,
     pub dept_id: Option<u64>,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1844,14 +1934,16 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for UserDept {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UserRole {
+    #[serde(rename = "ID")]
     pub id: u64,
     pub user_id: Option<u64>,
     pub role_id: Option<u64>,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1880,6 +1972,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for UserRole {
 #[derive(Serialize, Deserialize, Debug)]
 
 pub struct WebSocketHandler {
+    #[serde(rename = "ID")]
     pub id: u64,
     pub device_info_id: Option<u64>,
     pub name: Option<String>,
@@ -1887,10 +1980,11 @@ pub struct WebSocketHandler {
     pub password: Option<String>,
     pub script: Option<String>,
     #[serde(
+        rename = "CreatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
     )]
-    pub created_at: Option<chrono::NaiveDateTime>,
+    pub created_at: Option<NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime"
@@ -1918,7 +2012,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for WebSocketHandler {
     }
 }
 
-fn serialize_naive_datetime<S>(
+pub fn serialize_naive_datetime<S>(
     naive: &Option<NaiveDateTime>,
     serializer: S,
 ) -> Result<S::Ok, S::Error>
@@ -1927,7 +2021,6 @@ where
 {
     match naive {
         Some(ndt) => {
-            // 将 NaiveDateTime 转为 DateTime<Utc> 并序列化
             let dt = DateTime::<Utc>::from_utc(*ndt, Utc);
             dt.serialize(serializer)
         }
@@ -1935,7 +2028,9 @@ where
     }
 }
 
-fn deserialize_naive_datetime<'de, D>(deserializer: D) -> Result<Option<NaiveDateTime>, D::Error>
+pub fn deserialize_naive_datetime<'de, D>(
+    deserializer: D,
+) -> Result<Option<NaiveDateTime>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
