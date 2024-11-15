@@ -1,3 +1,4 @@
+use anyhow::Context;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use log::debug;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -144,40 +145,55 @@ pub async fn paginate<T>(
     table_name: &str,
     filters: Vec<Filter>,
     pagination: PaginationParams,
-) -> Result<PaginationResult<T>, sqlx::Error>
+) -> Result<PaginationResult<T>, Error>
 where
     T: for<'r> FromRow<'r, sqlx::mysql::MySqlRow> + Send + Unpin + Debug,
 {
     let offset = (pagination.page - 1) * pagination.size;
 
+    // 构建 WHERE 子句和绑定值
     let mut where_clause = String::new();
     let mut bindings: Vec<String> = Vec::new();
 
-    for filter in filters.iter() {
+    for filter in &filters {
         let (condition, values) = filter.to_sql();
         where_clause.push_str(&format!(" AND {}", condition));
         bindings.extend(values);
     }
 
-    let mut query = format!("SELECT * FROM {} WHERE 1=1", table_name);
-    query.push_str(&where_clause);
-    query.push_str(&format!(" LIMIT {} OFFSET {}", pagination.size, offset));
+    // 主查询语句
+    let query = format!(
+        "SELECT * FROM {} WHERE 1=1{} LIMIT {} OFFSET {}",
+        table_name, where_clause, pagination.size, offset
+    );
 
-    let mut count_query = format!("SELECT COUNT(1) FROM {} WHERE 1=1", table_name);
-    count_query.push_str(&where_clause);
+    // 计数查询语句
+    let count_query = format!(
+        "SELECT COUNT(1) FROM {} WHERE 1=1{}",
+        table_name, where_clause
+    );
 
+    // 执行主查询
     let mut query_builder = sqlx::query_as::<_, T>(&query);
-    for value in bindings.iter() {
+    for value in &bindings {
         query_builder = query_builder.bind(value);
     }
-    let items = query_builder.fetch_all(pool).await?;
+    let items = query_builder
+        .fetch_all(pool)
+        .await
+        .with_context(|| format!("Failed to fetch paginated records from '{}'", table_name))?;
 
-    let mut count_query_builder = sqlx::query_as(&count_query);
-    for value in bindings.iter() {
+    // 执行计数查询
+    let mut count_query_builder = sqlx::query_scalar(&count_query);
+    for value in &bindings {
         count_query_builder = count_query_builder.bind(value);
     }
-    let (total,): (i64,) = count_query_builder.fetch_one(pool).await?;
+    let total: i64 = count_query_builder
+        .fetch_one(pool)
+        .await
+        .with_context(|| format!("Failed to fetch record count for '{}'", table_name))?;
 
+    // 计算总页数
     let total_pages = ((total as f64) / (pagination.size as f64)).ceil() as u64;
 
     Ok(PaginationResult {
@@ -192,10 +208,11 @@ pub async fn list<T>(
     pool: &Pool<MySql>,
     table_name: &str,
     filters: Vec<Filter>,
-) -> Result<Vec<T>, sqlx::Error>
+) -> Result<Vec<T>, Error>
 where
     T: for<'r> FromRow<'r, sqlx::mysql::MySqlRow> + Send + Unpin + Debug,
 {
+    // 构建 WHERE 子句和绑定值
     let mut where_clause = String::new();
     let mut bindings: Vec<String> = Vec::new();
 
@@ -205,54 +222,89 @@ where
         bindings.extend(values);
     }
 
-    let mut query = format!("SELECT * FROM {} WHERE 1=1", table_name);
-    query.push_str(&where_clause);
+    // 完成查询语句
+    let mut query = format!("SELECT * FROM {} WHERE 1=1{}", table_name, where_clause);
+    println!("Executing query: {}", query);
 
+    // 创建查询构建器并绑定参数
     let mut query_builder = sqlx::query_as::<_, T>(&query);
     for value in bindings.iter() {
         query_builder = query_builder.bind(value);
     }
-    let items = query_builder.fetch_all(pool).await?;
+
+    // 执行查询并返回结果
+    let items = query_builder.fetch_all(pool).await.with_context(|| {
+        format!(
+            "Failed to fetch records from table '{}' with filters {:?}",
+            table_name, filters
+        )
+    })?;
 
     Ok(items)
 }
-
-pub async fn by_id<T>(pool: &Pool<MySql>, table_name: &str, id: String) -> Result<T, sqlx::Error>
+pub async fn by_id_common<T>(pool: &Pool<MySql>, table_name: &str, id: u64) -> Result<T, Error>
 where
     T: for<'r> FromRow<'r, sqlx::mysql::MySqlRow> + Send + Unpin + Debug,
 {
-    let mut query = format!("SELECT * FROM {} WHERE 1=1 and id = ?", table_name);
+    // 构建 SQL 查询
+    let query = format!("SELECT * FROM {} WHERE id = ?", table_name);
+    println!("Executing query: {}", query);
 
-    let mut query_builder = sqlx::query_as::<_, T>(&query);
-    let result = query_builder.bind(id).fetch_one(pool).await;
+    // 创建查询构建器并执行查询
+    let result = sqlx::query_as::<_, T>(&query)
+        .bind(id.clone())
+        .fetch_one(pool)
+        .await
+        .with_context(|| {
+            format!(
+                "Failed to fetch record from table '{}' with id '{}'",
+                table_name, id
+            )
+        })?;
 
-    result
+    Ok(result)
 }
 
-pub async fn delete_by_id(
-    pool: &Pool<MySql>,
-    table_name: &str,
-    id: u64,
-) -> Result<(), sqlx::Error> {
+pub async fn delete_by_id(pool: &Pool<MySql>, table_name: &str, id: u64) -> Result<(), Error> {
+    // 构建逻辑删除 SQL 查询
     let query = format!("UPDATE {} SET deleted_at = NOW() WHERE id = ?", table_name);
+    println!("Delete query: {}", query);
 
-    sqlx::query(&query).bind(id).execute(pool).await?;
+    // 执行更新操作并捕获可能的错误
+    let affected_rows = sqlx::query(&query)
+        .bind(id)
+        .execute(pool)
+        .await
+        .with_context(|| {
+            format!(
+                "Failed to execute delete on table '{}' with id {}",
+                table_name, id
+            )
+        })?;
+
+    // 检查是否有行受影响
+    if affected_rows.rows_affected() == 0 {
+        return Err(anyhow::anyhow!("No rows affected for id {}", id));
+    }
 
     Ok(())
 }
+
+use anyhow::{Error, Result};
 
 pub async fn update_by_id<T>(
     pool: &Pool<MySql>,
     table_name: &str,
     id: u64,
     updates: Vec<(&str, String)>,
-) -> Result<T, sqlx::Error>
+) -> Result<T, Error>
 where
     T: for<'r> FromRow<'r, sqlx::mysql::MySqlRow> + Send + Unpin + Debug,
 {
     let mut set_clause = String::new();
     let mut bindings: Vec<String> = Vec::new();
 
+    // 构建 SET 子句和绑定值
     for (field, value) in updates.iter() {
         if !set_clause.is_empty() {
             set_clause.push_str(", ");
@@ -261,53 +313,72 @@ where
         bindings.push(value.clone());
     }
 
+    // 更新 updated_at 字段
     set_clause.push_str(", updated_at = NOW()");
 
+    // 构建更新 SQL 查询
     let query = format!("UPDATE {} SET {} WHERE id = ?", table_name, set_clause);
     println!("Update query: {}", query);
     println!("Bindings: {:?}", bindings);
 
+    // 构建查询并绑定值
     let mut query_builder = sqlx::query(&query);
     for value in bindings.iter() {
-        println!("{}", value);
         query_builder = query_builder.bind(value);
     }
     query_builder = query_builder.bind(id);
 
-    let affected_rows = query_builder.execute(pool).await?;
+    // 执行更新操作并捕获可能的错误
+    let affected_rows = query_builder.execute(pool).await.with_context(|| {
+        format!(
+            "Failed to execute update on table '{}' with id {}",
+            table_name, id
+        )
+    })?;
 
     if affected_rows.rows_affected() == 0 {
-        return Err(sqlx::Error::RowNotFound);
+        return Err(anyhow::anyhow!("No rows affected for id {}", id));
     }
 
+    // 构建查询以返回更新后的记录
     let select_query = format!("SELECT * FROM {} WHERE id = ?", table_name);
     let updated_record = sqlx::query_as::<_, T>(&select_query)
         .bind(id)
         .fetch_one(pool)
-        .await?;
+        .await
+        .with_context(|| {
+            format!(
+                "Failed to fetch updated record from table '{}' with id {}",
+                table_name, id
+            )
+        })?;
 
     Ok(updated_record)
 }
 
 #[async_trait::async_trait]
-pub trait CrudOperations<T> {
-    async fn create(&self, pool: &Pool<MySql>, item: T) -> Result<(), sqlx::Error>;
-    async fn update(&self, pool: &Pool<MySql>, id: u64, item: T) -> Result<(), sqlx::Error>;
-    async fn delete(&self, pool: &Pool<MySql>, id: u64) -> Result<(), sqlx::Error>;
+pub trait CrudOperations<T>
+where
+    T: for<'r> FromRow<'r, sqlx::mysql::MySqlRow> + Send + Unpin + Debug,
+{
+    async fn create(&self, item: T) -> Result<T, Error>;
+    async fn update(&self, id: u64, item: T) -> Result<T, Error>;
+    async fn delete(&self, id: u64) -> Result<(), Error>;
     async fn page(
         &self,
-        pool: &Pool<MySql>,
         filters: Vec<Filter>,
         pagination: PaginationParams,
-    ) -> Result<PaginationResult<T>, sqlx::Error>;
-    async fn list(&self, pool: &Pool<MySql>, filters: Vec<Filter>) -> Result<Vec<T>, sqlx::Error>;
+    ) -> Result<PaginationResult<T>, Error>;
+    async fn list(&self, filters: Vec<Filter>) -> Result<Vec<T>, Error>;
+
+    async fn by_id(&self, id: u64) -> Result<T, Error>;
 }
 
 pub async fn insert<T>(
     pool: &Pool<MySql>,
     table_name: &str,
     updates: Vec<(&str, String)>,
-) -> Result<T, sqlx::Error>
+) -> anyhow::Result<T, anyhow::Error>
 where
     T: for<'r> FromRow<'r, sqlx::mysql::MySqlRow> + Send + Unpin + Debug,
 {
@@ -337,24 +408,32 @@ where
     println!("Insert query: {}", query);
     println!("Bindings: {:?}", bindings);
 
-    // 执行插入操作
+    // 构建查询并绑定值
     let mut query_builder = sqlx::query(&query);
     for value in bindings.iter() {
         query_builder = query_builder.bind(value);
     }
 
-    // 执行插入
-    query_builder.execute(pool).await?;
+    // 执行插入操作并捕获可能的数据库错误
+    query_builder
+        .execute(pool)
+        .await
+        .with_context(|| format!("Failed to execute insert into table '{}'", table_name))?;
 
     // 插入后获取新插入的记录
     let select_query = format!("SELECT * FROM {} ORDER BY id DESC LIMIT 1", table_name);
     let inserted_record = sqlx::query_as::<_, T>(&select_query)
         .fetch_one(pool)
-        .await?;
+        .await
+        .with_context(|| {
+            format!(
+                "Failed to fetch newly inserted record from table '{}'",
+                table_name
+            )
+        })?;
 
     Ok(inserted_record)
 }
-
 #[tokio::test]
 async fn test_get_paginated() {
     let pool = MySqlPool::connect("mysql://root:root123%40@localhost/iot-copy")

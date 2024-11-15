@@ -14,7 +14,7 @@ pub async fn user_index(
     config: &State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
     // 返回 Custom<Json<Value>>
-    match user_biz.get_user_by_id(1).await {
+    match user_biz.get_user_by_id(13).await {
         Ok(user) => {
             // 将 User 转换为 serde_json::Value
             let response_json = json!({
