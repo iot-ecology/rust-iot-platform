@@ -1,12 +1,19 @@
+use crate::biz::shipment_record_biz::ShipmentRecordBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{Signal, SimCard, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
+
 pub struct SignalBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+impl SignalBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        SignalBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]

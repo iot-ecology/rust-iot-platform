@@ -1,12 +1,19 @@
+use crate::biz::mqtt_client_biz::MqttClientBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{Product, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
+
 pub struct ProductBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+impl ProductBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        ProductBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]

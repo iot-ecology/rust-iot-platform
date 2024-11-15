@@ -1,3 +1,4 @@
+use crate::biz::dashboard_biz::DashboardBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{Dept, Signal};
 use anyhow::{Context, Error, Result};
@@ -9,6 +10,11 @@ use sqlx::MySqlPool;
 pub struct DeptBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+impl DeptBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        DeptBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]

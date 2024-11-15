@@ -1,3 +1,4 @@
+use crate::biz::transmit::bind::clickhouse_bind_biz::ClickhouseTransmitBindBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{InfluxDbTransmitBind, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
@@ -10,7 +11,11 @@ pub struct InfluxDbTransmitBindBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
 }
-
+impl InfluxDbTransmitBindBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        InfluxDbTransmitBindBiz { redis, mysql }
+    }
+}
 #[async_trait::async_trait]
 impl CrudOperations<InfluxDbTransmitBind> for InfluxDbTransmitBindBiz {
     async fn create(&self, item: InfluxDbTransmitBind) -> Result<InfluxDbTransmitBind, Error> {

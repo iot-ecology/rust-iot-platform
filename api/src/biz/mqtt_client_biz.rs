@@ -1,3 +1,4 @@
+use crate::biz::message_list_biz::MessageListBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{MqttClient, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
@@ -8,6 +9,11 @@ use sqlx::MySqlPool;
 pub struct MqttClientBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+impl MqttClientBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        MqttClientBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]

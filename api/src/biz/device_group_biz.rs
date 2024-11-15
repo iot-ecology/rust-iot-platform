@@ -1,3 +1,4 @@
+use crate::biz::dept_biz::DeptBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{DeviceGroup, Signal};
 use anyhow::{Context, Error, Result};
@@ -9,6 +10,11 @@ use sqlx::MySqlPool;
 pub struct DeviceGroupBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+impl DeviceGroupBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        DeviceGroupBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]

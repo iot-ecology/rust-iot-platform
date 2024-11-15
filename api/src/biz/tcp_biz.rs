@@ -1,3 +1,4 @@
+use crate::biz::sim_card_biz::SimCardBiz;
 use crate::db::db_model::TcpHandler;
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
@@ -6,9 +7,15 @@ use common_lib::sql_utils::{
 };
 use r2d2;
 use sqlx::MySqlPool;
+
 pub struct TcpHandlerBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+impl TcpHandlerBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        TcpHandlerBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]

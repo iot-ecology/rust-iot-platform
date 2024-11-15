@@ -1,12 +1,11 @@
 use crate::biz::user_biz::UserBiz;
-use crate::db::db_model::User;
 use common_lib::config::Config;
-use common_lib::redis_pool_utils::RedisOp;
+use rocket::http::Status;
+use rocket::post;
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
 use rocket::{get, State};
 use serde_json::json;
-use sqlx::{Error, MySqlPool};
 
 #[get("/user/index")]
 pub async fn user_index(
@@ -35,4 +34,150 @@ pub async fn user_index(
             Custom(rocket::http::Status::InternalServerError, Json(error_json))
         }
     }
+}
+
+#[post("/User/create")]
+pub async fn create_user(
+    user_api: &rocket::State<UserBiz>,
+    config: &rocket::State<Config>,
+) -> rocket::response::status::Custom<Json<serde_json::Value>> {
+    let error_json = json!({
+        "status": "error",
+        "message": ""
+    });
+    Custom(Status::InternalServerError, Json(error_json))
+}
+
+#[post("/User/update")]
+pub async fn update_user(
+    user_api: &rocket::State<UserBiz>,
+    config: &rocket::State<Config>,
+) -> rocket::response::status::Custom<Json<serde_json::Value>> {
+    let error_json = json!({
+        "status": "error",
+        "message": ""
+    });
+    Custom(Status::InternalServerError, Json(error_json))
+}
+
+#[get("/User/page")]
+pub async fn page_user(
+    user_api: &rocket::State<UserBiz>,
+    config: &rocket::State<Config>,
+) -> rocket::response::status::Custom<Json<serde_json::Value>> {
+    let error_json = json!({
+        "status": "error",
+        "message": ""
+    });
+    Custom(Status::InternalServerError, Json(error_json))
+}
+
+#[post("/User/delete/<id>")]
+pub async fn delete_user(
+    id: u64,
+    user_api: &rocket::State<UserBiz>,
+    config: &rocket::State<Config>,
+) -> rocket::response::status::Custom<Json<serde_json::Value>> {
+    let error_json = json!({
+        "status": "error",
+        "message": ""
+    });
+    Custom(Status::InternalServerError, Json(error_json))
+}
+
+#[get("/User/<id>")]
+pub async fn by_id_user(
+    id: u64,
+    user_api: &rocket::State<UserBiz>,
+    config: &rocket::State<Config>,
+) -> rocket::response::status::Custom<Json<serde_json::Value>> {
+    let error_json = json!({
+        "status": "error",
+        "message": ""
+    });
+    Custom(Status::InternalServerError, Json(error_json))
+}
+
+#[get("/User/list")]
+pub async fn list_user(
+    user_api: &rocket::State<UserBiz>,
+    config: &rocket::State<Config>,
+) -> rocket::response::status::Custom<Json<serde_json::Value>> {
+    let error_json = json!({
+        "status": "error",
+        "message": ""
+    });
+    Custom(Status::InternalServerError, Json(error_json))
+}
+
+#[post("/User/BindRole")]
+pub async fn bind_role(
+    user_api: &rocket::State<UserBiz>,
+    config: &rocket::State<Config>,
+) -> rocket::response::status::Custom<Json<serde_json::Value>> {
+    let error_json = json!({
+        "status": "error",
+        "message": ""
+    });
+    Custom(Status::InternalServerError, Json(error_json))
+}
+
+#[post("/User/BindDept")]
+pub async fn bind_dept(
+    user_api: &rocket::State<UserBiz>,
+    config: &rocket::State<Config>,
+) -> rocket::response::status::Custom<Json<serde_json::Value>> {
+    let error_json = json!({
+        "status": "error",
+        "message": ""
+    });
+    Custom(Status::InternalServerError, Json(error_json))
+}
+
+#[get("/User/QueryBindRole")]
+pub async fn query_bind_role(
+    user_api: &rocket::State<UserBiz>,
+    config: &rocket::State<Config>,
+) -> rocket::response::status::Custom<Json<serde_json::Value>> {
+    let error_json = json!({
+        "status": "error",
+        "message": ""
+    });
+    Custom(Status::InternalServerError, Json(error_json))
+}
+
+#[get("/User/QueryBindDept")]
+pub async fn query_bind_dept(
+    user_api: &rocket::State<UserBiz>,
+    config: &rocket::State<Config>,
+) -> rocket::response::status::Custom<Json<serde_json::Value>> {
+    let error_json = json!({
+        "status": "error",
+        "message": ""
+    });
+    Custom(Status::InternalServerError, Json(error_json))
+}
+
+#[post("/User/BindDeviceInfo")]
+pub async fn bind_device_info(
+    user_api: &rocket::State<UserBiz>,
+    config: &rocket::State<Config>,
+) -> rocket::response::status::Custom<Json<serde_json::Value>> {
+    let error_json = json!({
+        "status": "error",
+        "message": ""
+    });
+    Custom(Status::InternalServerError, Json(error_json))
+}
+
+#[post("/User/QueryBindDeviceInfo")]
+pub async fn query_bind_device_info(
+    user_api: &rocket::State<UserBiz>,
+    config: &rocket::State<Config>,
+) -> rocket::response::status::Custom<Json<serde_json::Value>> {
+    let error_json = json!({
+        "status": "error",
+        "message": ""
+    });
+    Custom(Status::InternalServerError, Json(error_json))
 }

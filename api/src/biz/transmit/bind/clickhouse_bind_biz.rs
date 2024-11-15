@@ -1,3 +1,4 @@
+use crate::biz::transmit::bind::cassandra_bind_biz::CassandraTransmitBindBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{ClickhouseTransmitBind, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
@@ -5,9 +6,15 @@ use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils;
 use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
+
 pub struct ClickhouseTransmitBindBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+impl ClickhouseTransmitBindBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        ClickhouseTransmitBindBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]

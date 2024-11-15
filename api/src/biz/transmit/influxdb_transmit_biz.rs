@@ -1,3 +1,4 @@
+use crate::biz::transmit::clickhouse_transmit_biz::ClickhouseTransmitBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{InfluxDbTransmit, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
@@ -8,6 +9,11 @@ use sqlx::MySqlPool;
 pub struct InfluxDbTransmitBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+impl InfluxDbTransmitBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        InfluxDbTransmitBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]

@@ -1,3 +1,4 @@
+use crate::biz::notice::dingding_biz::DingDingBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{FeiShu, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
@@ -5,11 +6,16 @@ use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils;
 use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
+
 pub struct FeiShuBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
 }
-
+impl FeiShuBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        FeiShuBiz { redis, mysql }
+    }
+}
 #[async_trait::async_trait]
 impl CrudOperations<FeiShu> for FeiShuBiz {
     async fn create(&self, item: FeiShu) -> Result<FeiShu, Error> {

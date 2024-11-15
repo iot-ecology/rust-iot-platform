@@ -1,3 +1,4 @@
+use crate::biz::calc_rule_biz::CalcRuleBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{CoapHandler, Signal};
 use anyhow::{Context, Error, Result};
@@ -9,6 +10,11 @@ use sqlx::MySqlPool;
 pub struct CoapHandlerBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+impl CoapHandlerBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        CoapHandlerBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]

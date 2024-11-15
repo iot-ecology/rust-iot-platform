@@ -1,3 +1,4 @@
+use crate::biz::transmit::bind::influxdb_bind_biz::InfluxDbTransmitBindBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{MongoTransmitBind, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
@@ -10,7 +11,11 @@ pub struct MongoTransmitBindBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
 }
-
+impl MongoTransmitBindBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        MongoTransmitBindBiz { redis, mysql }
+    }
+}
 #[async_trait::async_trait]
 impl CrudOperations<MongoTransmitBind> for MongoTransmitBindBiz {
     async fn create(&self, item: MongoTransmitBind) -> Result<MongoTransmitBind, Error> {

@@ -1,3 +1,4 @@
+use crate::biz::transmit::cassandra_transmit_biz::CassandraTransmitBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{ClickhouseTransmit, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
@@ -10,7 +11,11 @@ pub struct ClickhouseTransmitBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
 }
-
+impl ClickhouseTransmitBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        ClickhouseTransmitBiz { redis, mysql }
+    }
+}
 #[async_trait::async_trait]
 impl CrudOperations<ClickhouseTransmit> for ClickhouseTransmitBiz {
     async fn create(&self, item: ClickhouseTransmit) -> Result<ClickhouseTransmit, Error> {

@@ -1,3 +1,4 @@
+use crate::biz::repair_record_biz::RepairRecordBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{Role, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
@@ -8,6 +9,11 @@ use sqlx::MySqlPool;
 pub struct RoleBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+impl RoleBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        RoleBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]

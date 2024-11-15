@@ -1,3 +1,4 @@
+use crate::biz::notice::feishu_biz::FeiShuBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{CassandraTransmitBind, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
@@ -10,7 +11,11 @@ pub struct CassandraTransmitBindBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
 }
-
+impl CassandraTransmitBindBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        CassandraTransmitBindBiz { redis, mysql }
+    }
+}
 #[async_trait::async_trait]
 impl CrudOperations<CassandraTransmitBind> for CassandraTransmitBindBiz {
     async fn create(&self, item: CassandraTransmitBind) -> Result<CassandraTransmitBind, Error> {

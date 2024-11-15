@@ -1,3 +1,4 @@
+use crate::biz::signal_delay_waring_param_biz::SignalDelayWaringParamBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{SimCard, WebSocketHandler};
 use anyhow::{Context, Error, Result};
@@ -8,6 +9,11 @@ use sqlx::MySqlPool;
 pub struct SimCardBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+impl SimCardBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        SimCardBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]

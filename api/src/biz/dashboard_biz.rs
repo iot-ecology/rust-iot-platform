@@ -1,3 +1,4 @@
+use crate::biz::coap_biz::CoapHandlerBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{Dashboard, Signal};
 use anyhow::{Context, Error, Result};
@@ -9,6 +10,11 @@ use sqlx::MySqlPool;
 pub struct DashboardBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+impl DashboardBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        DashboardBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]

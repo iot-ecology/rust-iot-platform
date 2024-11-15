@@ -1,3 +1,4 @@
+use crate::biz::transmit::influxdb_transmit_biz::InfluxDbTransmitBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{MongoTransmit, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
@@ -5,9 +6,15 @@ use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils;
 use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
+
 pub struct MongoTransmitBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+impl MongoTransmitBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        MongoTransmitBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]

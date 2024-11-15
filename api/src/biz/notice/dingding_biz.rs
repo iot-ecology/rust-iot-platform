@@ -1,5 +1,5 @@
 use crate::biz::user_biz::UserBiz;
-use crate::db::db_model::{DingDing, Signal, WebSocketHandler};
+use crate::db::db_model::{DingDing, Signal, User, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils;
@@ -8,6 +8,12 @@ use sqlx::MySqlPool;
 pub struct DingDingBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+
+impl DingDingBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        DingDingBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]

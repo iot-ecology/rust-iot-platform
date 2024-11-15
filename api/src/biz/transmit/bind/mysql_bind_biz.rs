@@ -1,3 +1,4 @@
+use crate::biz::transmit::bind::mongo_bind_biz::MongoTransmitBindBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{MysqlTransmitBind, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
@@ -9,6 +10,11 @@ use sqlx::MySqlPool;
 pub struct MysqlTransmitBindBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+impl MysqlTransmitBindBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        MysqlTransmitBindBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]

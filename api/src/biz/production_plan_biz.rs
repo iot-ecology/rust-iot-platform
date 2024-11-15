@@ -1,12 +1,19 @@
+use crate::biz::product_biz::ProductBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{ProductionPlan, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
+
 pub struct ProductionPlanBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+impl ProductionPlanBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        ProductionPlanBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]

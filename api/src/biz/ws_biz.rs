@@ -1,3 +1,4 @@
+use crate::biz::tcp_biz::TcpHandlerBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::WebSocketHandler;
 use anyhow::{Context, Error, Result};
@@ -8,6 +9,11 @@ use sqlx::MySqlPool;
 pub struct WebSocketHandlerBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+impl WebSocketHandlerBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        WebSocketHandlerBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]

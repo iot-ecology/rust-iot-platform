@@ -1,3 +1,4 @@
+use crate::biz::transmit::mysql_transmit_biz::MysqlTransmitBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{CalcParam, Signal};
 use anyhow::{Context, Error, Result};
@@ -9,6 +10,11 @@ use sqlx::MySqlPool;
 pub struct CalcParamBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+impl CalcParamBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        CalcParamBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]

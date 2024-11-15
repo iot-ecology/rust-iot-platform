@@ -1,3 +1,4 @@
+use crate::biz::transmit::bind::mysql_bind_biz::MysqlTransmitBindBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{CassandraTransmit, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
@@ -9,6 +10,11 @@ use sqlx::MySqlPool;
 pub struct CassandraTransmitBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+impl CassandraTransmitBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        CassandraTransmitBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]

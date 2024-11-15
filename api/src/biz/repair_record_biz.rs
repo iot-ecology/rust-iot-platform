@@ -1,3 +1,4 @@
+use crate::biz::production_plan_biz::ProductionPlanBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{RepairRecord, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
@@ -8,6 +9,11 @@ use sqlx::MySqlPool;
 pub struct RepairRecordBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
+}
+impl RepairRecordBiz {
+    pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
+        RepairRecordBiz { redis, mysql }
+    }
 }
 
 #[async_trait::async_trait]
