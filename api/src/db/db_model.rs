@@ -1970,7 +1970,6 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for UserRole {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-
 pub struct WebSocketHandler {
     #[serde(rename = "ID")]
     pub id: u64,
