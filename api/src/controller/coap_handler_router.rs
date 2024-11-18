@@ -1,5 +1,7 @@
 use crate::biz::coap_biz::CoapHandlerBiz;
+use crate::db::db_model::CoapHandler;
 use common_lib::config::Config;
+use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
 use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
@@ -8,6 +10,7 @@ use serde_json::json;
 
 #[post("/CoapHandler/create", format = "json", data = "<data>")]
 pub async fn create_coap_handler(
+    data: Json<CoapHandler>,
     coap_handler_api: &rocket::State<CoapHandlerBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -21,6 +24,7 @@ pub async fn create_coap_handler(
 
 #[post("/CoapHandler/update", format = "json", data = "<data>")]
 pub async fn update_coap_handler(
+    data: Json<CoapHandler>,
     coap_handler_api: &rocket::State<CoapHandlerBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -48,6 +52,8 @@ pub async fn by_id_coap_handler(
 
 #[get("/CoapHandler/page?<page>&<page_size>")]
 pub async fn page_coap_handler(
+    page: Option<u64>,
+    page_size: Option<u64>,
     coap_handler_api: &rocket::State<CoapHandlerBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

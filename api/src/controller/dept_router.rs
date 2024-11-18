@@ -1,5 +1,7 @@
 use crate::biz::dept_biz::DeptBiz;
+use crate::db::db_model::{Dashboard, Dept};
 use common_lib::config::Config;
+use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
 use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
@@ -8,6 +10,7 @@ use serde_json::json;
 
 #[post("/Dept/create", format = "json", data = "<data>")]
 pub async fn create_dept(
+    data: Json<Dept>,
     dept_api: &rocket::State<DeptBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -20,6 +23,7 @@ pub async fn create_dept(
 
 #[post("/Dept/update", format = "json", data = "<data>")]
 pub async fn update_dept(
+    data: Json<Dept>,
     dept_api: &rocket::State<DeptBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -32,6 +36,8 @@ pub async fn update_dept(
 
 #[get("/Dept/page?<page>&<page_size>")]
 pub async fn page_dept(
+    page: Option<u64>,
+    page_size: Option<u64>,
     dept_api: &rocket::State<DeptBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

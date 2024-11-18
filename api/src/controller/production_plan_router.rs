@@ -1,4 +1,7 @@
+use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
+
 use crate::biz::production_plan_biz::ProductionPlanBiz;
+use crate::db::db_model::ProductionPlan;
 use common_lib::config::Config;
 use rocket::http::Status;
 use rocket::response::status::Custom;
@@ -8,6 +11,7 @@ use serde_json::json;
 
 #[post("/ProductionPlan/create", format = "json", data = "<data>")]
 pub async fn create_production_plan(
+    data: Json<ProductionPlan>,
     production_plan_api: &rocket::State<ProductionPlanBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -20,6 +24,7 @@ pub async fn create_production_plan(
 
 #[post("/ProductionPlan/update", format = "json", data = "<data>")]
 pub async fn update_production_plan(
+    data: Json<ProductionPlan>,
     production_plan_api: &rocket::State<ProductionPlanBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -45,6 +50,8 @@ pub async fn by_id_production_plan(
 
 #[get("/ProductionPlan/page?<page>&<page_size>")]
 pub async fn page_production_plan(
+    page: Option<u64>,
+    page_size: Option<u64>,
     production_plan_api: &rocket::State<ProductionPlanBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

@@ -1,5 +1,7 @@
 use crate::biz::notice::dingding_biz::DingDingBiz;
+use crate::db::db_model::DingDing;
 use common_lib::config::Config;
+use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
 use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
@@ -8,6 +10,7 @@ use serde_json::json;
 
 #[post("/DingDing/create", format = "json", data = "<data>")]
 pub async fn create_dingding(
+    data: Json<DingDing>,
     dingding_api: &rocket::State<DingDingBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -20,6 +23,7 @@ pub async fn create_dingding(
 
 #[post("/DingDing/update", format = "json", data = "<data>")]
 pub async fn update_dingding(
+    data: Json<DingDing>,
     dingding_api: &rocket::State<DingDingBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -45,6 +49,8 @@ pub async fn by_id_dingding(
 
 #[get("/DingDing/page?<page>&<page_size>")]
 pub async fn page_dingding(
+    page: Option<u64>,
+    page_size: Option<u64>,
     dingding_api: &rocket::State<DingDingBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

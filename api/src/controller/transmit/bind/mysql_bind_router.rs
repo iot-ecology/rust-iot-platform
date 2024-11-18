@@ -1,5 +1,7 @@
 use crate::biz::transmit::bind::mysql_bind_biz::MysqlTransmitBindBiz;
+use crate::db::db_model::MysqlTransmitBind;
 use common_lib::config::Config;
+use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
 use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
@@ -8,6 +10,7 @@ use serde_json::json;
 
 #[post("/MySQLTransmitBind/create", format = "json", data = "<data>")]
 pub async fn create_mysql_transmit_bind(
+    data: Json<MysqlTransmitBind>,
     my_sql_transmit_bind_api: &rocket::State<MysqlTransmitBindBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -21,6 +24,7 @@ pub async fn create_mysql_transmit_bind(
 
 #[post("/MySQLTransmitBind/update", format = "json", data = "<data>")]
 pub async fn update_mysql_transmit_bind(
+    data: Json<MysqlTransmitBind>,
     my_sql_transmit_bind_api: &rocket::State<MysqlTransmitBindBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -48,6 +52,8 @@ pub async fn by_id_mysql_transmit_bind(
 
 #[get("/MySQLTransmitBind/page?<page>&<page_size>")]
 pub async fn page_mysql_transmit_bind(
+    page: Option<u64>,
+    page_size: Option<u64>,
     my_sql_transmit_bind_api: &rocket::State<MysqlTransmitBindBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

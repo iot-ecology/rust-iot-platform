@@ -1,5 +1,7 @@
 use crate::biz::transmit::bind::clickhouse_bind_biz::ClickhouseTransmitBindBiz;
+use crate::db::db_model::ClickhouseTransmitBind;
 use common_lib::config::Config;
+use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
 use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
@@ -8,6 +10,7 @@ use serde_json::json;
 
 #[post("/ClickhouseTransmitBind/create", format = "json", data = "<data>")]
 pub async fn create_clickhouse_transmit_bind(
+    data: Json<ClickhouseTransmitBind>,
     clickhouse_transmit_bind_api: &rocket::State<ClickhouseTransmitBindBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -21,6 +24,7 @@ pub async fn create_clickhouse_transmit_bind(
 
 #[post("/ClickhouseTransmitBind/update", format = "json", data = "<data>")]
 pub async fn update_clickhouse_transmit_bind(
+    data: Json<ClickhouseTransmitBind>,
     clickhouse_transmit_bind_api: &rocket::State<ClickhouseTransmitBindBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -48,6 +52,8 @@ pub async fn by_id_clickhouse_transmit_bind(
 
 #[get("/ClickhouseTransmitBind/page?<page>&<page_size>")]
 pub async fn page_clickhouse_transmit_bind(
+    page: Option<u64>,
+    page_size: Option<u64>,
     clickhouse_transmit_bind_api: &rocket::State<ClickhouseTransmitBindBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

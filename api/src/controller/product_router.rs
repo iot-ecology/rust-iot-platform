@@ -1,4 +1,7 @@
+use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
+
 use crate::biz::product_biz::ProductBiz;
+use crate::db::db_model::{MqttClient, Product};
 use common_lib::config::Config;
 use rocket::http::Status;
 use rocket::response::status::Custom;
@@ -8,6 +11,7 @@ use serde_json::json;
 
 #[post("/product/create", format = "json", data = "<data>")]
 pub async fn create_product(
+    data: Json<Product>,
     product_api: &rocket::State<ProductBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -20,6 +24,7 @@ pub async fn create_product(
 
 #[post("/product/update", format = "json", data = "<data>")]
 pub async fn update_product(
+    data: Json<Product>,
     product_api: &rocket::State<ProductBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -57,6 +62,8 @@ pub async fn list_product(
 
 #[get("/product/page?<page>&<page_size>")]
 pub async fn page_product(
+    page: Option<u64>,
+    page_size: Option<u64>,
     product_api: &rocket::State<ProductBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

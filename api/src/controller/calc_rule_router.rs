@@ -1,6 +1,8 @@
 use crate::biz::calc_rule_biz::CalcRuleBiz;
 
+use crate::db::db_model::CalcRule;
 use common_lib::config::Config;
+use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
 use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
@@ -9,6 +11,7 @@ use serde_json::json;
 
 #[post("/calc-rule/create", format = "json", data = "<data>")]
 pub async fn create_calc_rule(
+    data: Json<CalcRule>,
     calc_rule_api: &rocket::State<CalcRuleBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -21,6 +24,7 @@ pub async fn create_calc_rule(
 
 #[post("/calc-rule/update", format = "json", data = "<data>")]
 pub async fn update_calc_rule(
+    data: Json<CalcRule>,
     calc_rule_api: &rocket::State<CalcRuleBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -33,6 +37,8 @@ pub async fn update_calc_rule(
 
 #[get("/calc-rule/page?<page>&<page_size>")]
 pub async fn page_calc_rule(
+    page: Option<u64>,
+    page_size: Option<u64>,
     calc_rule_api: &rocket::State<CalcRuleBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

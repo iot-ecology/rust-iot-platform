@@ -1,4 +1,7 @@
+use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
+
 use crate::biz::signal_biz::SignalBiz;
+use crate::db::db_model::{Signal, SignalDelayWaring};
 use common_lib::config::Config;
 use rocket::http::Status;
 use rocket::response::status::Custom;
@@ -8,6 +11,7 @@ use serde_json::json;
 
 #[post("/signal/create", format = "json", data = "<data>")]
 pub async fn create_signal(
+    data: Json<Signal>,
     signal_api: &rocket::State<SignalBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -20,6 +24,7 @@ pub async fn create_signal(
 
 #[post("/signal/update", format = "json", data = "<data>")]
 pub async fn update_signal(
+    data: Json<Signal>,
     signal_api: &rocket::State<SignalBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -45,6 +50,8 @@ pub async fn delete_signal(
 
 #[get("/signal/page?<page>&<page_size>")]
 pub async fn page_signal(
+    page: Option<u64>,
+    page_size: Option<u64>,
     signal_api: &rocket::State<SignalBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

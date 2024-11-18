@@ -1,4 +1,7 @@
+use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
+
 use crate::biz::mqtt_client_biz::MqttClientBiz;
+use crate::db::db_model::MqttClient;
 use common_lib::config::Config;
 use rocket::http::Status;
 use rocket::response::status::Custom;
@@ -8,6 +11,7 @@ use serde_json::json;
 
 #[post("/mqtt/create", format = "json", data = "<data>")]
 pub async fn create_mqtt(
+    data: Json<MqttClient>,
     mqtt_api: &rocket::State<MqttClientBiz>,
     config: &rocket::State<Config>,
 ) -> Custom<Json<serde_json::Value>> {
@@ -20,6 +24,8 @@ pub async fn create_mqtt(
 
 #[get("/mqtt/page?<page>&<page_size>")]
 pub async fn page_mqtt(
+    page: Option<u64>,
+    page_size: Option<u64>,
     mqtt_api: &rocket::State<MqttClientBiz>,
     config: &rocket::State<Config>,
 ) -> Custom<Json<serde_json::Value>> {
@@ -81,6 +87,7 @@ pub async fn stop_mqtt(
 
 #[post("/mqtt/update", format = "json", data = "<data>")]
 pub async fn update_mqtt(
+    data: Json<MqttClient>,
     mqtt_api: &rocket::State<MqttClientBiz>,
     config: &rocket::State<Config>,
 ) -> Custom<Json<serde_json::Value>> {

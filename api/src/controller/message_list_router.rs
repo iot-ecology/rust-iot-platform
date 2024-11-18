@@ -1,3 +1,5 @@
+use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
+
 use crate::biz::message_list_biz::MessageListBiz;
 use common_lib::config::Config;
 use rocket::http::Status;
@@ -7,6 +9,8 @@ use rocket::{get, post};
 use serde_json::json;
 #[get("/MessageList/page?<page>&<page_size>")]
 pub async fn page_message_list(
+    page: Option<u64>,
+    page_size: Option<u64>,
     message_list_api: &rocket::State<MessageListBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

@@ -1,4 +1,7 @@
+use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
+
 use crate::biz::signal_delay_waring_biz::SignalDelayWaringBiz;
+use crate::db::db_model::{SignalDelayWaring, SignalDelayWaringParam};
 use common_lib::config::Config;
 use rocket::http::Status;
 use rocket::response::status::Custom;
@@ -8,6 +11,7 @@ use serde_json::json;
 
 #[post("/signal-delay-waring/create", format = "json", data = "<data>")]
 pub async fn create_signal_delay_waring(
+    data: Json<SignalDelayWaring>,
     signal_delay_waring_api: &rocket::State<SignalDelayWaringBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -20,6 +24,7 @@ pub async fn create_signal_delay_waring(
 
 #[post("/signal-delay-waring/update", format = "json", data = "<data>")]
 pub async fn update_signal_delay_waring(
+    data: Json<SignalDelayWaring>,
     signal_delay_waring_api: &rocket::State<SignalDelayWaringBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -32,6 +37,8 @@ pub async fn update_signal_delay_waring(
 
 #[get("/signal-delay-waring/page?<page>&<page_size>")]
 pub async fn page_signal_delay_waring(
+    page: Option<u64>,
+    page_size: Option<u64>,
     signal_delay_waring_api: &rocket::State<SignalDelayWaringBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

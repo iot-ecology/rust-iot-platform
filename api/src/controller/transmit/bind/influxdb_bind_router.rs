@@ -1,5 +1,7 @@
 use crate::biz::transmit::bind::influxdb_bind_biz::InfluxDbTransmitBindBiz;
+use crate::db::db_model::InfluxDbTransmitBind;
 use common_lib::config::Config;
+use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
 use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
@@ -8,6 +10,7 @@ use serde_json::json;
 
 #[post("/InfluxdbTransmitBind/create", format = "json", data = "<data>")]
 pub async fn create_influxdb_transmit_bind(
+    data: Json<InfluxDbTransmitBind>,
     influxdb_transmit_bind_api: &rocket::State<InfluxDbTransmitBindBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -21,6 +24,7 @@ pub async fn create_influxdb_transmit_bind(
 
 #[post("/InfluxdbTransmitBind/update", format = "json", data = "<data>")]
 pub async fn update_influxdb_transmit_bind(
+    data: Json<InfluxDbTransmitBind>,
     influxdb_transmit_bind_api: &rocket::State<InfluxDbTransmitBindBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -48,6 +52,8 @@ pub async fn by_id_influxdb_transmit_bind(
 
 #[get("/InfluxdbTransmitBind/page?<page>&<page_size>")]
 pub async fn page_influxdb_transmit_bind(
+    page: Option<u64>,
+    page_size: Option<u64>,
     influxdb_transmit_bind_api: &rocket::State<InfluxDbTransmitBindBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

@@ -1,5 +1,7 @@
 use crate::biz::transmit::mongo_transmit_biz::MongoTransmitBiz;
+use crate::db::db_model::MongoTransmit;
 use common_lib::config::Config;
+use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
 use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
@@ -8,6 +10,7 @@ use serde_json::json;
 
 #[post("/MongoTransmit/create", format = "json", data = "<data>")]
 pub async fn create_mongo_transmit(
+    data: Json<MongoTransmit>,
     mongo_transmit_api: &rocket::State<MongoTransmitBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -20,6 +23,7 @@ pub async fn create_mongo_transmit(
 
 #[post("/MongoTransmit/update", format = "json", data = "<data>")]
 pub async fn update_mongo_transmit(
+    data: Json<MongoTransmit>,
     mongo_transmit_api: &rocket::State<MongoTransmitBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -57,6 +61,8 @@ pub async fn list_mongo_transmit(
 
 #[get("/MongoTransmit/page?<page>&<page_size>")]
 pub async fn page_mongo_transmit(
+    page: Option<u64>,
+    page_size: Option<u64>,
     mongo_transmit_api: &rocket::State<MongoTransmitBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

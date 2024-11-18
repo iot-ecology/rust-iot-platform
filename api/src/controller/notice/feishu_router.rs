@@ -1,5 +1,7 @@
 use crate::biz::notice::feishu_biz::FeiShuBiz;
+use crate::db::db_model::{DingDing, FeiShu};
 use common_lib::config::Config;
+use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
 use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
@@ -8,6 +10,7 @@ use serde_json::json;
 
 #[post("/FeiShuId/create", format = "json", data = "<data>")]
 pub async fn create_feishu(
+    data: Json<FeiShu>,
     feishu_api: &rocket::State<FeiShuBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -20,6 +23,7 @@ pub async fn create_feishu(
 
 #[post("/FeiShuId/update", format = "json", data = "<data>")]
 pub async fn update_feishu(
+    data: Json<FeiShu>,
     feishu_api: &rocket::State<FeiShuBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -45,6 +49,8 @@ pub async fn by_id_feishu(
 
 #[get("/FeiShuId/page?<page>&<page_size>")]
 pub async fn page_feishu(
+    page: Option<u64>,
+    page_size: Option<u64>,
     feishu_api: &rocket::State<FeiShuBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

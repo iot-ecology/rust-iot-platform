@@ -1,12 +1,16 @@
 use crate::biz::sim_card_biz::SimCardBiz;
+use crate::db::db_model::SimCard;
 use common_lib::config::Config;
+use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
 use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
+
 #[post("/SimCard/create", format = "json", data = "<data>")]
 pub async fn create_sim_card(
+    data: Json<SimCard>,
     sim_card_api: &rocket::State<SimCardBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -19,6 +23,7 @@ pub async fn create_sim_card(
 
 #[post("/SimCard/update", format = "json", data = "<data>")]
 pub async fn update_sim_card(
+    data: Json<SimCard>,
     sim_card_api: &rocket::State<SimCardBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -31,6 +36,8 @@ pub async fn update_sim_card(
 
 #[get("/SimCard/page?<page>&<page_size>")]
 pub async fn page_sim_card(
+    page: Option<u64>,
+    page_size: Option<u64>,
     sim_card_api: &rocket::State<SimCardBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

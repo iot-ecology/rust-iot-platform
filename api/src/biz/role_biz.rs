@@ -1,6 +1,6 @@
 use crate::biz::repair_record_biz::RepairRecordBiz;
 use crate::biz::user_biz::UserBiz;
-use crate::db::db_model::{Role, Signal, WebSocketHandler};
+use crate::db::db_model::{Role, Signal, User, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
@@ -13,6 +13,31 @@ pub struct RoleBiz {
 impl RoleBiz {
     pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
         RoleBiz { redis, mysql }
+    }
+
+    pub async fn find_by_name(&self, username: Option<String>) -> Result<Option<Role>, Error> {
+        if username.is_none() {
+            return Ok(None);
+        }
+
+        let sql = "select * from roles where name = ?";
+
+        let record = sqlx::query_as::<_, Role>(sql)
+            .bind(username.clone().unwrap())
+            .fetch_optional(&self.mysql)
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to fetch updated record from table '{}' with username {:?}",
+                    "users",
+                    username.clone()
+                )
+            });
+
+        return match record {
+            Ok(u) => Ok(u),
+            Err(ee) => Err(ee),
+        };
     }
 }
 
