@@ -7,7 +7,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/calc-rule/create")]
+#[post("/calc-rule/create", format = "json", data = "<data>")]
 pub async fn create_calc_rule(
     calc_rule_api: &rocket::State<CalcRuleBiz>,
     config: &rocket::State<Config>,
@@ -19,7 +19,7 @@ pub async fn create_calc_rule(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/calc-rule/update")]
+#[post("/calc-rule/update", format = "json", data = "<data>")]
 pub async fn update_calc_rule(
     calc_rule_api: &rocket::State<CalcRuleBiz>,
     config: &rocket::State<Config>,
@@ -31,7 +31,7 @@ pub async fn update_calc_rule(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/calc-rule/page")]
+#[get("/calc-rule/page?<page>&<page_size>")]
 pub async fn page_calc_rule(
     calc_rule_api: &rocket::State<CalcRuleBiz>,
     config: &rocket::State<Config>,

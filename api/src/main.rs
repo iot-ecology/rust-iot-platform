@@ -53,8 +53,11 @@ use common_lib::mysql_utils::gen_mysql_url;
 use common_lib::rabbit_utils::RabbitMQFairing;
 use common_lib::redis_pool_utils::{create_redis_pool_from_config, RedisOp};
 use rocket::fairing::{Info, Kind};
+use rocket::request::FromRequest;
 use rocket::{launch, routes, Build, Rocket};
+use serde::Serialize;
 use sqlx::MySqlPool;
+use std::collections::HashSet;
 
 use crate::controller::calc_param_router;
 use crate::controller::calc_rule_router;
@@ -64,6 +67,8 @@ use crate::controller::dept_router;
 use crate::controller::device_group_router;
 use crate::controller::device_info_router;
 use crate::controller::http_handler_router;
+use crate::controller::login_router::login;
+use crate::controller::login_router::userinfo;
 use crate::controller::message_list_router;
 use crate::controller::mqtt_client_router;
 use crate::controller::product_router;
@@ -122,6 +127,8 @@ fn rocket() -> _ {
                 query_bind_dept,
                 bind_device_info,
                 query_bind_device_info,
+                login,
+                userinfo,
                 // Device related routes
                 device_info_router::create_device_info,
                 device_info_router::list_device_info,
@@ -438,4 +445,48 @@ impl rocket::fairing::Fairing for MySqlPoolFairing {
             .manage(fei_shu_biz)
             .manage(ding_ding_biz))
     }
+}
+pub struct AuthToken(String);
+use rocket::serde::json::Json;
+use rocket::{
+    self,
+    http::Status,
+    post,
+    request::{Outcome, Request},
+};
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for AuthToken {
+    type Error = Json<ErrorResponse>;
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let whitelist: HashSet<String> = vec![
+            "/login".to_string(),
+            // "/userinfo".to_string(),
+        ]
+        .into_iter()
+        .collect();
+
+        let path = request.uri().path();
+
+        if whitelist.contains(path.as_str()) {
+            Outcome::Success(AuthToken("".to_string()))
+        } else {
+            if let Some(value) = request.headers().get_one("Authorization") {
+                Outcome::Success(AuthToken(value.to_string()))
+            } else {
+                Outcome::Error((
+                    Status::Unauthorized,
+                    Json(ErrorResponse {
+                        message: "Authorization header missing".to_string(),
+                    }),
+                ))
+            }
+        }
+    }
+}
+
+#[derive(Serialize, Debug)]
+pub struct ErrorResponse {
+    message: String,
 }

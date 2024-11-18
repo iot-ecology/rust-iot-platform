@@ -4,7 +4,7 @@ use crate::db::db_model::{FeiShu, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils;
-use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
+use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
 
 pub struct FeiShuBiz {
@@ -81,7 +81,7 @@ impl CrudOperations<FeiShu> for FeiShuBiz {
 
     async fn page(
         &self,
-        filters: Vec<Filter>,
+        filters: Vec<FilterInfo>,
         pagination: PaginationParams,
     ) -> Result<PaginationResult<FeiShu>, Error> {
         log::info!(
@@ -96,7 +96,7 @@ impl CrudOperations<FeiShu> for FeiShuBiz {
         result
     }
 
-    async fn list(&self, filters: Vec<Filter>) -> Result<Vec<FeiShu>, Error> {
+    async fn list(&self, filters: Vec<FilterInfo>) -> Result<Vec<FeiShu>, Error> {
         log::info!("Fetching list of FeiShus with filters: {:?}", filters);
 
         let result = sql_utils::list::<FeiShu>(&self.mysql, "feishus", filters).await;

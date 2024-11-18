@@ -5,7 +5,7 @@ use rocket::response::status::Custom;
 use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
-#[post("/SimCard/create")]
+#[post("/SimCard/create", format = "json", data = "<data>")]
 pub async fn create_sim_card(
     sim_card_api: &rocket::State<SimCardBiz>,
     config: &rocket::State<Config>,
@@ -17,7 +17,7 @@ pub async fn create_sim_card(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/SimCard/update")]
+#[post("/SimCard/update", format = "json", data = "<data>")]
 pub async fn update_sim_card(
     sim_card_api: &rocket::State<SimCardBiz>,
     config: &rocket::State<Config>,
@@ -29,7 +29,7 @@ pub async fn update_sim_card(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/SimCard/page")]
+#[get("/SimCard/page?<page>&<page_size>")]
 pub async fn page_sim_card(
     sim_card_api: &rocket::State<SimCardBiz>,
     config: &rocket::State<Config>,

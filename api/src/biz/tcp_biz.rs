@@ -3,7 +3,7 @@ use crate::db::db_model::TcpHandler;
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils::{
-    by_id_common, CrudOperations, Filter, PaginationParams, PaginationResult,
+    by_id_common, CrudOperations, FilterInfo, PaginationParams, PaginationResult,
 };
 use r2d2;
 use sqlx::MySqlPool;
@@ -105,7 +105,7 @@ impl CrudOperations<TcpHandler> for TcpHandlerBiz {
 
     async fn page(
         &self,
-        filters: Vec<Filter>,
+        filters: Vec<FilterInfo>,
         pagination: PaginationParams,
     ) -> Result<PaginationResult<TcpHandler>, Error> {
         log::info!(
@@ -125,7 +125,7 @@ impl CrudOperations<TcpHandler> for TcpHandlerBiz {
         result
     }
 
-    async fn list(&self, filters: Vec<Filter>) -> Result<Vec<TcpHandler>, Error> {
+    async fn list(&self, filters: Vec<FilterInfo>) -> Result<Vec<TcpHandler>, Error> {
         log::info!("Fetching list of tcp handlers with filters: {:?}", filters);
         let result =
             common_lib::sql_utils::list::<TcpHandler>(&self.mysql, "tcp_handlers", filters).await;

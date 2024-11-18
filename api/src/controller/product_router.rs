@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/product/create")]
+#[post("/product/create", format = "json", data = "<data>")]
 pub async fn create_product(
     product_api: &rocket::State<ProductBiz>,
     config: &rocket::State<Config>,
@@ -18,7 +18,7 @@ pub async fn create_product(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/product/update")]
+#[post("/product/update", format = "json", data = "<data>")]
 pub async fn update_product(
     product_api: &rocket::State<ProductBiz>,
     config: &rocket::State<Config>,
@@ -55,7 +55,7 @@ pub async fn list_product(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/product/page")]
+#[get("/product/page?<page>&<page_size>")]
 pub async fn page_product(
     product_api: &rocket::State<ProductBiz>,
     config: &rocket::State<Config>,

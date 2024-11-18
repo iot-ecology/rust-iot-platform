@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/CassandraTransmit/create")]
+#[post("/CassandraTransmit/create", format = "json", data = "<data>")]
 pub async fn create_cassandra_transmit(
     cassandra_transmit_api: &rocket::State<CassandraTransmitBiz>,
     config: &rocket::State<Config>,
@@ -18,7 +18,7 @@ pub async fn create_cassandra_transmit(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/CassandraTransmit/update")]
+#[post("/CassandraTransmit/update", format = "json", data = "<data>")]
 pub async fn update_cassandra_transmit(
     cassandra_transmit_api: &rocket::State<CassandraTransmitBiz>,
     config: &rocket::State<Config>,
@@ -55,7 +55,7 @@ pub async fn list_cassandra_transmit(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/CassandraTransmit/page")]
+#[get("/CassandraTransmit/page?<page>&<page_size>")]
 pub async fn page_cassandra_transmit(
     cassandra_transmit_api: &rocket::State<CassandraTransmitBiz>,
     config: &rocket::State<Config>,

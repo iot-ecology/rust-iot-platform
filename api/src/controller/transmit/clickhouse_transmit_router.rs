@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/ClickhouseTransmit/create")]
+#[post("/ClickhouseTransmit/create", format = "json", data = "<data>")]
 pub async fn create_clickhouse_transmit(
     click_transmit_api: &rocket::State<ClickhouseTransmitBiz>,
     config: &rocket::State<Config>,
@@ -18,7 +18,7 @@ pub async fn create_clickhouse_transmit(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/ClickhouseTransmit/update")]
+#[post("/ClickhouseTransmit/update", format = "json", data = "<data>")]
 pub async fn update_clickhouse_transmit(
     click_transmit_api: &rocket::State<ClickhouseTransmitBiz>,
     config: &rocket::State<Config>,
@@ -55,7 +55,7 @@ pub async fn list_clickhouse_transmit(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/ClickhouseTransmit/page")]
+#[get("/ClickhouseTransmit/page?<page>&<page_size>")]
 pub async fn page_clickhouse_transmit(
     click_transmit_api: &rocket::State<ClickhouseTransmitBiz>,
     config: &rocket::State<Config>,

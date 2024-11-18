@@ -3,7 +3,7 @@ use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::WebSocketHandler;
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
-use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
+use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
 
 pub struct WebSocketHandlerBiz {
@@ -131,7 +131,7 @@ impl CrudOperations<WebSocketHandler> for WebSocketHandlerBiz {
 
     async fn page(
         &self,
-        filters: Vec<Filter>,
+        filters: Vec<FilterInfo>,
         pagination: PaginationParams,
     ) -> Result<PaginationResult<WebSocketHandler>, Error> {
         log::info!(
@@ -149,7 +149,7 @@ impl CrudOperations<WebSocketHandler> for WebSocketHandlerBiz {
         result
     }
 
-    async fn list(&self, filters: Vec<Filter>) -> Result<Vec<WebSocketHandler>, Error> {
+    async fn list(&self, filters: Vec<FilterInfo>) -> Result<Vec<WebSocketHandler>, Error> {
         log::info!(
             "Fetching list of WebSocketHandlers with filters: {:?}",
             filters

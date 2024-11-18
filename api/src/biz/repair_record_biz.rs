@@ -3,7 +3,7 @@ use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{RepairRecord, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
-use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
+use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
 
 pub struct RepairRecordBiz {
@@ -105,7 +105,7 @@ impl CrudOperations<RepairRecord> for RepairRecordBiz {
 
     async fn page(
         &self,
-        filters: Vec<Filter>,
+        filters: Vec<FilterInfo>,
         pagination: PaginationParams,
     ) -> Result<PaginationResult<RepairRecord>, Error> {
         log::info!(
@@ -125,7 +125,7 @@ impl CrudOperations<RepairRecord> for RepairRecordBiz {
         result
     }
 
-    async fn list(&self, filters: Vec<Filter>) -> Result<Vec<RepairRecord>, Error> {
+    async fn list(&self, filters: Vec<FilterInfo>) -> Result<Vec<RepairRecord>, Error> {
         log::info!(
             "Fetching list of repair records with filters: {:?}",
             filters

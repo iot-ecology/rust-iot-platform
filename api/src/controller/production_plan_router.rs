@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/ProductionPlan/create")]
+#[post("/ProductionPlan/create", format = "json", data = "<data>")]
 pub async fn create_production_plan(
     production_plan_api: &rocket::State<ProductionPlanBiz>,
     config: &rocket::State<Config>,
@@ -18,7 +18,7 @@ pub async fn create_production_plan(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/ProductionPlan/update")]
+#[post("/ProductionPlan/update", format = "json", data = "<data>")]
 pub async fn update_production_plan(
     production_plan_api: &rocket::State<ProductionPlanBiz>,
     config: &rocket::State<Config>,
@@ -43,7 +43,7 @@ pub async fn by_id_production_plan(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/ProductionPlan/page")]
+#[get("/ProductionPlan/page?<page>&<page_size>")]
 pub async fn page_production_plan(
     production_plan_api: &rocket::State<ProductionPlanBiz>,
     config: &rocket::State<Config>,

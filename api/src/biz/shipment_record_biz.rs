@@ -3,7 +3,7 @@ use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{ShipmentRecord, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
-use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
+use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
 
 pub struct ShipmentRecordBiz {
@@ -124,7 +124,7 @@ impl CrudOperations<ShipmentRecord> for ShipmentRecordBiz {
 
     async fn page(
         &self,
-        filters: Vec<Filter>,
+        filters: Vec<FilterInfo>,
         pagination: PaginationParams,
     ) -> Result<PaginationResult<ShipmentRecord>, Error> {
         log::info!(
@@ -144,7 +144,7 @@ impl CrudOperations<ShipmentRecord> for ShipmentRecordBiz {
         result
     }
 
-    async fn list(&self, filters: Vec<Filter>) -> Result<Vec<ShipmentRecord>, Error> {
+    async fn list(&self, filters: Vec<FilterInfo>) -> Result<Vec<ShipmentRecord>, Error> {
         log::info!(
             "Fetching list of shipment records with filters: {:?}",
             filters

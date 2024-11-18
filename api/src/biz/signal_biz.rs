@@ -3,7 +3,7 @@ use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{Signal, SimCard, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
-use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
+use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
 
 pub struct SignalBiz {
@@ -115,7 +115,7 @@ impl CrudOperations<Signal> for SignalBiz {
 
     async fn page(
         &self,
-        filters: Vec<Filter>,
+        filters: Vec<FilterInfo>,
         pagination: PaginationParams,
     ) -> Result<PaginationResult<Signal>, Error> {
         log::info!(
@@ -131,7 +131,7 @@ impl CrudOperations<Signal> for SignalBiz {
         result
     }
 
-    async fn list(&self, filters: Vec<Filter>) -> Result<Vec<Signal>, Error> {
+    async fn list(&self, filters: Vec<FilterInfo>) -> Result<Vec<Signal>, Error> {
         log::info!("Fetching list of signals with filters: {:?}", filters);
         let result = common_lib::sql_utils::list::<Signal>(&self.mysql, "signals", filters).await;
         return result;

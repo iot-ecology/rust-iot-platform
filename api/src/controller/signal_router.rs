@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/signal/create")]
+#[post("/signal/create", format = "json", data = "<data>")]
 pub async fn create_signal(
     signal_api: &rocket::State<SignalBiz>,
     config: &rocket::State<Config>,
@@ -18,7 +18,7 @@ pub async fn create_signal(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/signal/update")]
+#[post("/signal/update", format = "json", data = "<data>")]
 pub async fn update_signal(
     signal_api: &rocket::State<SignalBiz>,
     config: &rocket::State<Config>,
@@ -43,7 +43,7 @@ pub async fn delete_signal(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/signal/page")]
+#[get("/signal/page?<page>&<page_size>")]
 pub async fn page_signal(
     signal_api: &rocket::State<SignalBiz>,
     config: &rocket::State<Config>,

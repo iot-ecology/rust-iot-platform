@@ -5,7 +5,7 @@ use rocket::response::status::Custom;
 use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
-#[post("/ShipmentRecord/create")]
+#[post("/ShipmentRecord/create", format = "json", data = "<data>")]
 pub async fn create_shipment_record(
     shipment_record_api: &rocket::State<ShipmentRecordBiz>,
     config: &rocket::State<Config>,
@@ -17,7 +17,7 @@ pub async fn create_shipment_record(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/ShipmentRecord/update")]
+#[post("/ShipmentRecord/update", format = "json", data = "<data>")]
 pub async fn update_shipment_record(
     shipment_record_api: &rocket::State<ShipmentRecordBiz>,
     config: &rocket::State<Config>,
@@ -29,7 +29,7 @@ pub async fn update_shipment_record(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/ShipmentRecord/page")]
+#[get("/ShipmentRecord/page?<page>&<page_size>")]
 pub async fn page_shipment_record(
     shipment_record_api: &rocket::State<ShipmentRecordBiz>,
     config: &rocket::State<Config>,

@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/Role/create")]
+#[post("/Role/create", format = "json", data = "<data>")]
 pub async fn create_role(
     role_api: &rocket::State<RoleBiz>,
     config: &rocket::State<Config>,
@@ -18,7 +18,7 @@ pub async fn create_role(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/Role/update")]
+#[post("/Role/update", format = "json", data = "<data>")]
 pub async fn update_role(
     role_api: &rocket::State<RoleBiz>,
     config: &rocket::State<Config>,
@@ -30,7 +30,7 @@ pub async fn update_role(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/Role/page")]
+#[get("/Role/page?<page>&<page_size>")]
 pub async fn page_role(
     role_api: &rocket::State<RoleBiz>,
     config: &rocket::State<Config>,

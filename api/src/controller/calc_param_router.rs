@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/calc-param/create")]
+#[post("/calc-param/create", format = "json", data = "<data>")]
 pub async fn create_calc_param(
     calc_param_api: &rocket::State<CalcParamBiz>,
     config: &rocket::State<Config>,
@@ -18,7 +18,7 @@ pub async fn create_calc_param(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/calc-param/update")]
+#[post("/calc-param/update", format = "json", data = "<data>")]
 pub async fn update_calc_param(
     calc_param_api: &rocket::State<CalcParamBiz>,
     config: &rocket::State<Config>,
@@ -30,7 +30,7 @@ pub async fn update_calc_param(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/calc-param/page")]
+#[get("/calc-param/page?<page>&<page_size>")]
 pub async fn page_calc_param(
     calc_param_api: &rocket::State<CalcParamBiz>,
     config: &rocket::State<Config>,

@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/RepairRecord/create")]
+#[post("/RepairRecord/create", format = "json", data = "<data>")]
 pub async fn create_repair_record(
     repair_record_api: &rocket::State<RepairRecordBiz>,
     config: &rocket::State<Config>,
@@ -18,7 +18,7 @@ pub async fn create_repair_record(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/RepairRecord/update")]
+#[post("/RepairRecord/update", format = "json", data = "<data>")]
 pub async fn update_repair_record(
     repair_record_api: &rocket::State<RepairRecordBiz>,
     config: &rocket::State<Config>,
@@ -43,7 +43,7 @@ pub async fn by_id_repair_record(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/RepairRecord/page")]
+#[get("/RepairRecord/page?<page>&<page_size>")]
 pub async fn page_repair_record(
     repair_record_api: &rocket::State<RepairRecordBiz>,
     config: &rocket::State<Config>,

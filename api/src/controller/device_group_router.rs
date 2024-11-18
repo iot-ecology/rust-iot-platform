@@ -5,7 +5,7 @@ use rocket::response::status::Custom;
 use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
-#[post("/device_group/create")]
+#[post("/device_group/create", format = "json", data = "<data>")]
 pub async fn create_device_group(
     device_group_api: &rocket::State<DeviceGroupBiz>,
     config: &rocket::State<Config>,
@@ -17,7 +17,7 @@ pub async fn create_device_group(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/device_group/update")]
+#[post("/device_group/update", format = "json", data = "<data>")]
 pub async fn update_device_group(
     device_group_api: &rocket::State<DeviceGroupBiz>,
     config: &rocket::State<Config>,
@@ -42,7 +42,7 @@ pub async fn by_id_device_group(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/device_group/page")]
+#[get("/device_group/page?<page>&<page_size>")]
 pub async fn page_device_group(
     device_group_api: &rocket::State<DeviceGroupBiz>,
     config: &rocket::State<Config>,

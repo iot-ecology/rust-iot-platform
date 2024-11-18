@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/InfluxdbTransmit/create")]
+#[post("/InfluxdbTransmit/create", format = "json", data = "<data>")]
 pub async fn create_influxdb_transmit(
     influxdb_transmit_api: &rocket::State<InfluxDbTransmitBiz>,
     config: &rocket::State<Config>,
@@ -18,7 +18,7 @@ pub async fn create_influxdb_transmit(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/InfluxdbTransmit/update")]
+#[post("/InfluxdbTransmit/update", format = "json", data = "<data>")]
 pub async fn update_influxdb_transmit(
     influxdb_transmit_api: &rocket::State<InfluxDbTransmitBiz>,
     config: &rocket::State<Config>,
@@ -55,7 +55,7 @@ pub async fn list_influxdb_transmit(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/InfluxdbTransmit/page")]
+#[get("/InfluxdbTransmit/page?<page>&<page_size>")]
 pub async fn page_influxdb_transmit(
     influxdb_transmit_api: &rocket::State<InfluxDbTransmitBiz>,
     config: &rocket::State<Config>,

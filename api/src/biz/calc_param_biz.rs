@@ -4,7 +4,7 @@ use crate::db::db_model::{CalcParam, Signal};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils;
-use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
+use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
 
 pub struct CalcParamBiz {
@@ -115,7 +115,7 @@ impl CrudOperations<CalcParam> for CalcParamBiz {
 
     async fn page(
         &self,
-        filters: Vec<Filter>,
+        filters: Vec<FilterInfo>,
         pagination: PaginationParams,
     ) -> Result<PaginationResult<CalcParam>, Error> {
         log::info!(
@@ -130,7 +130,7 @@ impl CrudOperations<CalcParam> for CalcParamBiz {
         result
     }
 
-    async fn list(&self, filters: Vec<Filter>) -> Result<Vec<CalcParam>, Error> {
+    async fn list(&self, filters: Vec<FilterInfo>) -> Result<Vec<CalcParam>, Error> {
         log::info!("Fetching list of CalcParams with filters: {:?}", filters);
 
         let result = sql_utils::list::<CalcParam>(&self.mysql, "calc_params", filters).await;

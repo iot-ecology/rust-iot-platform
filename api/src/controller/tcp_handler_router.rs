@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/TcpHandler/create")]
+#[post("/TcpHandler/create", format = "json", data = "<data>")]
 pub async fn create_tcp_handler(
     tcp_handler_api: &rocket::State<TcpHandlerBiz>,
     config: &rocket::State<Config>,
@@ -19,7 +19,7 @@ pub async fn create_tcp_handler(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/TcpHandler/update")]
+#[post("/TcpHandler/update", format = "json", data = "<data>")]
 pub async fn update_tcp_handler(
     tcp_handler_api: &rocket::State<TcpHandlerBiz>,
     config: &rocket::State<Config>,
@@ -46,7 +46,7 @@ pub async fn by_id_tcp_handler(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/TcpHandler/page")]
+#[get("/TcpHandler/page?<page>&<page_size>")]
 pub async fn page_tcp_handler(
     tcp_handler_api: &rocket::State<TcpHandlerBiz>,
     config: &rocket::State<Config>,

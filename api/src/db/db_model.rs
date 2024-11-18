@@ -23,7 +23,6 @@ pub struct User {
         rename = "UpdatedAt",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime",
-        default,
         default
     )]
     pub updated_at: Option<NaiveDateTime>,
@@ -32,7 +31,6 @@ pub struct User {
         skip_serializing_if = "Option::is_none",
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime",
-        default,
         default
     )]
     pub deleted_at: Option<NaiveDateTime>,

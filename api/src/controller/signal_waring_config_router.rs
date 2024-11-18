@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/signal-waring-config/create")]
+#[post("/signal-waring-config/create", format = "json", data = "<data>")]
 pub async fn create_signal_waring_config(
     signal_waring_config_api: &rocket::State<SignalDelayWaringBiz>,
     config: &rocket::State<Config>,
@@ -43,7 +43,7 @@ pub async fn query_waring_list(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/signal-waring-config/update")]
+#[post("/signal-waring-config/update", format = "json", data = "<data>")]
 pub async fn update_signal_waring_config(
     signal_waring_config_api: &rocket::State<SignalDelayWaringBiz>,
     config: &rocket::State<Config>,
@@ -55,7 +55,7 @@ pub async fn update_signal_waring_config(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/signal-waring-config/page")]
+#[get("/signal-waring-config/page?<page>&<page_size>")]
 pub async fn page_signal_waring_config(
     signal_waring_config_api: &rocket::State<SignalDelayWaringBiz>,
     config: &rocket::State<Config>,

@@ -2,7 +2,7 @@ use crate::db::db_model::User;
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils::{
-    by_id_common, CrudOperations, Filter, PaginationParams, PaginationResult,
+    by_id_common, CrudOperations, FilterInfo, PaginationParams, PaginationResult,
 };
 use r2d2;
 use sqlx::MySqlPool;
@@ -25,6 +25,24 @@ impl UserBiz {
     async fn query_mysql_for_user(&self, user_id: u64) -> Result<User, Error> {
         let x = self.by_id(user_id).await;
         x
+    }
+
+    pub async fn find_user_with_pwd(&self, username: String, password: String) -> Option<User> {
+        let sql = "select * from users where username = ? and password = ?";
+        let record = sqlx::query_as::<_, User>(sql)
+            .bind(username.clone())
+            .bind(password.clone())
+            .fetch_optional(&self.mysql)
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to fetch updated record from table '{}' with username {:?}",
+                    "users",
+                    username.clone()
+                )
+            });
+
+        record.unwrap()
     }
 
     pub async fn find_by_username(&self, username: Option<String>) -> Result<Option<User>, Error> {
@@ -133,7 +151,7 @@ impl CrudOperations<User> for UserBiz {
 
     async fn page(
         &self,
-        filters: Vec<Filter>,
+        filters: Vec<FilterInfo>,
         pagination: PaginationParams,
     ) -> Result<PaginationResult<User>, Error> {
         log::info!(
@@ -149,7 +167,7 @@ impl CrudOperations<User> for UserBiz {
         result
     }
 
-    async fn list(&self, filters: Vec<Filter>) -> Result<Vec<User>, Error> {
+    async fn list(&self, filters: Vec<FilterInfo>) -> Result<Vec<User>, Error> {
         log::info!("Fetching list of users with filters: {:?}", filters);
         let result = common_lib::sql_utils::list::<User>(&self.mysql, "users", filters).await;
         return result;

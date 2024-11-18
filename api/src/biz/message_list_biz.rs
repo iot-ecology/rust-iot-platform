@@ -3,7 +3,7 @@ use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{MessageList, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
-use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
+use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
 
 pub struct MessageListBiz {
@@ -89,7 +89,7 @@ impl CrudOperations<MessageList> for MessageListBiz {
 
     async fn page(
         &self,
-        filters: Vec<Filter>,
+        filters: Vec<FilterInfo>,
         pagination: PaginationParams,
     ) -> Result<PaginationResult<MessageList>, Error> {
         log::info!(
@@ -109,7 +109,7 @@ impl CrudOperations<MessageList> for MessageListBiz {
         result
     }
 
-    async fn list(&self, filters: Vec<Filter>) -> Result<Vec<MessageList>, Error> {
+    async fn list(&self, filters: Vec<FilterInfo>) -> Result<Vec<MessageList>, Error> {
         log::info!("Fetching list of message lists with filters: {:?}", filters);
         let result =
             common_lib::sql_utils::list::<MessageList>(&self.mysql, "message_lists", filters).await;

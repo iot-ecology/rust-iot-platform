@@ -7,7 +7,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/dashboard/create")]
+#[post("/dashboard/create", format = "json", data = "<data>")]
 pub async fn create_dashboard(
     dashboard_api: &rocket::State<DashboardBiz>,
     config: &rocket::State<Config>,
@@ -19,7 +19,7 @@ pub async fn create_dashboard(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/dashboard/update")]
+#[post("/dashboard/update", format = "json", data = "<data>")]
 pub async fn update_dashboard(
     dashboard_api: &rocket::State<DashboardBiz>,
     config: &rocket::State<Config>,
@@ -44,7 +44,7 @@ pub async fn by_id_dashboard(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/dashboard/page")]
+#[get("/dashboard/page?<page>&<page_size>")]
 pub async fn page_dashboard(
     dashboard_api: &rocket::State<DashboardBiz>,
     config: &rocket::State<Config>,

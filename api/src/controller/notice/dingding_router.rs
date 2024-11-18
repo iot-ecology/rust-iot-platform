@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/DingDing/create")]
+#[post("/DingDing/create", format = "json", data = "<data>")]
 pub async fn create_dingding(
     dingding_api: &rocket::State<DingDingBiz>,
     config: &rocket::State<Config>,
@@ -18,7 +18,7 @@ pub async fn create_dingding(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/DingDing/update")]
+#[post("/DingDing/update", format = "json", data = "<data>")]
 pub async fn update_dingding(
     dingding_api: &rocket::State<DingDingBiz>,
     config: &rocket::State<Config>,
@@ -43,7 +43,7 @@ pub async fn by_id_dingding(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/DingDing/page")]
+#[get("/DingDing/page?<page>&<page_size>")]
 pub async fn page_dingding(
     dingding_api: &rocket::State<DingDingBiz>,
     config: &rocket::State<Config>,

@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/MongoTransmitBind/create")]
+#[post("/MongoTransmitBind/create", format = "json", data = "<data>")]
 pub async fn create_mongo_transmit_bind(
     mongo_transmit_bind_api: &rocket::State<MongoTransmitBindBiz>,
     config: &rocket::State<Config>,
@@ -19,7 +19,7 @@ pub async fn create_mongo_transmit_bind(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/MongoTransmitBind/update")]
+#[post("/MongoTransmitBind/update", format = "json", data = "<data>")]
 pub async fn update_mongo_transmit_bind(
     mongo_transmit_bind_api: &rocket::State<MongoTransmitBindBiz>,
     config: &rocket::State<Config>,
@@ -46,7 +46,7 @@ pub async fn by_id_mongo_transmit_bind(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/MongoTransmitBind/page")]
+#[get("/MongoTransmitBind/page?<page>&<page_size>")]
 pub async fn page_mongo_transmit_bind(
     mongo_transmit_bind_api: &rocket::State<MongoTransmitBindBiz>,
     config: &rocket::State<Config>,

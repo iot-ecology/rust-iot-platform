@@ -7,7 +7,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/HttpHandler/create")]
+#[post("/HttpHandler/create", format = "json", data = "<data>")]
 pub async fn create_http_handler(
     http_handler_api: &rocket::State<HttpHandlerBiz>,
     config: &rocket::State<Config>,
@@ -20,7 +20,7 @@ pub async fn create_http_handler(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/HttpHandler/update")]
+#[post("/HttpHandler/update", format = "json", data = "<data>")]
 pub async fn update_http_handler(
     http_handler_api: &rocket::State<HttpHandlerBiz>,
     config: &rocket::State<Config>,
@@ -47,7 +47,7 @@ pub async fn by_id_http_handler(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/HttpHandler/page")]
+#[get("/HttpHandler/page?<page>&<page_size>")]
 pub async fn page_http_handler(
     http_handler_api: &rocket::State<HttpHandlerBiz>,
     config: &rocket::State<Config>,

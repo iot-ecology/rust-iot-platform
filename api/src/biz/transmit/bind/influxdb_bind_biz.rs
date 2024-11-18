@@ -4,7 +4,7 @@ use crate::db::db_model::{InfluxDbTransmitBind, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils;
-use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
+use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
 
 pub struct InfluxDbTransmitBindBiz {
@@ -140,7 +140,7 @@ impl CrudOperations<InfluxDbTransmitBind> for InfluxDbTransmitBindBiz {
 
     async fn page(
         &self,
-        filters: Vec<Filter>,
+        filters: Vec<FilterInfo>,
         pagination: PaginationParams,
     ) -> Result<PaginationResult<InfluxDbTransmitBind>, Error> {
         log::info!(
@@ -160,7 +160,7 @@ impl CrudOperations<InfluxDbTransmitBind> for InfluxDbTransmitBindBiz {
         result
     }
 
-    async fn list(&self, filters: Vec<Filter>) -> Result<Vec<InfluxDbTransmitBind>, Error> {
+    async fn list(&self, filters: Vec<FilterInfo>) -> Result<Vec<InfluxDbTransmitBind>, Error> {
         log::info!(
             "Fetching list of InfluxDbTransmitBinds with filters: {:?}",
             filters

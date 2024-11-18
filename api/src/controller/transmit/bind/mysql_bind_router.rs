@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/MySQLTransmitBind/create")]
+#[post("/MySQLTransmitBind/create", format = "json", data = "<data>")]
 pub async fn create_mysql_transmit_bind(
     my_sql_transmit_bind_api: &rocket::State<MysqlTransmitBindBiz>,
     config: &rocket::State<Config>,
@@ -19,7 +19,7 @@ pub async fn create_mysql_transmit_bind(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/MySQLTransmitBind/update")]
+#[post("/MySQLTransmitBind/update", format = "json", data = "<data>")]
 pub async fn update_mysql_transmit_bind(
     my_sql_transmit_bind_api: &rocket::State<MysqlTransmitBindBiz>,
     config: &rocket::State<Config>,
@@ -46,7 +46,7 @@ pub async fn by_id_mysql_transmit_bind(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/MySQLTransmitBind/page")]
+#[get("/MySQLTransmitBind/page?<page>&<page_size>")]
 pub async fn page_mysql_transmit_bind(
     my_sql_transmit_bind_api: &rocket::State<MysqlTransmitBindBiz>,
     config: &rocket::State<Config>,

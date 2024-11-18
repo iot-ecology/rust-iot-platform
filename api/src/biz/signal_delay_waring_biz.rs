@@ -3,7 +3,7 @@ use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{SignalDelayWaring, SimCard, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
-use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
+use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
 
 pub struct SignalDelayWaringBiz {
@@ -80,7 +80,7 @@ impl CrudOperations<SignalDelayWaring> for SignalDelayWaringBiz {
 
     async fn page(
         &self,
-        filters: Vec<Filter>,
+        filters: Vec<FilterInfo>,
         pagination: PaginationParams,
     ) -> Result<PaginationResult<SignalDelayWaring>, Error> {
         log::info!(
@@ -100,7 +100,7 @@ impl CrudOperations<SignalDelayWaring> for SignalDelayWaringBiz {
         result
     }
 
-    async fn list(&self, filters: Vec<Filter>) -> Result<Vec<SignalDelayWaring>, Error> {
+    async fn list(&self, filters: Vec<FilterInfo>) -> Result<Vec<SignalDelayWaring>, Error> {
         log::info!(
             "Fetching list of signal delay warnings with filters: {:?}",
             filters

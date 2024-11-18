@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/CoapHandler/create")]
+#[post("/CoapHandler/create", format = "json", data = "<data>")]
 pub async fn create_coap_handler(
     coap_handler_api: &rocket::State<CoapHandlerBiz>,
     config: &rocket::State<Config>,
@@ -19,7 +19,7 @@ pub async fn create_coap_handler(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/CoapHandler/update")]
+#[post("/CoapHandler/update", format = "json", data = "<data>")]
 pub async fn update_coap_handler(
     coap_handler_api: &rocket::State<CoapHandlerBiz>,
     config: &rocket::State<Config>,
@@ -46,7 +46,7 @@ pub async fn by_id_coap_handler(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/CoapHandler/page")]
+#[get("/CoapHandler/page?<page>&<page_size>")]
 pub async fn page_coap_handler(
     coap_handler_api: &rocket::State<CoapHandlerBiz>,
     config: &rocket::State<Config>,

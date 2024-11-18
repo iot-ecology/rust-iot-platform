@@ -76,7 +76,7 @@ pub struct PaginationParams {
     pub size: u64,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PaginationResult<T> {
     pub data: Vec<T>,
     pub total: i64,
@@ -91,6 +91,7 @@ pub enum FilterOperation {
     NotEqual,
     LeftLike,
     RightLike,
+    AllLike,
     GreaterThan,
     LessThan,
     GreaterThanOrEqual,
@@ -99,21 +100,25 @@ pub enum FilterOperation {
 }
 
 #[derive(Debug)]
-pub struct Filter {
+pub struct FilterInfo {
     pub field: String,
     pub value: String,
     pub operation: FilterOperation,
     pub value2: Option<String>,
 }
 
-impl Filter {
+impl FilterInfo {
     fn to_sql(&self) -> (String, Vec<String>) {
         match self.operation {
             FilterOperation::Equal => (format!("{} = ?", self.field), vec![self.value.clone()]),
             FilterOperation::NotEqual => (format!("{} != ?", self.field), vec![self.value.clone()]),
             FilterOperation::LeftLike => (
                 format!("{} LIKE ?", self.field),
-                vec![format!("%{}%", self.value)],
+                vec![format!("%{}", self.value)],
+            ),
+            FilterOperation::AllLike => (
+                format!("{} LIKE ?", self.field),
+                vec![format!("%{}", self.value)],
             ),
             FilterOperation::RightLike => (
                 format!("{} LIKE ?", self.field),
@@ -146,7 +151,7 @@ impl Filter {
 pub async fn paginate<T>(
     pool: &Pool<MySql>,
     table_name: &str,
-    filters: Vec<Filter>,
+    filters: Vec<FilterInfo>,
     pagination: PaginationParams,
 ) -> Result<PaginationResult<T>, Error>
 where
@@ -210,7 +215,7 @@ where
 pub async fn list<T>(
     pool: &Pool<MySql>,
     table_name: &str,
-    filters: Vec<Filter>,
+    filters: Vec<FilterInfo>,
 ) -> Result<Vec<T>, Error>
 where
     T: for<'r> FromRow<'r, sqlx::mysql::MySqlRow> + Send + Unpin + Debug,
@@ -369,10 +374,10 @@ where
     async fn delete(&self, id: u64) -> Result<(), Error>;
     async fn page(
         &self,
-        filters: Vec<Filter>,
+        filters: Vec<FilterInfo>,
         pagination: PaginationParams,
     ) -> Result<PaginationResult<T>, Error>;
-    async fn list(&self, filters: Vec<Filter>) -> Result<Vec<T>, Error>;
+    async fn list(&self, filters: Vec<FilterInfo>) -> Result<Vec<T>, Error>;
 
     async fn by_id(&self, id: u64) -> Result<T, Error>;
 }
@@ -446,13 +451,13 @@ async fn test_get_paginated() {
     let pagination = PaginationParams { page: 1, size: 10 };
 
     let filters = vec![
-        Filter {
+        FilterInfo {
             field: "username".to_string(),
             value: "1".to_string(),
             operation: FilterOperation::LeftLike,
             value2: None,
         },
-        Filter {
+        FilterInfo {
             field: "id".to_string(),
             value: "1".to_string(),
             operation: FilterOperation::Between,

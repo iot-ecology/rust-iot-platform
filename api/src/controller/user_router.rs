@@ -1,7 +1,7 @@
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::User;
 use common_lib::config::Config;
-use common_lib::sql_utils::CrudOperations;
+use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
 use log::error;
 use log::info;
 use rocket::http::Status;
@@ -97,28 +97,107 @@ pub async fn create_user(
     }
 }
 
-#[post("/User/update")]
+#[post("/User/update", format = "json", data = "<data>")]
 pub async fn update_user(
+    data: Json<User>,
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
-    let error_json = json!({
-        "status": "error",
-        "message": ""
-    });
-    Custom(Status::InternalServerError, Json(error_json))
+    let x = user_api.by_id(data.id.unwrap()).await;
+
+    match x {
+        Ok(mut u) => {
+            u.password = data.password.clone();
+            u.email = data.email.clone();
+            let result = user_api.update(u.id.unwrap(), u).await;
+            match result {
+                Ok(u2) => {
+                    let success_json = json!({
+                        "code": 20000,
+                        "message": "更新成功",
+                        "data": u2
+                    });
+                    Custom(Status::Ok, Json(success_json))
+                }
+                Err(e) => {
+                    error!("error =  {:?}", e);
+
+                    let error_json = json!({
+                        "code": 40000,
+                        "message": "查询失败"
+                    });
+                    Custom(Status::InternalServerError, Json(error_json))
+                }
+            }
+        }
+        Err(e) => {
+            error!("error =  {:?}", e);
+
+            let error_json = json!({
+                "code": 40000,
+                "message": "查询失败"
+            });
+            Custom(Status::InternalServerError, Json(error_json))
+        }
+    }
 }
 
-#[get("/User/page")]
+#[get("/User/page?<username>&<page>&<page_size>")]
 pub async fn page_user(
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
+    username: Option<String>,
+    page: Option<u64>,
+    page_size: Option<u64>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
-    let error_json = json!({
-        "status": "error",
-        "message": ""
-    });
-    Custom(Status::InternalServerError, Json(error_json))
+    let page = page.unwrap_or(1);
+    let page_size = page_size.unwrap_or(10);
+
+    if page == 0 || page_size == 0 {
+        let error_json = json!({
+                           "code": 40000,
+
+            "message": "Invalid page or page_size parameters"
+        });
+        return Custom(Status::Ok, Json(error_json));
+    };
+
+    let filters = vec![FilterInfo {
+        field: "username".to_string(),
+        value: username.unwrap_or_else(String::new),
+        operation: FilterOperation::AllLike,
+        value2: None,
+    }];
+
+    let result = user_api
+        .page(
+            filters,
+            PaginationParams {
+                page: page,
+                size: page_size,
+            },
+        )
+        .await;
+
+    match result {
+        Ok(uu) => {
+            let success_json = json!({
+                "code": 20000,
+                "message": "查询成功",
+                "data": uu
+            });
+            Custom(Status::Ok, Json(success_json))
+        }
+        Err(e) => {
+            let error_json = json!({
+                               "code": 40000,
+
+                    "message": "查询失败"
+
+            });
+            return Custom(Status::Ok, Json(error_json));
+        }
+    }
 }
 
 #[post("/User/delete/<id>")]
@@ -127,11 +206,23 @@ pub async fn delete_user(
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
-    let error_json = json!({
-        "status": "error",
-        "message": ""
-    });
-    Custom(Status::InternalServerError, Json(error_json))
+    let result = user_api.delete(id).await;
+    match result {
+        Ok(o) => {
+            let success_json = json!({
+                "code": 20000,
+                "message": "删除成功",
+            });
+            Custom(Status::Ok, Json(success_json))
+        }
+        Err(e) => {
+            let success_json = json!({
+                "code": 40000,
+                "message": "删除失败",
+            });
+            Custom(Status::Ok, Json(success_json))
+        }
+    }
 }
 
 #[get("/User/<id>")]
@@ -140,11 +231,24 @@ pub async fn by_id_user(
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
-    let error_json = json!({
-        "status": "error",
-        "message": ""
-    });
-    Custom(Status::InternalServerError, Json(error_json))
+    let result = user_api.by_id(id).await;
+    match result {
+        Ok(u) => {
+            let success_json = json!({
+                        "code": 20000,
+                        "message": "查询成功",
+            "data":u
+                    });
+            Custom(Status::Ok, Json(success_json))
+        }
+        Err(e) => {
+            let success_json = json!({
+                "code": 40000,
+                "message": "查询失败",
+            });
+            Custom(Status::Ok, Json(success_json))
+        }
+    }
 }
 
 #[get("/User/list")]
@@ -152,11 +256,24 @@ pub async fn list_user(
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
-    let error_json = json!({
-        "status": "error",
-        "message": ""
-    });
-    Custom(Status::InternalServerError, Json(error_json))
+    let result = user_api.list(Vec::new()).await;
+    match result {
+        Ok(u) => {
+            let success_json = json!({
+                        "code": 20000,
+                        "message": "查询成功",
+            "data":u
+                    });
+            Custom(Status::Ok, Json(success_json))
+        }
+        Err(e) => {
+            let success_json = json!({
+                "code": 40000,
+                "message": "查询失败",
+            });
+            Custom(Status::Ok, Json(success_json))
+        }
+    }
 }
 
 #[post("/User/BindRole")]

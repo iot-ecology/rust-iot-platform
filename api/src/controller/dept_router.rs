@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/Dept/create")]
+#[post("/Dept/create", format = "json", data = "<data>")]
 pub async fn create_dept(
     dept_api: &rocket::State<DeptBiz>,
     config: &rocket::State<Config>,
@@ -18,7 +18,7 @@ pub async fn create_dept(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/Dept/update")]
+#[post("/Dept/update", format = "json", data = "<data>")]
 pub async fn update_dept(
     dept_api: &rocket::State<DeptBiz>,
     config: &rocket::State<Config>,
@@ -30,7 +30,7 @@ pub async fn update_dept(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/Dept/page")]
+#[get("/Dept/page?<page>&<page_size>")]
 pub async fn page_dept(
     dept_api: &rocket::State<DeptBiz>,
     config: &rocket::State<Config>,

@@ -4,7 +4,7 @@ use crate::db::db_model::{ClickhouseTransmitBind, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils;
-use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
+use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
 
 pub struct ClickhouseTransmitBindBiz {
@@ -136,7 +136,7 @@ impl CrudOperations<ClickhouseTransmitBind> for ClickhouseTransmitBindBiz {
 
     async fn page(
         &self,
-        filters: Vec<Filter>,
+        filters: Vec<FilterInfo>,
         pagination: PaginationParams,
     ) -> Result<PaginationResult<ClickhouseTransmitBind>, Error> {
         log::info!(
@@ -156,7 +156,7 @@ impl CrudOperations<ClickhouseTransmitBind> for ClickhouseTransmitBindBiz {
         result
     }
 
-    async fn list(&self, filters: Vec<Filter>) -> Result<Vec<ClickhouseTransmitBind>, Error> {
+    async fn list(&self, filters: Vec<FilterInfo>) -> Result<Vec<ClickhouseTransmitBind>, Error> {
         log::info!(
             "Fetching list of ClickhouseTransmitBinds with filters: {:?}",
             filters

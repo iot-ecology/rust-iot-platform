@@ -4,7 +4,7 @@ use crate::db::db_model::{MongoTransmitBind, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils;
-use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
+use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
 
 pub struct MongoTransmitBindBiz {
@@ -121,7 +121,7 @@ impl CrudOperations<MongoTransmitBind> for MongoTransmitBindBiz {
 
     async fn page(
         &self,
-        filters: Vec<Filter>,
+        filters: Vec<FilterInfo>,
         pagination: PaginationParams,
     ) -> Result<PaginationResult<MongoTransmitBind>, Error> {
         log::info!(
@@ -141,7 +141,7 @@ impl CrudOperations<MongoTransmitBind> for MongoTransmitBindBiz {
         result
     }
 
-    async fn list(&self, filters: Vec<Filter>) -> Result<Vec<MongoTransmitBind>, Error> {
+    async fn list(&self, filters: Vec<FilterInfo>) -> Result<Vec<MongoTransmitBind>, Error> {
         log::info!(
             "Fetching list of MongoTransmitBinds with filters: {:?}",
             filters

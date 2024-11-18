@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/FeiShuId/create")]
+#[post("/FeiShuId/create", format = "json", data = "<data>")]
 pub async fn create_feishu(
     feishu_api: &rocket::State<FeiShuBiz>,
     config: &rocket::State<Config>,
@@ -18,7 +18,7 @@ pub async fn create_feishu(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/FeiShuId/update")]
+#[post("/FeiShuId/update", format = "json", data = "<data>")]
 pub async fn update_feishu(
     feishu_api: &rocket::State<FeiShuBiz>,
     config: &rocket::State<Config>,
@@ -43,7 +43,7 @@ pub async fn by_id_feishu(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/FeiShuId/page")]
+#[get("/FeiShuId/page?<page>&<page_size>")]
 pub async fn page_feishu(
     feishu_api: &rocket::State<FeiShuBiz>,
     config: &rocket::State<Config>,

@@ -4,7 +4,7 @@ use crate::db::db_model::{MysqlTransmit, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils;
-use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
+use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
 
 pub struct MysqlTransmitBiz {
@@ -101,7 +101,7 @@ impl CrudOperations<MysqlTransmit> for MysqlTransmitBiz {
 
     async fn page(
         &self,
-        filters: Vec<Filter>,
+        filters: Vec<FilterInfo>,
         pagination: PaginationParams,
     ) -> Result<PaginationResult<MysqlTransmit>, Error> {
         log::info!(
@@ -121,7 +121,7 @@ impl CrudOperations<MysqlTransmit> for MysqlTransmitBiz {
         result
     }
 
-    async fn list(&self, filters: Vec<Filter>) -> Result<Vec<MysqlTransmit>, Error> {
+    async fn list(&self, filters: Vec<FilterInfo>) -> Result<Vec<MysqlTransmit>, Error> {
         log::info!(
             "Fetching list of MysqlTransmits with filters: {:?}",
             filters

@@ -3,7 +3,7 @@ use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{MqttClient, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
-use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
+use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
 
 pub struct MqttClientBiz {
@@ -120,7 +120,7 @@ impl CrudOperations<MqttClient> for MqttClientBiz {
 
     async fn page(
         &self,
-        filters: Vec<Filter>,
+        filters: Vec<FilterInfo>,
         pagination: PaginationParams,
     ) -> Result<PaginationResult<MqttClient>, Error> {
         log::info!(
@@ -140,7 +140,7 @@ impl CrudOperations<MqttClient> for MqttClientBiz {
         result
     }
 
-    async fn list(&self, filters: Vec<Filter>) -> Result<Vec<MqttClient>, Error> {
+    async fn list(&self, filters: Vec<FilterInfo>) -> Result<Vec<MqttClient>, Error> {
         log::info!("Fetching list of mqtt clients with filters: {:?}", filters);
         let result =
             common_lib::sql_utils::list::<MqttClient>(&self.mysql, "mqtt_clients", filters).await;

@@ -3,7 +3,7 @@ use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{Dept, Signal};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
-use common_lib::sql_utils::{CrudOperations, Filter, PaginationParams, PaginationResult};
+use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
 use sqlx::MySqlPool;
 
 #[derive(Debug)]
@@ -66,7 +66,7 @@ impl CrudOperations<Dept> for DeptBiz {
 
     async fn page(
         &self,
-        filters: Vec<Filter>,
+        filters: Vec<FilterInfo>,
         pagination: PaginationParams,
     ) -> Result<PaginationResult<Dept>, Error> {
         log::info!(
@@ -86,7 +86,7 @@ impl CrudOperations<Dept> for DeptBiz {
         result
     }
 
-    async fn list(&self, filters: Vec<Filter>) -> Result<Vec<Dept>, Error> {
+    async fn list(&self, filters: Vec<FilterInfo>) -> Result<Vec<Dept>, Error> {
         log::info!("Fetching list of Depts with filters: {:?}", filters);
         let result = common_lib::sql_utils::list::<Dept>(&self.mysql, "departments", filters).await;
         result

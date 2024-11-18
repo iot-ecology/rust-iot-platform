@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
 
-#[post("/mqtt/create")]
+#[post("/mqtt/create", format = "json", data = "<data>")]
 pub async fn create_mqtt(
     mqtt_api: &rocket::State<MqttClientBiz>,
     config: &rocket::State<Config>,
@@ -18,7 +18,7 @@ pub async fn create_mqtt(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[get("/mqtt/page")]
+#[get("/mqtt/page?<page>&<page_size>")]
 pub async fn page_mqtt(
     mqtt_api: &rocket::State<MqttClientBiz>,
     config: &rocket::State<Config>,
@@ -79,7 +79,7 @@ pub async fn stop_mqtt(
     Custom(Status::InternalServerError, Json(error_json))
 }
 
-#[post("/mqtt/update")]
+#[post("/mqtt/update", format = "json", data = "<data>")]
 pub async fn update_mqtt(
     mqtt_api: &rocket::State<MqttClientBiz>,
     config: &rocket::State<Config>,
