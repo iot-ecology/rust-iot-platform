@@ -1,6 +1,6 @@
 use crate::biz::mqtt_client_biz::MqttClientBiz;
 use crate::biz::user_biz::UserBiz;
-use crate::db::db_model::{Product, Signal, WebSocketHandler};
+use crate::db::db_model::{Product, Role, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
@@ -14,6 +14,33 @@ impl ProductBiz {
     pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
         ProductBiz { redis, mysql }
     }
+
+
+    pub async fn find_by_name(&self, name: Option<String>) -> Result<Option<Product>, Error> {
+        if name.is_none() {
+            return Ok(None);
+        }
+
+        let sql = "select * from products where name = ?";
+
+        let record = sqlx::query_as::<_, Product>(sql)
+            .bind(name.clone().unwrap())
+            .fetch_optional(&self.mysql)
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to fetch updated record from table '{}' with username {:?}",
+                    "users",
+                    name.clone()
+                )
+            });
+
+        return match record {
+            Ok(u) => Ok(u),
+            Err(ee) => Err(ee),
+        };
+    }
+
 }
 
 #[async_trait::async_trait]

@@ -50,16 +50,16 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for User {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug,Clone)]
 pub struct CalcParam {
     pub protocol: Option<String>,
     pub identification_code: Option<String>,
-    pub device_uid: Option<i64>,
+    pub device_uid: Option<u64>,
     pub name: Option<String>,
     pub signal_name: Option<String>,
-    pub signal_id: Option<i64>,
+    pub signal_id: Option<u64>,
     pub reduce: Option<String>,
-    pub calc_rule_id: Option<i64>,
+    pub calc_rule_id: Option<u64>,
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
     pub id: Option<u64>,
     #[serde(
@@ -107,7 +107,7 @@ pub struct CalcRule {
     pub name: Option<String>,
     pub cron: Option<String>,
     pub script: Option<String>,
-    pub offset: Option<i64>,
+    pub offset: Option<u64>,
     pub start: Option<bool>,
     pub mock_value: Option<String>,
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
@@ -174,7 +174,7 @@ pub struct CassandraTransmitBind {
         default
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
-    pub device_uid: Option<i64>,
+    pub device_uid: Option<u64>,
     pub protocol: Option<String>,
     pub identification_code: Option<String>,
     pub cassandra_transmit_id: Option<i32>,
@@ -274,7 +274,7 @@ pub struct ClickhouseTransmitBind {
         default
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
-    pub device_uid: Option<i64>,
+    pub device_uid: Option<u64>,
     pub protocol: Option<String>,
     pub identification_code: Option<String>,
     pub clickhouse_transmit_id: Option<i32>,
@@ -704,7 +704,7 @@ pub struct DeviceInfo {
         default
     )]
     pub warranty_expiry: Option<chrono::NaiveDateTime>,
-    pub push_interval: Option<i64>,
+    pub push_interval: Option<u64>,
     pub error_rate: Option<f64>,
     pub protocol: Option<String>,
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
@@ -730,7 +730,7 @@ pub struct DeviceInfo {
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
     pub identification_code: Option<String>,
-    pub device_uid: Option<i64>,
+    pub device_uid: Option<u64>,
 }
 
 impl FromRow<'_, sqlx::mysql::MySqlRow> for DeviceInfo {
@@ -916,7 +916,7 @@ pub struct InfluxDbTransmitBind {
         default
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
-    pub device_uid: Option<i64>,
+    pub device_uid: Option<u64>,
     pub protocol: Option<String>,
     pub identification_code: Option<String>,
     pub influxdb_transmit_id: Option<i32>,
@@ -1018,7 +1018,7 @@ pub struct MessageList {
     pub deleted_at: Option<chrono::NaiveDateTime>,
     pub content: Option<String>,
     pub en_content: Option<String>,
-    pub message_type_id: Option<i64>,
+    pub message_type_id: Option<u64>,
     pub ref_id: Option<String>,
 }
 
@@ -1061,7 +1061,7 @@ pub struct MessageTypeBindRole {
         default
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
-    pub message_type: Option<i64>,
+    pub message_type: Option<u64>,
     pub role_id: Option<u64>,
 }
 impl FromRow<'_, sqlx::mysql::MySqlRow> for MessageTypeBindRole {
@@ -1101,7 +1101,7 @@ pub struct MongoTransmitBind {
         default
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
-    pub device_uid: Option<i64>,
+    pub device_uid: Option<u64>,
     pub protocol: Option<String>,
     pub identification_code: Option<String>,
     pub mysql_transmit_id: Option<i32>,
@@ -1202,7 +1202,7 @@ pub struct MqttClient {
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
     pub host: Option<String>,
-    pub port: Option<i64>,
+    pub port: Option<u64>,
     pub client_id: Option<String>,
     pub username: Option<String>,
     pub password: Option<String>,
@@ -1441,9 +1441,9 @@ pub struct Product {
     pub sku: Option<String>,
     pub price: Option<f64>,
     pub cost: Option<f64>,
-    pub quantity: Option<i64>,
-    pub minimum_stock: Option<i64>,
-    pub warranty_period: Option<i64>,
+    pub quantity: Option<u64>,
+    pub minimum_stock: Option<u64>,
+    pub warranty_period: Option<u64>,
     pub status: Option<String>,
     pub tags: Option<String>,
     pub image_url: Option<String>,

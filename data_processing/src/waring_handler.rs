@@ -103,10 +103,6 @@ pub async fn handler_waring_once(
     Ok(())
 }
 
-pub fn calc_collection_name(prefix: &str, id: i32) -> String {
-    let string = format!("{}_{}", prefix, id % 100);
-    return string;
-}
 
 fn get_mapping_signal_waring_config(
     device_uid_string: &str,
@@ -177,6 +173,7 @@ use common_lib::mongo_utils::{get_mongo, MongoDBManager};
 use common_lib::redis_pool_utils::RedisOp;
 use serde::{Deserialize, Serialize};
 use serde_json::from_str;
+use common_lib::ut::calc_collection_name;
 
 #[cfg(test)]
 mod tests {

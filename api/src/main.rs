@@ -48,9 +48,9 @@ use crate::controller::user_router::{
     bind_dept, bind_device_info, bind_role, by_id_user, create_user, delete_user, list_user,
     page_user, query_bind_dept, query_bind_device_info, query_bind_role, update_user, user_index,
 };
-use common_lib::config::{read_config_tb, MySQLConfig, RedisConfig};
+use common_lib::config::{read_config_tb, MongoConfig, MySQLConfig, RedisConfig};
 use common_lib::mysql_utils::gen_mysql_url;
-use common_lib::rabbit_utils::RabbitMQFairing;
+use common_lib::rabbit_utils::{RabbitMQ, RabbitMQFairing};
 use common_lib::redis_pool_utils::{create_redis_pool_from_config, RedisOp};
 use rocket::fairing::{Info, Kind};
 use rocket::request::FromRequest;
@@ -102,6 +102,7 @@ fn rocket() -> _ {
         .attach(MySqlPoolFairing {
             config: config1.mysql_config.clone().unwrap(),
             redis_config: config1.redis_config.clone(),
+            mongo_config: config1.mongo_config.clone().unwrap(),
         })
         .manage(config1.clone())
         .configure(rocket::Config {
@@ -350,6 +351,8 @@ fn rocket() -> _ {
 pub struct MySqlPoolFairing {
     pub config: MySQLConfig,
     pub redis_config: RedisConfig,
+    pub mongo_config: MongoConfig,
+    
 }
 #[rocket::async_trait]
 impl rocket::fairing::Fairing for MySqlPoolFairing {
@@ -367,6 +370,10 @@ impl rocket::fairing::Fairing for MySqlPoolFairing {
         let redis_pool = create_redis_pool_from_config(&self.redis_config);
 
         let redis_op = RedisOp { pool: redis_pool };
+
+
+        let mongo_db_manager = MongoDBManager::new(self.mongo_config.clone()).await.unwrap();
+        
 
         let user_biz = UserBiz::new(redis_op.clone(), pool.clone());
         let websocket_handler_biz = WebSocketHandlerBiz::new(redis_op.clone(), pool.clone());
@@ -406,11 +413,13 @@ impl rocket::fairing::Fairing for MySqlPoolFairing {
             CassandraTransmitBindBiz::new(redis_op.clone(), pool.clone());
         let fei_shu_biz = FeiShuBiz::new(redis_op.clone(), pool.clone());
         let ding_ding_biz = DingDingBiz::new(redis_op.clone(), pool.clone());
+        let calc_run_biz = CalcRunBiz::new(redis_op.clone(), pool.clone(),mongo_db_manager);
 
         Ok(rocket
             .manage(pool)
             .manage(redis_op.clone())
             .manage(user_biz)
+            .manage(calc_run_biz)
             .manage(websocket_handler_biz)
             .manage(tcp_handler_biz)
             .manage(sim_card_biz)
@@ -454,6 +463,8 @@ use rocket::{
     post,
     request::{Outcome, Request},
 };
+use common_lib::mongo_utils::MongoDBManager;
+use crate::biz::calc_run_biz::CalcRunBiz;
 
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for AuthToken {

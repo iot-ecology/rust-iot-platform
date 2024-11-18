@@ -174,30 +174,6 @@ pub struct Tv {
     pub value: f64,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct CalcCache {
-    #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
-    pub param: Option<Vec<CalcParamCache>>,
-    pub cron: String,
-    pub script: String,
-    pub offset: i64,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct CalcParamCache {
-    pub protocol: String,
-    #[serde(rename = "identification_code")]
-    pub identification_code: String,
-    #[serde(rename = "device_uid")]
-    pub device_uid: u32,
-    pub name: String,
-    #[serde(rename = "signal_id")]
-    pub signal_id: i32,
-    pub reduce: String,
-    #[serde(rename = "calc_rule_id")]
-    pub calc_rule_id: i32,
-}
 
 #[derive(Debug)]
 pub struct InfluxQueryConfig {
