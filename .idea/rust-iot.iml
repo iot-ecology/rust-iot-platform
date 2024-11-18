@@ -10,6 +10,8 @@
       <sourceFolder url="file://$MODULE_DIR$/iot_protocol/tcp/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/iot_protocol/ws/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/notification/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/iot_protocol/coap-test/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/iot_protocol/mqtt/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/api/target" />
       <excludeFolder url="file://$MODULE_DIR$/common_lib/target" />
       <excludeFolder url="file://$MODULE_DIR$/data_processing/target" />
@@ -18,6 +20,8 @@
       <excludeFolder url="file://$MODULE_DIR$/iot_protocol/tcp/target" />
       <excludeFolder url="file://$MODULE_DIR$/iot_protocol/ws/target" />
       <excludeFolder url="file://$MODULE_DIR$/notification/target" />
+      <excludeFolder url="file://$MODULE_DIR$/iot_protocol/coap-test/target" />
+      <excludeFolder url="file://$MODULE_DIR$/iot_protocol/mqtt/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

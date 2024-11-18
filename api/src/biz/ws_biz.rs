@@ -1,6 +1,6 @@
 use crate::biz::tcp_biz::TcpHandlerBiz;
 use crate::biz::user_biz::UserBiz;
-use crate::db::db_model::WebSocketHandler;
+use crate::db::db_model::{HttpHandler, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
@@ -16,6 +16,24 @@ impl WebSocketHandlerBiz {
     pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
         WebSocketHandlerBiz { redis, mysql }
     }
+    pub async fn find_by_device_info_id(&self, device_info_id: u64) -> Result<Option<WebSocketHandler>, Error> {
+        let sql = "select * from websocket_handlers where 1=1 and device_info_id = ?";
+
+        let record = sqlx::query_as::<_, WebSocketHandler>(sql).bind(device_info_id.to_string())
+
+            .fetch_optional(&self.mysql).await.with_context(|| {
+            format!(
+                "Failed to fetch updated record from table '{}' with username {:?}",
+                "websocket_handlers",
+                device_info_id
+            )
+        });
+
+        match record {
+            Ok(u) => Ok(u),
+            Err(ee) => Err(ee),
+        }
+    }
 
     pub fn setRedis(&self, ws: &WebSocketHandler) {
         self.redis.set_hash(
@@ -24,13 +42,13 @@ impl WebSocketHandlerBiz {
             <std::option::Option<std::string::String> as Clone>::clone(&ws.script)
                 .unwrap()
                 .as_str(),
-        );
+        ).expect("TODO: panic message");
     }
     pub fn deleteRedis(&self, ws: &WebSocketHandler) {
         self.redis.delete_hash_field(
             "struct:Websocket",
             ws.device_info_id.unwrap().to_string().as_str(),
-        );
+        ).expect("TODO: panic message");
     }
 
     pub fn set_auth(&self, ws: &WebSocketHandler) {

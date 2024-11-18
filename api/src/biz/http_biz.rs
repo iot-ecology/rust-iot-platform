@@ -20,13 +20,31 @@ impl HttpHandlerBiz {
             <std::option::Option<std::string::String> as Clone>::clone(&ws.script)
                 .unwrap()
                 .as_str(),
-        );
+        ).expect("TODO: panic message");
     }
     pub fn deleteRedis(&self, ws: &HttpHandler) {
         self.redis.delete_hash_field(
             "struct:Http",
             ws.device_info_id.unwrap().to_string().as_str(),
-        );
+        ).expect("TODO: panic message");
+    }
+    pub async fn find_by_device_info_id(&self, device_info_id: u64) -> Result<Option<HttpHandler>, Error> {
+        let sql = "select * from http_handlers where 1=1 and device_info_id = ?";
+
+        let record = sqlx::query_as::<_, HttpHandler>(sql).bind(device_info_id.to_string())
+
+            .fetch_optional(&self.mysql).await.with_context(|| {
+            format!(
+                "Failed to fetch updated record from table '{}' with username {:?}",
+                "http_handlers",
+                device_info_id
+            )
+        });
+
+        match record {
+            Ok(u) => Ok(u),
+            Err(ee) => Err(ee),
+        }
     }
 
     pub fn set_auth(&self, ws: &HttpHandler) {

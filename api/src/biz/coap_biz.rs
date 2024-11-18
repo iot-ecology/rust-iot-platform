@@ -1,6 +1,6 @@
 use crate::biz::calc_rule_biz::CalcRuleBiz;
 use crate::biz::user_biz::UserBiz;
-use crate::db::db_model::{CoapHandler, Signal};
+use crate::db::db_model::{CoapHandler, Signal, User};
 use crate::rocket::serde::json;
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
@@ -18,30 +18,44 @@ impl CoapHandlerBiz {
         self.redis.set_hash(
             "struct:Coap",
             ws.device_info_id.unwrap().to_string().as_str(),
-            <std::option::Option<std::string::String> as Clone>::clone(&ws.script)
-                .unwrap()
-                .as_str(),
-        );
+            <Option<String> as Clone>::clone(&ws.script).unwrap().as_str(),
+        ).expect("TODO: panic message");
     }
     pub fn deleteRedis(&self, ws: &CoapHandler) {
         self.redis.delete_hash_field(
             "struct:Coap",
             ws.device_info_id.unwrap().to_string().as_str(),
-        );
+        ).expect("TODO: panic message");
+    }
+
+    pub async fn find_by_device_info_id(&self, device_info_id: u64) -> Result<Option<CoapHandler>, Error> {
+        let sql = "select * from coap_handlers where 1=1 and device_info_id = ?";
+
+        let record = sqlx::query_as::<_, CoapHandler>(sql).bind(device_info_id.to_string())
+
+            .fetch_optional(&self.mysql).await.with_context(|| {
+            format!(
+                "Failed to fetch updated record from table '{}' with username {:?}",
+                "coap_handlers",
+                device_info_id
+            )
+        });
+
+        match record {
+            Ok(u) => Ok(u),
+            Err(ee) => Err(ee),
+        }
     }
 
     pub fn set_auth(&self, ws: &CoapHandler) {
         let result = json::to_string(ws);
         match result {
             Ok(o) => {
-                let x = self
-                    .redis
-                    .set_hash(
-                        "auth:coap",
-                        ws.device_info_id.unwrap().to_string().as_str(),
-                        o.as_str(),
-                    )
-                    .unwrap();
+                let x = self.redis.set_hash(
+                    "auth:coap",
+                    ws.device_info_id.unwrap().to_string().as_str(),
+                    o.as_str(),
+                ).unwrap();
             }
             Err(e) => {
                 error!("Error: {}", e);
@@ -110,8 +124,7 @@ impl CrudOperations<CoapHandler> for CoapHandlerBiz {
 
         log::info!("Updating CoapHandler with ID {}: {:?}", id, updates);
 
-        let result =
-            sql_utils::update_by_id::<CoapHandler>(&self.mysql, "coap_handlers", id, updates).await;
+        let result = sql_utils::update_by_id::<CoapHandler>(&self.mysql, "coap_handlers", id, updates).await;
 
         match result {
             Ok(it) => Ok(it),
@@ -136,9 +149,7 @@ impl CrudOperations<CoapHandler> for CoapHandlerBiz {
             pagination
         );
 
-        let result =
-            sql_utils::paginate::<CoapHandler>(&self.mysql, "coap_handlers", filters, pagination)
-                .await;
+        let result = sql_utils::paginate::<CoapHandler>(&self.mysql, "coap_handlers", filters, pagination).await;
 
         result
     }
