@@ -48,7 +48,7 @@ use crate::controller::user_router::{
     bind_dept, bind_device_info, bind_role, by_id_user, create_user, delete_user, list_user,
     page_user, query_bind_dept, query_bind_device_info, query_bind_role, update_user, user_index,
 };
-use common_lib::config::{read_config_tb, MongoConfig, MySQLConfig, RedisConfig};
+use common_lib::config::{read_config_tb, InfluxConfig, MongoConfig, MySQLConfig, RedisConfig};
 use common_lib::mysql_utils::gen_mysql_url;
 use common_lib::rabbit_utils::{RabbitMQ, RabbitMQFairing};
 use common_lib::redis_pool_utils::{create_redis_pool_from_config, RedisOp};
@@ -103,6 +103,7 @@ fn rocket() -> _ {
             config: config1.mysql_config.clone().unwrap(),
             redis_config: config1.redis_config.clone(),
             mongo_config: config1.mongo_config.clone().unwrap(),
+            influxd_config: config1.influx_config.clone().unwrap(),
         })
         .manage(config1.clone())
         .configure(rocket::Config {
@@ -352,7 +353,9 @@ pub struct MySqlPoolFairing {
     pub config: MySQLConfig,
     pub redis_config: RedisConfig,
     pub mongo_config: MongoConfig,
-    
+
+    pub influxd_config: InfluxConfig,
+
 }
 #[rocket::async_trait]
 impl rocket::fairing::Fairing for MySqlPoolFairing {
@@ -413,7 +416,7 @@ impl rocket::fairing::Fairing for MySqlPoolFairing {
             CassandraTransmitBindBiz::new(redis_op.clone(), pool.clone());
         let fei_shu_biz = FeiShuBiz::new(redis_op.clone(), pool.clone());
         let ding_ding_biz = DingDingBiz::new(redis_op.clone(), pool.clone());
-        let calc_run_biz = CalcRunBiz::new(redis_op.clone(), pool.clone(),mongo_db_manager);
+        let calc_run_biz = CalcRunBiz::new(redis_op.clone(), pool.clone(), mongo_db_manager, self.influxd_config.clone());
 
         Ok(rocket
             .manage(pool)

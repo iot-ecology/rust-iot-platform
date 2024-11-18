@@ -107,7 +107,7 @@ pub struct CalcRule {
     pub name: Option<String>,
     pub cron: Option<String>,
     pub script: Option<String>,
-    pub offset: Option<u64>,
+    pub offset: Option<i64>,
     pub start: Option<bool>,
     pub mock_value: Option<String>,
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]

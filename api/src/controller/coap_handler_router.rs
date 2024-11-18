@@ -46,7 +46,7 @@ pub async fn create_coap_handler(
                     .unwrap()
                     .as_str(),
                 "COAP",
-                u.device_info_id.unwrap() as u32,
+                u.device_info_id.unwrap() ,
             );
             let db_manager = InfluxDBManager::new(
                 &config.influx_config.clone().unwrap().host.unwrap(),
@@ -102,7 +102,7 @@ pub async fn update_coap_handler(
                             .unwrap()
                             .as_str(),
                         "COAP",
-                        u2.device_info_id.unwrap() as u32,
+                        u2.device_info_id.unwrap() ,
                     );
 
                     let db_manager = InfluxDBManager::new(

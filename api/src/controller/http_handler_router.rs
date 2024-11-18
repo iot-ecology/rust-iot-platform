@@ -48,7 +48,7 @@ pub async fn create_http_handler(
                     .unwrap()
                     .as_str(),
                 "HTTP",
-                u.device_info_id.unwrap() as u32,
+                u.device_info_id.unwrap() ,
             );
             let db_manager = InfluxDBManager::new(
                 &config.influx_config.clone().unwrap().host.unwrap(),
@@ -104,7 +104,7 @@ pub async fn update_http_handler(
                             .unwrap()
                             .as_str(),
                         "HTTP",
-                        u2.device_info_id.unwrap() as u32,
+                        u2.device_info_id.unwrap() ,
                     );
 
                     let db_manager = InfluxDBManager::new(

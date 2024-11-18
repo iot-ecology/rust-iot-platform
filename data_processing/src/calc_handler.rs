@@ -1,7 +1,7 @@
 use crate::storage_handler::{ calc_measurement};
 use bson::{Bson, Document};
 use chrono::Utc;
-use common_lib::influxdb_utils::InfluxDBManager;
+use common_lib::influxdb_utils::{InfluxDBManager, LocValue};
 use common_lib::models::{AggregationConfig, InfluxQueryConfig};
 use common_lib::mongo_utils::MongoDBManager;
 use common_lib::redis_handler::RedisWrapper;
@@ -27,66 +27,6 @@ use lapin::{Channel, Connection};
 use common_lib::servlet_common::CalcCache;
 use common_lib::ut::{calc_bucket_name, calc_collection_name};
 
-#[derive(Debug)]
-enum LocValue {
-    Map(HashMap<i64, f64>),
-    Scalar(f64),
-}
-
-impl Serialize for LocValue {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            LocValue::Map(map) => {
-                let mut ser_map = serializer.serialize_map(Some(map.len()))?;
-                for (k, v) in map {
-                    ser_map.serialize_entry(k, v)?;
-                }
-                ser_map.end()
-            }
-            LocValue::Scalar(scalar) => serializer.serialize_f64(*scalar),
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for LocValue {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct LocValueVisitor;
-
-        impl<'de> Visitor<'de> for LocValueVisitor {
-            type Value = LocValue;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("a map or a scalar value")
-            }
-
-            fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                Ok(LocValue::Scalar(value))
-            }
-
-            fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
-            where
-                M: MapAccess<'de>,
-            {
-                let mut map = HashMap::new();
-                while let Some((key, value)) = access.next_entry()? {
-                    map.insert(key, value);
-                }
-                Ok(LocValue::Map(map))
-            }
-        }
-
-        deserializer.deserialize_any(LocValueVisitor)
-    }
-}
 pub async fn calc_handler(
     msg: String,
     redis_wrapper: &RedisOp,
@@ -391,7 +331,7 @@ fn json_str_to_document(json_str: &str) -> Result<Document, Box<dyn std::error::
     }
 }
 
-fn get_next_time(cron_expr: &str) -> Option<i64> {
+pub fn get_next_time(cron_expr: &str) -> Option<i64> {
     // 解析 cron 表达式
     let schedule = Schedule::from_str(cron_expr).ok()?;
 

@@ -1,26 +1,102 @@
+use serde_json::json;
 use crate::db::db_model::{CalcParam, CalcRule};
 use anyhow::{Context, Result};
+use r2d2_redis::redis::Commands;
 use common_lib::mongo_utils::MongoDBManager;
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::servlet_common::{CalcCache, CalcParamCache};
-use common_lib::ut::calc_collection_name;
+use common_lib::ut::{calc_bucket_name, calc_collection_name, calc_measurement};
 use rocket::serde::json;
 use sqlx::MySqlPool;
+use cron::Schedule;
+use chrono::Utc;
+use log::{error, info};
+use serde_json::{Map};
+use std::collections::{BTreeMap, HashMap};
+use influxdb2_structmap::value::Value;
+use quick_js::JsValue;
+use common_lib::config::InfluxConfig;
+use common_lib::influxdb_utils::{InfluxDBManager, LocValue};
+use common_lib::models::{AggregationConfig, InfluxQueryConfig};
+use common_lib::time_utils::get_next_time;
 
 pub struct CalcRunBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
     pub mongo: MongoDBManager,
-
+    pub config: InfluxConfig,
 }
 
 impl CalcRunBiz {
-    pub fn new(redis: RedisOp, mysql: MySqlPool, mongo_dbmanager: MongoDBManager) -> Self {
-        CalcRunBiz { redis, mysql, mongo: mongo_dbmanager }
+    pub fn new(redis: RedisOp, mysql: MySqlPool, mongo_dbmanager: MongoDBManager, config: InfluxConfig) -> Self {
+        CalcRunBiz { redis, mysql, mongo: mongo_dbmanager, config }
     }
 
-    pub async fn start(&self, role_id: u64) {}
-    pub async fn stop(&self, role_id: u64) {}
+    pub async fn start(&self, role_id: u64) -> Result<bool> {
+        let calc_cache = self.refresh_rule(role_id).await?;
+
+
+        let option = get_next_time(&calc_cache.cron).unwrap();
+        self.redis.add_zset("calc_queue", calc_cache.id.to_string().as_str(), option as f64)
+            .map_err(|e| anyhow::anyhow!("Failed to add to redis zset: {}", e))?;
+
+        // 4. 更新数据库中的状态
+        let sql = "UPDATE calc_rules SET start = true WHERE id = ?";
+        sqlx::query(sql)
+            .bind(role_id.to_string())
+            .execute(&self.mysql)
+            .await
+            .with_context(|| format!("Failed to update calc rule status for id: {}", role_id))?;
+
+        Ok(true)
+    }
+
+    pub async fn stop(&self, role_id: u64) -> Result<bool> {
+        let sql = "select * from calc_rules where id = ?";
+
+        let record = sqlx::query_as::<_, CalcRule>(sql)
+            .bind(role_id.to_string())
+            .fetch_optional(&self.mysql)
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to fetch calc rule from table '{}' with id {:?}",
+                    "calc_rules",
+                    role_id
+                )
+            })?;
+
+        if let Some(calc_rule) = record {
+            let json_data = json::json!({
+                "id": calc_rule.id
+            });
+            let json_str = json::to_string(&json_data).unwrap();
+
+            self.redis.delete_zset("calc_queue", &json_str).unwrap();
+            self.redis.delete_hash_field("calc_cache", &role_id.to_string()).unwrap();
+            self.redis
+                .delete(&format!("calc_queue_param:{}", role_id))
+                .unwrap();
+
+            let sql_update = "UPDATE calc_rules SET start = ? WHERE id = ?";
+            sqlx::query(sql_update)
+                .bind(false)
+                .bind(role_id.to_string())
+                .execute(&self.mysql)
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed to update calc rule in table '{}' with id {:?}",
+                        "calc_rules",
+                        role_id
+                    )
+                })?;
+
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
 
     pub async fn InitMongoCollection(&self, d: &CalcRule, collection: String) {
         let string = calc_collection_name(collection.as_str(), d.id.unwrap() as i32);
@@ -64,7 +140,7 @@ impl CalcRunBiz {
 
         let calc_cache = CalcCache {
             id: calc_rule.id.unwrap(),
-            param: calc_param_cache,
+            param: Some(calc_param_cache),
             cron: calc_rule.cron.unwrap(),
             script: calc_rule.script.unwrap(),
             offset: calc_rule.offset.unwrap(),
@@ -74,5 +150,215 @@ impl CalcRunBiz {
             self.redis.set_hash("calc_cache", calc_cache.id.to_string().as_str(), s.as_str()).map_err(|e| anyhow::anyhow!("Failed to set redis hash: {}", e))?;
             Ok(calc_cache)
         })
+    }
+
+    pub async fn mock_calc(&self, start_time: i64, end_time: i64, id: i32) -> Option<String> {
+        // Get calc cache from Redis
+        let result = match self.redis.get_hash("calc_cache", &id.to_string()) {
+            Ok(val) => val,
+            Err(e) => {
+                error!("Failed to get from redis: {:?}", e);
+                return None;
+            }
+        };
+
+        // Deserialize calc cache
+        let calc_cache: CalcCache = match serde_json::from_str(&result.unwrap()) {
+            Ok(cache) => cache,
+            Err(e) => {
+                error!("Failed to deserialize calc cache: {:?}", e);
+                return None;
+            }
+        };
+
+        let influxdb = InfluxDBManager::new(
+            &self.config.clone().host.unwrap(),
+            self.config.clone().port?,
+            &self.config.clone().org.unwrap(),
+            &self.config.clone().token.unwrap(),
+                                            );
+        let mut m: HashMap<String, LocValue> = HashMap::new();
+
+        for cache in calc_cache.param.unwrap().iter() {
+            if cache.reduce == "原始" {
+                let field = vec![cache.signal_id.to_string()];
+                let config = InfluxQueryConfig {
+                    bucket: calc_bucket_name(self.config.clone().bucket.unwrap().clone().as_ref(), &cache.protocol, cache.device_uid),
+                    measurement: calc_measurement(cache.device_uid.to_string().as_str(), &cache.identification_code, &cache.protocol),
+                    fields: field,
+                    aggregation: AggregationConfig {
+                        every: 1,
+                        function: "mean".to_string(),
+                        create_empty: false,
+                    },
+                    start_time,
+                    end_time,
+                    reduce: cache.reduce.clone(),
+                };
+
+                let query_string = config.generate_flux_query();
+                log::info!("influxdb query line = {}", query_string);
+
+
+                let vec1 = influxdb
+                    .query_with_string(query_string)
+                    .await
+                    .unwrap();
+
+                let mut v: HashMap<i64, f64> = HashMap::new();
+                if vec1.is_empty() {
+                    info!("no data");
+                } else {
+                    for record in vec1 {
+                        // 打印每条记录的详细信息
+
+                        let va = record.values.get("_value").unwrap();
+                        let mut vaa: f64 = 0.0;
+                        match va {
+                            Value::Unknown => {}
+                            Value::String(_) => {}
+                            Value::Double(fa) => {
+                                vaa = fa.0;
+                            }
+                            Value::Bool(_) => {}
+                            Value::Long(_) => {}
+                            Value::UnsignedLong(_) => {}
+                            Value::Duration(_) => {}
+                            Value::Base64Binary(_) => {}
+                            Value::TimeRFC(_) => {}
+                        }
+
+                        let time = record.values.get("_time").unwrap();
+                        let mut t: i64 = 0;
+                        match time {
+                            influxdb2_structmap::value::Value::Unknown => {}
+                            Value::String(_) => {}
+                            Value::Double(_) => {}
+                            Value::Bool(_) => {}
+                            Value::Long(_) => {}
+                            Value::UnsignedLong(_) => {}
+                            Value::Duration(_) => {}
+                            Value::Base64Binary(_) => {}
+                            Value::TimeRFC(tt) => {
+                                let beijing_time = tt.with_timezone(
+                                    &chrono::FixedOffset::east(
+                                        8 * 3600,
+                                    ),
+                                );
+                                t = beijing_time.timestamp();
+                            }
+                        }
+                        v.insert(t, vaa);
+                    }
+                    m.insert(cache.name.clone(), LocValue::Map(v));
+                }
+            } else {
+                let field = vec![cache.signal_id.to_string()];
+                let config = InfluxQueryConfig {
+                    bucket: calc_bucket_name(self.config.clone().bucket.unwrap().clone().as_ref(), &cache.protocol, cache.device_uid),
+                    measurement: calc_measurement(cache.device_uid.to_string().as_str(), &cache.identification_code, &cache.protocol),
+                    fields: field,
+                    start_time,
+                    end_time,
+                    reduce: cache.reduce.clone(),
+                    aggregation: AggregationConfig {
+                        every: 1,
+                        function: "mean".to_string(),
+                        create_empty: false,
+                    },
+                };
+
+                let query_string = config.generate_flux_reduce();
+                log::info!("influxdb query line = {}", query_string);
+
+                let vec1 = influxdb
+                    .query_with_string(query_string)
+                    .await
+                    .unwrap();
+
+                if vec1.is_empty() {
+                    info!("no data");
+                } else {
+                    for record in vec1 {
+                        let va = record.values.get("_value").unwrap();
+                        let mut vaa: f64 = 0.0;
+                        match va {
+                            Value::Unknown => {}
+                            Value::String(_) => {}
+                            Value::Double(fa) => {
+                                vaa = fa.0;
+                            }
+                            Value::Bool(_) => {}
+                            Value::Long(_) => {}
+                            Value::UnsignedLong(_) => {}
+                            Value::Duration(_) => {}
+                            Value::Base64Binary(_) => {}
+                            Value::TimeRFC(_) => {}
+                        }
+
+                        m.insert(
+                            cache.name.clone(),
+                            LocValue::Scalar(vaa),
+                        );
+                    }
+                }
+
+
+            };
+
+        }
+
+        let pa = serde_json::to_string(&m).unwrap();
+
+        let context = quick_js::Context::new().unwrap();
+
+
+        context.eval(calc_cache.script.as_str()).unwrap();
+
+        let js_code_2 = r#"
+        function main2(data) {
+            return JSON.parse(data);
+        }"#;
+        context.eval(js_code_2).unwrap();
+        let js_code_3 = r#"
+        function main3(data) {
+            return JSON.stringify(data);
+        }"#;
+        context.eval(js_code_3).unwrap();
+        let value2 =
+            context.call_function("main2", [pa.clone()]).unwrap();
+
+        let value = context.call_function("main", [value2]).unwrap();
+
+        let fff = context.call_function("main3", [value]).unwrap();
+
+
+        return  match fff {
+            JsValue::String(json_str) => {
+
+
+                // Update mock value in database
+                if let Ok(mut old) = sqlx::query_as::<_, CalcRule>("SELECT * FROM calc_rules WHERE id = ?")
+                    .bind(calc_cache.id)
+                    .fetch_one(&self.mysql)
+                    .await
+                {
+                    old.mock_value = Some(json_str.clone());
+
+                    let _ = sqlx::query("UPDATE calc_rules SET mock_value = ? WHERE id = ?")
+                        .bind(&old.mock_value)
+                        .bind(old.id)
+                        .execute(&self.mysql)
+                        .await;
+                }
+
+                Some(json_str)
+            }
+
+            _ => {
+                None
+            }
+        };
+        None
     }
 }

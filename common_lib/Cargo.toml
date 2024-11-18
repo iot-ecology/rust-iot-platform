@@ -42,3 +42,4 @@ regex = "1.11.1"
 sqlx = { version = "0.8.2", features = ["mysql", "chrono","runtime-tokio-native-tls"] }
 async-trait = "0.1.83"
 anyhow = "1.0.92"
+cron = "0.12.1"

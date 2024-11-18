@@ -4,14 +4,17 @@ use influxdb2::models::{Bucket, DataPoint, PostBucketRequest, Query};
 use influxdb2::Client;
 use std::collections::HashMap;
 use std::error::Error;
-
+use std::fmt;
 use crate::models::DataValue;
 use futures::prelude::*;
 use influxdb2::api::query::FluxRecord;
 use log::info;
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::{MapAccess, Visitor};
+use serde::ser::SerializeMap;
 
 pub struct InfluxDBManager {
-    client: Client,
+   pub client: Client,
     host: String,
     port: u16,
     org: String,
@@ -114,6 +117,68 @@ impl InfluxDBManager {
         let response = self.client.query_raw(Some(query)).await?;
 
         Ok(response)
+    }
+}
+
+
+#[derive(Debug)]
+pub enum LocValue {
+      Map(HashMap<i64, f64>),
+     Scalar(f64),
+}
+
+impl Serialize for LocValue {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            LocValue::Map(map) => {
+                let mut ser_map = serializer.serialize_map(Some(map.len()))?;
+                for (k, v) in map {
+                    ser_map.serialize_entry(k, v)?;
+                }
+                ser_map.end()
+            }
+            LocValue::Scalar(scalar) => serializer.serialize_f64(*scalar),
+        }
+    }
+}
+
+ impl<'de> Deserialize<'de> for LocValue {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct LocValueVisitor;
+
+        impl<'de> Visitor<'de> for LocValueVisitor {
+            type Value = LocValue;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a map or a scalar value")
+            }
+
+            fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                Ok(LocValue::Scalar(value))
+            }
+
+            fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
+            where
+                M: MapAccess<'de>,
+            {
+                let mut map = HashMap::new();
+                while let Some((key, value)) = access.next_entry()? {
+                    map.insert(key, value);
+                }
+                Ok(LocValue::Map(map))
+            }
+        }
+
+        deserializer.deserialize_any(LocValueVisitor)
     }
 }
 
