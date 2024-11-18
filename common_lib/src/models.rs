@@ -176,8 +176,8 @@ pub struct Tv {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CalcCache {
-    #[serde(rename = "id")]
-    pub id: u64,
+    #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
+    pub id: Option<u64>,
     pub param: Option<Vec<CalcParamCache>>,
     pub cron: String,
     pub script: String,

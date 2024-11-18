@@ -14,17 +14,20 @@ struct User {
     pub status: Option<String>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
-        deserialize_with = "deserialize_naive_datetime"
+        deserialize_with = "deserialize_naive_datetime",
+        default
     )]
     pub created_at: Option<chrono::NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
-        deserialize_with = "deserialize_naive_datetime"
+        deserialize_with = "deserialize_naive_datetime",
+        default
     )]
     pub updated_at: Option<chrono::NaiveDateTime>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
-        deserialize_with = "deserialize_naive_datetime"
+        deserialize_with = "deserialize_naive_datetime",
+        default
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
 }

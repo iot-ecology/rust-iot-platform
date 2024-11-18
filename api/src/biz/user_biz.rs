@@ -26,6 +26,31 @@ impl UserBiz {
         let x = self.by_id(user_id).await;
         x
     }
+
+    pub async fn find_by_username(&self, username: Option<String>) -> Result<Option<User>, Error> {
+        if username.is_none() {
+            return Ok(None);
+        }
+
+        let sql = "select * from users where username = ?";
+
+        let record = sqlx::query_as::<_, User>(sql)
+            .bind(username.clone().unwrap())
+            .fetch_optional(&self.mysql)
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to fetch updated record from table '{}' with username {:?}",
+                    "users",
+                    username.clone()
+                )
+            });
+
+        return match record {
+            Ok(u) => Ok(u),
+            Err(ee) => Err(ee),
+        };
+    }
 }
 
 #[async_trait::async_trait]

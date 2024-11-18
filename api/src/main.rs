@@ -44,7 +44,10 @@ use crate::controller::transmit::clickhouse_transmit_router;
 use crate::controller::transmit::influxdb_transmit_router;
 use crate::controller::transmit::mongo_transmit_router;
 use crate::controller::transmit::mysql_transmit_router;
-use crate::controller::user_router::user_index;
+use crate::controller::user_router::{
+    bind_dept, bind_device_info, bind_role, by_id_user, create_user, delete_user, list_user,
+    page_user, query_bind_dept, query_bind_device_info, query_bind_role, update_user, user_index,
+};
 use common_lib::config::{read_config_tb, MySQLConfig, RedisConfig};
 use common_lib::mysql_utils::gen_mysql_url;
 use common_lib::rabbit_utils::RabbitMQFairing;
@@ -78,6 +81,7 @@ use crate::controller::ws_handler_router;
 mod biz;
 mod controller;
 mod db;
+mod ut;
 
 #[launch]
 fn rocket() -> _ {
@@ -106,6 +110,18 @@ fn rocket() -> _ {
                 // Existing routes
                 crate::controller::demo_api::index,
                 user_index,
+                create_user,
+                update_user,
+                page_user,
+                delete_user,
+                by_id_user,
+                list_user,
+                bind_role,
+                bind_dept,
+                query_bind_role,
+                query_bind_dept,
+                bind_device_info,
+                query_bind_device_info,
                 // Device related routes
                 device_info_router::create_device_info,
                 device_info_router::list_device_info,
