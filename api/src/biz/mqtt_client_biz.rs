@@ -112,7 +112,7 @@ impl CrudOperations<MqttClient> for MqttClientBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<MqttClient, Error> {
         log::info!("Deleting mqtt client with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "mqtt_clients", id).await

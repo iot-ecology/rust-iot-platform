@@ -73,7 +73,7 @@ impl CrudOperations<FeiShu> for FeiShuBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<FeiShu, Error> {
         log::info!("Deleting FeiShu with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "feishus", id).await

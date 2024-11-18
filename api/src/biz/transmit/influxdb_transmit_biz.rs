@@ -84,7 +84,7 @@ impl CrudOperations<InfluxDbTransmit> for InfluxDbTransmitBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<InfluxDbTransmit, Error> {
         log::info!("Deleting InfluxDbTransmit with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "influx_db_transmits", id).await

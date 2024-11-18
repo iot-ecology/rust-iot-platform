@@ -90,7 +90,7 @@ impl CrudOperations<CassandraTransmit> for CassandraTransmitBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<CassandraTransmit, Error> {
         log::info!("Deleting CassandraTransmit with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "cassandra_transmits", id).await

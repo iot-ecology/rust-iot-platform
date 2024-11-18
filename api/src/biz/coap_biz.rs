@@ -1,10 +1,12 @@
 use crate::biz::calc_rule_biz::CalcRuleBiz;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::{CoapHandler, Signal};
+use crate::rocket::serde::json;
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils;
 use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
+use log::error;
 use sqlx::MySqlPool;
 
 pub struct CoapHandlerBiz {
@@ -12,6 +14,40 @@ pub struct CoapHandlerBiz {
     pub mysql: MySqlPool,
 }
 impl CoapHandlerBiz {
+    pub fn setRedis(&self, ws: &CoapHandler) {
+        self.redis.set_hash(
+            "struct:Coap",
+            ws.device_info_id.unwrap().to_string().as_str(),
+            <std::option::Option<std::string::String> as Clone>::clone(&ws.script)
+                .unwrap()
+                .as_str(),
+        );
+    }
+    pub fn deleteRedis(&self, ws: &CoapHandler) {
+        self.redis.delete_hash_field(
+            "struct:Coap",
+            ws.device_info_id.unwrap().to_string().as_str(),
+        );
+    }
+
+    pub fn set_auth(&self, ws: &CoapHandler) {
+        let result = json::to_string(ws);
+        match result {
+            Ok(o) => {
+                let x = self
+                    .redis
+                    .set_hash(
+                        "auth:coap",
+                        ws.device_info_id.unwrap().to_string().as_str(),
+                        o.as_str(),
+                    )
+                    .unwrap();
+            }
+            Err(e) => {
+                error!("Error: {}", e);
+            }
+        }
+    }
     pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
         CoapHandlerBiz { redis, mysql }
     }
@@ -83,7 +119,7 @@ impl CrudOperations<CoapHandler> for CoapHandlerBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<CoapHandler, Error> {
         log::info!("Deleting CoapHandler with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "coap_handlers", id).await

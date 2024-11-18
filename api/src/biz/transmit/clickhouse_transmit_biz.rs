@@ -89,7 +89,7 @@ impl CrudOperations<ClickhouseTransmit> for ClickhouseTransmitBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<ClickhouseTransmit, Error> {
         log::info!("Deleting ClickhouseTransmit with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "clickhouse_transmits", id).await

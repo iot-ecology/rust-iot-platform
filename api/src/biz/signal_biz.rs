@@ -107,7 +107,7 @@ impl CrudOperations<Signal> for SignalBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<Signal, Error> {
         log::info!("Deleting signal with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "signals", id).await

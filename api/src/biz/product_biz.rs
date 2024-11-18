@@ -132,7 +132,7 @@ impl CrudOperations<Product> for ProductBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<Product, Error> {
         log::info!("Deleting product with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "products", id).await

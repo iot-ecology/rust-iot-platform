@@ -169,11 +169,23 @@ pub async fn delete_role(
     role_api: &rocket::State<RoleBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
-    let error_json = json!({
-        "status": "error",
-        "message": ""
-    });
-    Custom(Status::InternalServerError, Json(error_json))
+    let result = role_api.delete(id).await;
+    match result {
+        Ok(o) => {
+            let success_json = json!({
+                "code": 20000,
+                "message": "删除成功",
+            });
+            Custom(Status::Ok, Json(success_json))
+        }
+        Err(e) => {
+            let success_json = json!({
+                "code": 40000,
+                "message": "删除失败",
+            });
+            Custom(Status::Ok, Json(success_json))
+        }
+    }
 }
 
 #[get("/Role/<id>")]
@@ -182,11 +194,24 @@ pub async fn by_id_role(
     role_api: &rocket::State<RoleBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
-    let error_json = json!({
-        "status": "error",
-        "message": ""
-    });
-    Custom(Status::InternalServerError, Json(error_json))
+    let result = role_api.by_id(id).await;
+    match result {
+        Ok(u) => {
+            let success_json = json!({
+                        "code": 20000,
+                        "message": "查询成功",
+            "data":u
+                    });
+            Custom(Status::Ok, Json(success_json))
+        }
+        Err(e) => {
+            let success_json = json!({
+                "code": 40000,
+                "message": "查询失败",
+            });
+            Custom(Status::Ok, Json(success_json))
+        }
+    }
 }
 
 #[get("/Role/list")]
@@ -194,9 +219,22 @@ pub async fn list_role(
     role_api: &rocket::State<RoleBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
-    let error_json = json!({
-        "status": "error",
-        "message": ""
-    });
-    Custom(Status::InternalServerError, Json(error_json))
+    let result = role_api.list(Vec::new()).await;
+    match result {
+        Ok(u) => {
+            let success_json = json!({
+                        "code": 20000,
+                        "message": "查询成功",
+            "data":u
+                    });
+            Custom(Status::Ok, Json(success_json))
+        }
+        Err(e) => {
+            let success_json = json!({
+                "code": 40000,
+                "message": "查询失败",
+            });
+            Custom(Status::Ok, Json(success_json))
+        }
+    }
 }

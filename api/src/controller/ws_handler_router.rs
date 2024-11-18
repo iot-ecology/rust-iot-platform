@@ -1,7 +1,10 @@
 use crate::biz::ws_biz::WebSocketHandlerBiz;
 use crate::db::db_model::WebSocketHandler;
 use common_lib::config::Config;
+use common_lib::influxdb_utils::InfluxDBManager;
 use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
+use common_lib::ut::calc_bucket_name;
+use log::{error, info};
 use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
@@ -30,6 +33,29 @@ pub async fn create_websocket_handler(
                 "message": "创建成功",
                 "data": u
             });
+
+            ws_handler_api.setRedis(&u);
+            ws_handler_api.set_auth(&u);
+
+            let string = calc_bucket_name(
+                config
+                    .influx_config
+                    .clone()
+                    .unwrap()
+                    .bucket
+                    .unwrap()
+                    .as_str(),
+                "WebSocket",
+                u.device_info_id.unwrap() as u32,
+            );
+            let db_manager = InfluxDBManager::new(
+                &config.influx_config.clone().unwrap().host.unwrap(),
+                config.influx_config.clone().unwrap().port.unwrap(),
+                &config.influx_config.clone().unwrap().org.unwrap(),
+                &config.influx_config.clone().unwrap().token.unwrap(),
+            );
+
+            let _ = db_manager.create_bucket(string).await;
             Custom(Status::Ok, Json(success_json))
         }
         Err(e) => {
@@ -48,12 +74,68 @@ pub async fn update_websocket_handler(
     ws_handler_api: &rocket::State<WebSocketHandlerBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
-    // 处理更新 WebsocketHandler 的逻辑
-    let error_json = json!({
-        "status": "error",
-        "message": "Failed to update WebsocketHandler"
-    });
-    Custom(Status::InternalServerError, Json(error_json))
+    let x = ws_handler_api.by_id(data.id.unwrap()).await;
+
+    match x {
+        Ok(mut u) => {
+            u.password = data.password.clone();
+            u.username = data.username.clone();
+            u.name = data.name.clone();
+            u.script = data.script.clone();
+            let result = ws_handler_api.update(u.id.unwrap(), u).await;
+            match result {
+                Ok(u2) => {
+                    let success_json = json!({
+                        "code": 20000,
+                        "message": "更新成功",
+                        "data": u2
+                    });
+
+                    ws_handler_api.setRedis(&u2);
+                    ws_handler_api.set_auth(&u2);
+                    let string = calc_bucket_name(
+                        config
+                            .influx_config
+                            .clone()
+                            .unwrap()
+                            .bucket
+                            .unwrap()
+                            .as_str(),
+                        "WebSocket",
+                        u2.device_info_id.unwrap() as u32,
+                    );
+
+                    let db_manager = InfluxDBManager::new(
+                        &config.influx_config.clone().unwrap().host.unwrap(),
+                        config.influx_config.clone().unwrap().port.unwrap(),
+                        &config.influx_config.clone().unwrap().org.unwrap(),
+                        &config.influx_config.clone().unwrap().token.unwrap(),
+                    );
+
+                    let _ = db_manager.create_bucket(string).await;
+                    Custom(Status::Ok, Json(success_json))
+                }
+                Err(e) => {
+                    error!("error =  {:?}", e);
+
+                    let error_json = json!({
+                        "code": 40000,
+                        "message": "查询失败"
+                    });
+                    Custom(Status::InternalServerError, Json(error_json))
+                }
+            }
+        }
+        Err(e) => {
+            error!("error =  {:?}", e);
+
+            let error_json = json!({
+                "code": 40000,
+                "message": "查询失败"
+            });
+            Custom(Status::InternalServerError, Json(error_json))
+        }
+    }
 }
 
 #[get("/WebsocketHandler/<id>")]
@@ -62,27 +144,82 @@ pub async fn by_id_websocket_handler(
     ws_handler_api: &rocket::State<WebSocketHandlerBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
-    // 处理根据 id 获取 WebsocketHandler 的逻辑
-    let error_json = json!({
-        "status": "error",
-        "message": "Failed to find WebsocketHandler by id"
-    });
-    Custom(Status::InternalServerError, Json(error_json))
+    let result = ws_handler_api.by_id(id).await;
+    match result {
+        Ok(u) => {
+            let success_json = json!({
+                        "code": 20000,
+                        "message": "查询成功",
+            "data":u
+                    });
+            Custom(Status::Ok, Json(success_json))
+        }
+        Err(e) => {
+            let success_json = json!({
+                "code": 40000,
+                "message": "查询失败",
+            });
+            Custom(Status::Ok, Json(success_json))
+        }
+    }
 }
 
-#[get("/WebsocketHandler/page?<page>&<page_size>")]
+#[get("/WebsocketHandler/page?<page>&<page_size>&<name>")]
 pub async fn page_websocket_handler(
     ws_handler_api: &rocket::State<WebSocketHandlerBiz>,
     config: &rocket::State<Config>,
     page: Option<u64>,
+    name: Option<String>,
     page_size: Option<u64>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
-    // 处理分页查询 WebsocketHandler 的逻辑
-    let error_json = json!({
-        "status": "error",
-        "message": "Failed to fetch WebsocketHandler page"
-    });
-    Custom(Status::InternalServerError, Json(error_json))
+    let page = page.unwrap_or(1);
+    let page_size = page_size.unwrap_or(10);
+
+    if page == 0 || page_size == 0 {
+        let error_json = json!({
+                           "code": 40000,
+
+            "message": "Invalid page or page_size parameters"
+        });
+        return Custom(Status::Ok, Json(error_json));
+    };
+
+    let filters = vec![FilterInfo {
+        field: "name".to_string(),
+        value: name.unwrap_or_else(String::new),
+        operation: FilterOperation::AllLike,
+        value2: None,
+    }];
+
+    let result = ws_handler_api
+        .page(
+            filters,
+            PaginationParams {
+                page: page,
+                size: page_size,
+            },
+        )
+        .await;
+
+    match result {
+        Ok(uu) => {
+            let success_json = json!({
+                "code": 20000,
+                "message": "查询成功",
+                "data": uu
+            });
+            Custom(Status::Ok, Json(success_json))
+        }
+        Err(e) => {
+            let error_json = json!({
+                               "code": 40000,
+
+                    "message": "查询失败"
+
+            });
+            return Custom(Status::Ok, Json(error_json));
+        }
+    }
 }
 
 #[post("/WebsocketHandler/delete/<id>")]
@@ -91,10 +228,22 @@ pub async fn delete_websocket_handler(
     ws_handler_api: &rocket::State<WebSocketHandlerBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
-    // 处理删除 WebsocketHandler 的逻辑
-    let error_json = json!({
-        "status": "error",
-        "message": "Failed to delete WebsocketHandler"
-    });
-    Custom(Status::InternalServerError, Json(error_json))
+    let result = ws_handler_api.delete(id).await;
+    match result {
+        Ok(o) => {
+            let success_json = json!({
+                "code": 20000,
+                "message": "删除成功",
+            });
+            ws_handler_api.deleteRedis(&o);
+            Custom(Status::Ok, Json(success_json))
+        }
+        Err(e) => {
+            let success_json = json!({
+                "code": 40000,
+                "message": "删除失败",
+            });
+            Custom(Status::Ok, Json(success_json))
+        }
+    }
 }

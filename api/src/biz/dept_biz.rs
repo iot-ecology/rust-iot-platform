@@ -31,8 +31,7 @@ impl CrudOperations<Dept> for DeptBiz {
 
         log::info!("Creating Dept with updates: {:?}", updates);
 
-        let result =
-            common_lib::sql_utils::insert::<Dept>(&self.mysql, "departments", updates).await;
+        let result = common_lib::sql_utils::insert::<Dept>(&self.mysql, "depts", updates).await;
 
         result
     }
@@ -50,8 +49,7 @@ impl CrudOperations<Dept> for DeptBiz {
         log::info!("Updating Dept with ID {}: {:?}", id, updates);
 
         let result =
-            common_lib::sql_utils::update_by_id::<Dept>(&self.mysql, "departments", id, updates)
-                .await;
+            common_lib::sql_utils::update_by_id::<Dept>(&self.mysql, "depts", id, updates).await;
 
         match result {
             Ok(it) => Ok(it),
@@ -59,9 +57,9 @@ impl CrudOperations<Dept> for DeptBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<Dept, Error> {
         log::info!("Deleting Dept with ID {}", id);
-        common_lib::sql_utils::delete_by_id(&self.mysql, "departments", id).await
+        common_lib::sql_utils::delete_by_id(&self.mysql, "depts", id).await
     }
 
     async fn page(
@@ -75,26 +73,21 @@ impl CrudOperations<Dept> for DeptBiz {
             pagination
         );
 
-        let result = common_lib::sql_utils::paginate::<Dept>(
-            &self.mysql,
-            "departments",
-            filters,
-            pagination,
-        )
-        .await;
+        let result =
+            common_lib::sql_utils::paginate::<Dept>(&self.mysql, "depts", filters, pagination)
+                .await;
 
         result
     }
 
     async fn list(&self, filters: Vec<FilterInfo>) -> Result<Vec<Dept>, Error> {
         log::info!("Fetching list of Depts with filters: {:?}", filters);
-        let result = common_lib::sql_utils::list::<Dept>(&self.mysql, "departments", filters).await;
+        let result = common_lib::sql_utils::list::<Dept>(&self.mysql, "depts", filters).await;
         result
     }
 
     async fn by_id(&self, id: u64) -> Result<Dept, Error> {
-        let result =
-            common_lib::sql_utils::by_id_common::<Dept>(&self.mysql, "departments", id).await;
+        let result = common_lib::sql_utils::by_id_common::<Dept>(&self.mysql, "depts", id).await;
         result
     }
 }

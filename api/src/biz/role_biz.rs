@@ -91,7 +91,7 @@ impl CrudOperations<Role> for RoleBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<Role, Error> {
         log::info!("Deleting role with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "roles", id).await

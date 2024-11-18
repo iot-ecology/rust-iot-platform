@@ -128,7 +128,7 @@ impl CrudOperations<ClickhouseTransmitBind> for ClickhouseTransmitBindBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<ClickhouseTransmitBind, Error> {
         log::info!("Deleting ClickhouseTransmitBind with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "clickhouse_transmit_binds", id).await

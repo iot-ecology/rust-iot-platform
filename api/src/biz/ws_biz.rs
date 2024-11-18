@@ -4,6 +4,8 @@ use crate::db::db_model::WebSocketHandler;
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
+use log::error;
+use rocket::serde::json;
 use sqlx::MySqlPool;
 
 pub struct WebSocketHandlerBiz {
@@ -13,6 +15,41 @@ pub struct WebSocketHandlerBiz {
 impl WebSocketHandlerBiz {
     pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
         WebSocketHandlerBiz { redis, mysql }
+    }
+
+    pub fn setRedis(&self, ws: &WebSocketHandler) {
+        self.redis.set_hash(
+            "struct:Websocket",
+            ws.device_info_id.unwrap().to_string().as_str(),
+            <std::option::Option<std::string::String> as Clone>::clone(&ws.script)
+                .unwrap()
+                .as_str(),
+        );
+    }
+    pub fn deleteRedis(&self, ws: &WebSocketHandler) {
+        self.redis.delete_hash_field(
+            "struct:Websocket",
+            ws.device_info_id.unwrap().to_string().as_str(),
+        );
+    }
+
+    pub fn set_auth(&self, ws: &WebSocketHandler) {
+        let result = json::to_string(ws);
+        match result {
+            Ok(o) => {
+                let x = self
+                    .redis
+                    .set_hash(
+                        "auth:ws",
+                        ws.device_info_id.unwrap().to_string().as_str(),
+                        o.as_str(),
+                    )
+                    .unwrap();
+            }
+            Err(e) => {
+                error!("Error: {}", e);
+            }
+        }
     }
 }
 
@@ -124,7 +161,7 @@ impl CrudOperations<WebSocketHandler> for WebSocketHandlerBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<WebSocketHandler, Error> {
         log::info!("Deleting WebSocketHandler with ID {}", id);
         common_lib::sql_utils::delete_by_id(&self.mysql, "websocket_handlers", id).await
     }

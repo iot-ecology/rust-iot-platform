@@ -106,7 +106,7 @@ impl CrudOperations<MysqlTransmitBind> for MysqlTransmitBindBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<MysqlTransmitBind, Error> {
         log::info!("Deleting MysqlTransmitBind with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "mysql_transmit_binds", id).await

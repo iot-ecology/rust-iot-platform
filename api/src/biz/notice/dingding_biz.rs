@@ -74,7 +74,7 @@ impl CrudOperations<DingDing> for DingDingBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<DingDing, Error> {
         log::info!("Deleting DingDing with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "dingdings", id).await

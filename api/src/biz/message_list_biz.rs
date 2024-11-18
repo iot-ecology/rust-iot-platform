@@ -81,7 +81,7 @@ impl CrudOperations<MessageList> for MessageListBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<MessageList, Error> {
         log::info!("Deleting message list with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "message_lists", id).await

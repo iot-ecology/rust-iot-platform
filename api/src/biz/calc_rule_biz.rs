@@ -91,7 +91,7 @@ impl CrudOperations<CalcRule> for CalcRuleBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<CalcRule, Error> {
         log::info!("Deleting CalcRule with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "calc_rules", id).await

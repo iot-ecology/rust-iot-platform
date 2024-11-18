@@ -93,7 +93,7 @@ impl CrudOperations<MysqlTransmit> for MysqlTransmitBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<MysqlTransmit, Error> {
         log::info!("Deleting MysqlTransmit with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "mysql_transmits", id).await

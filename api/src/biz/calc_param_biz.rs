@@ -107,7 +107,7 @@ impl CrudOperations<CalcParam> for CalcParamBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<CalcParam, Error> {
         log::info!("Deleting CalcParam with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "calc_params", id).await

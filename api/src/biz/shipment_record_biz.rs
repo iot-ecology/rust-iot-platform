@@ -116,7 +116,7 @@ impl CrudOperations<ShipmentRecord> for ShipmentRecordBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<ShipmentRecord, Error> {
         log::info!("Deleting shipment record with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "shipment_records", id).await

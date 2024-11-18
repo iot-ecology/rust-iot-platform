@@ -132,7 +132,7 @@ impl CrudOperations<InfluxDbTransmitBind> for InfluxDbTransmitBindBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<InfluxDbTransmitBind, Error> {
         log::info!("Deleting InfluxDbTransmitBind with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "influxdb_transmit_binds", id).await

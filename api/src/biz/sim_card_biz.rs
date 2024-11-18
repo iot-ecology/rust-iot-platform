@@ -61,7 +61,7 @@ impl CrudOperations<SimCard> for SimCardBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<SimCard, Error> {
         log::info!("Deleting sim card with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "sim_cards", id).await

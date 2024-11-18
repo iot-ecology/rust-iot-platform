@@ -119,7 +119,7 @@ impl CrudOperations<SignalDelayWaringParam> for SignalDelayWaringParamBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<SignalDelayWaringParam, Error> {
         log::info!("Deleting signal delay warning param with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "signal_delay_waring_params", id).await

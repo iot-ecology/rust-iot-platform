@@ -113,7 +113,7 @@ impl CrudOperations<MongoTransmitBind> for MongoTransmitBindBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<MongoTransmitBind, Error> {
         log::info!("Deleting MongoTransmitBind with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "mongo_transmit_binds", id).await

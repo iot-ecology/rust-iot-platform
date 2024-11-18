@@ -97,7 +97,7 @@ impl CrudOperations<RepairRecord> for RepairRecordBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<RepairRecord, Error> {
         log::info!("Deleting repair record with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "repair_records", id).await

@@ -2159,7 +2159,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for UserRole {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WebSocketHandler {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
     pub id: Option<u64>,
@@ -2189,6 +2189,7 @@ pub struct WebSocketHandler {
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
 }
+
 impl FromRow<'_, sqlx::mysql::MySqlRow> for WebSocketHandler {
     fn from_row(row: &'_ sqlx::mysql::MySqlRow) -> Result<Self, sqlx::Error> {
         Ok(WebSocketHandler {

@@ -4,6 +4,8 @@ use crate::db::db_model::{HttpHandler, Signal, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
+use log::error;
+use rocket::serde::json;
 use sqlx::MySqlPool;
 
 pub struct HttpHandlerBiz {
@@ -11,6 +13,40 @@ pub struct HttpHandlerBiz {
     pub mysql: MySqlPool,
 }
 impl HttpHandlerBiz {
+    pub fn setRedis(&self, ws: &HttpHandler) {
+        self.redis.set_hash(
+            "struct:Http",
+            ws.device_info_id.unwrap().to_string().as_str(),
+            <std::option::Option<std::string::String> as Clone>::clone(&ws.script)
+                .unwrap()
+                .as_str(),
+        );
+    }
+    pub fn deleteRedis(&self, ws: &HttpHandler) {
+        self.redis.delete_hash_field(
+            "struct:Http",
+            ws.device_info_id.unwrap().to_string().as_str(),
+        );
+    }
+
+    pub fn set_auth(&self, ws: &HttpHandler) {
+        let result = json::to_string(ws);
+        match result {
+            Ok(o) => {
+                let x = self
+                    .redis
+                    .set_hash(
+                        "auth:http",
+                        ws.device_info_id.unwrap().to_string().as_str(),
+                        o.as_str(),
+                    )
+                    .unwrap();
+            }
+            Err(e) => {
+                error!("Error: {}", e);
+            }
+        }
+    }
     pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
         HttpHandlerBiz { redis, mysql }
     }
@@ -89,7 +125,7 @@ impl CrudOperations<HttpHandler> for HttpHandlerBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<HttpHandler, Error> {
         log::info!("Deleting HttpHandler with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "http_handlers", id).await

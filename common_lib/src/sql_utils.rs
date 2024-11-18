@@ -1,6 +1,6 @@
 use anyhow::Context;
 use chrono::{DateTime, NaiveDateTime, Utc};
-use log::debug;
+use log::{debug, info};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::{FromRow, MySql, MySqlPool, Pool, Row};
 use std::fmt::Debug;
@@ -118,7 +118,7 @@ impl FilterInfo {
             ),
             FilterOperation::AllLike => (
                 format!("{} LIKE ?", self.field),
-                vec![format!("%{}", self.value)],
+                vec![format!("%{}%", self.value)],
             ),
             FilterOperation::RightLike => (
                 format!("{} LIKE ?", self.field),
@@ -163,10 +163,12 @@ where
     let mut where_clause = String::new();
     let mut bindings: Vec<String> = Vec::new();
 
-    for filter in &filters {
-        let (condition, values) = filter.to_sql();
-        where_clause.push_str(&format!(" AND {}", condition));
-        bindings.extend(values);
+    for filter in filters.iter() {
+        if !filter.value.as_str().eq("0") || filter.value.as_str().eq("") {
+            let (condition, values) = filter.to_sql();
+            where_clause.push_str(&format!(" AND {}", condition));
+            bindings.extend(values);
+        }
     }
 
     // 主查询语句
@@ -180,6 +182,9 @@ where
         "SELECT COUNT(1) FROM {} WHERE 1=1{}",
         table_name, where_clause
     );
+
+    info!("sql = {:?}", query);
+    info!("where = {:?}", bindings);
 
     // 执行主查询
     let mut query_builder = sqlx::query_as::<_, T>(&query);
@@ -225,9 +230,11 @@ where
     let mut bindings: Vec<String> = Vec::new();
 
     for filter in filters.iter() {
-        let (condition, values) = filter.to_sql();
-        where_clause.push_str(&format!(" AND {}", condition));
-        bindings.extend(values);
+        if !filter.value.as_str().eq("0") || filter.value.as_str().eq("") {
+            let (condition, values) = filter.to_sql();
+            where_clause.push_str(&format!(" AND {}", condition));
+            bindings.extend(values);
+        }
     }
 
     // 完成查询语句
@@ -273,11 +280,15 @@ where
     Ok(result)
 }
 
-pub async fn delete_by_id(pool: &Pool<MySql>, table_name: &str, id: u64) -> Result<(), Error> {
+pub async fn delete_by_id<T>(pool: &Pool<MySql>, table_name: &str, id: u64) -> Result<T, Error>
+where
+    T: for<'r> FromRow<'r, sqlx::mysql::MySqlRow> + Send + Unpin + Debug,
+{
     // 构建逻辑删除 SQL 查询
     let query = format!("UPDATE {} SET deleted_at = NOW() WHERE id = ?", table_name);
     println!("Delete query: {}", query);
 
+    let result = by_id_common(pool, table_name, id).await;
     // 执行更新操作并捕获可能的错误
     let affected_rows = sqlx::query(&query)
         .bind(id)
@@ -294,8 +305,7 @@ pub async fn delete_by_id(pool: &Pool<MySql>, table_name: &str, id: u64) -> Resu
     if affected_rows.rows_affected() == 0 {
         return Err(anyhow::anyhow!("No rows affected for id {}", id));
     }
-
-    Ok(())
+    result
 }
 
 use anyhow::{Error, Result};
@@ -371,7 +381,7 @@ where
 {
     async fn create(&self, item: T) -> Result<T, Error>;
     async fn update(&self, id: u64, item: T) -> Result<T, Error>;
-    async fn delete(&self, id: u64) -> Result<(), Error>;
+    async fn delete(&self, id: u64) -> Result<T, Error>;
     async fn page(
         &self,
         filters: Vec<FilterInfo>,

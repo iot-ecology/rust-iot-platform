@@ -1,11 +1,13 @@
 use crate::biz::sim_card_biz::SimCardBiz;
-use crate::db::db_model::TcpHandler;
+use crate::db::db_model::{TcpHandler, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils::{
     by_id_common, CrudOperations, FilterInfo, PaginationParams, PaginationResult,
 };
+use log::error;
 use r2d2;
+use rocket::serde::json;
 use sqlx::MySqlPool;
 
 pub struct TcpHandlerBiz {
@@ -15,6 +17,40 @@ pub struct TcpHandlerBiz {
 impl TcpHandlerBiz {
     pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
         TcpHandlerBiz { redis, mysql }
+    }
+    pub fn setRedis(&self, ws: &TcpHandler) {
+        self.redis.set_hash(
+            "struct:tcp",
+            ws.device_info_id.unwrap().to_string().as_str(),
+            <std::option::Option<std::string::String> as Clone>::clone(&ws.script)
+                .unwrap()
+                .as_str(),
+        );
+    }
+    pub fn deleteRedis(&self, ws: &TcpHandler) {
+        self.redis.delete_hash_field(
+            "struct:tcp",
+            ws.device_info_id.unwrap().to_string().as_str(),
+        );
+    }
+
+    pub fn set_auth(&self, ws: &TcpHandler) {
+        let result = json::to_string(ws);
+        match result {
+            Ok(o) => {
+                let x = self
+                    .redis
+                    .set_hash(
+                        "auth:tcp",
+                        ws.device_info_id.unwrap().to_string().as_str(),
+                        o.as_str(),
+                    )
+                    .unwrap();
+            }
+            Err(e) => {
+                error!("Error: {}", e);
+            }
+        }
     }
 }
 
@@ -97,7 +133,7 @@ impl CrudOperations<TcpHandler> for TcpHandlerBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<TcpHandler, Error> {
         log::info!("Deleting tcp handler with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "tcp_handlers", id).await

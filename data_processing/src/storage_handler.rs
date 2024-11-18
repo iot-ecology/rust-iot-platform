@@ -5,6 +5,7 @@ use common_lib::models::{DataRowList, DataValue, MQTTMessage, Signal, SignalMapp
 use common_lib::rabbit_utils::RabbitMQ;
 use common_lib::redis_handler::{get_redis_instance, RedisWrapper};
 use common_lib::redis_pool_utils::RedisOp;
+use common_lib::ut::calc_bucket_name;
 use futures_util::StreamExt;
 use lapin::options::{BasicAckOptions, BasicConsumeOptions, BasicPublishOptions};
 use lapin::types::FieldTable;
@@ -179,9 +180,7 @@ pub fn get_mqtt_client_signal(
 pub fn calc_measurement(device_uid: &str, identification_code: &str, protocol: &str) -> String {
     format!("{}_{}_{}", protocol, device_uid, identification_code)
 }
-pub fn calc_bucket_name(prefix: &str, protocol: &str, id: u32) -> String {
-    format!("{}_{}_{}", prefix, protocol, id % 100)
-}
+
 #[cfg(test)]
 mod tests {
     use super::*;

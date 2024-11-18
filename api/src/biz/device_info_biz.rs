@@ -137,7 +137,7 @@ impl CrudOperations<DeviceInfo> for DeviceInfoBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<DeviceInfo, Error> {
         log::info!("Deleting DeviceInfo with ID {}", id);
         common_lib::sql_utils::delete_by_id(&self.mysql, "device_infos", id).await
     }

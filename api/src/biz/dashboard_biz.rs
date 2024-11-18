@@ -59,7 +59,7 @@ impl CrudOperations<Dashboard> for DashboardBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<(), Error> {
+    async fn delete(&self, id: u64) -> Result<Dashboard, Error> {
         log::info!("Deleting dashboard with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "dashboards", id).await
