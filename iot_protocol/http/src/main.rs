@@ -178,8 +178,9 @@ async fn handler_message(
 
     // 获取 RabbitMQ 实例并发布消息
     let rabbit = get_rabbitmq_instance().await.unwrap();
+    let guard = rabbit.lock().await;
 
-    rabbit
+    guard
         .publish("", "pre_http_handler", json_data.as_str())
         .await
         .expect("publish message failed");

@@ -200,7 +200,8 @@ async fn handle_data(payload: String, name: String, rel_adds: String) -> &'stati
         // 获取 RabbitMQ 实例并发布消息
         let rabbit = get_rabbitmq_instance().await.unwrap();
 
-        rabbit
+        let guard = rabbit.lock().await;
+        guard
             .publish("", "pre_coap_handler", json_data.as_str())
             .await
             .expect("publish message failed");

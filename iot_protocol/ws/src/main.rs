@@ -48,8 +48,9 @@ fn mirror(id: String, ws: WebSocket, peers_map: &State<PeersMap>) -> Channel<'st
                                     };
 
        let rabbit = get_rabbitmq_instance().await.unwrap();
+            let guard = rabbit.lock().await;
 
-            rabbit
+            guard
                 .publish("", "pre_ws_handler", c.to_json_string().as_str())
                 .await
                 .expect("publish message failed");

@@ -38,7 +38,10 @@ async fn main() {
     let rabbit = get_rabbitmq_instance().await.unwrap();
     let redis_wrapper = get_redis_instance().await.unwrap();
 
-    let channel = rabbit.connection.create_channel().await.unwrap();
+
+    let mut rabbitmq = rabbit.lock().await;
+    let channel = rabbitmq.connection.create_channel().await.unwrap();
+
     let mongo_config = guard1.mongo_config.clone().unwrap();
 
     init_mongo(mongo_config.clone()).await.unwrap();

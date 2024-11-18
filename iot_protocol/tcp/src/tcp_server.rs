@@ -19,11 +19,11 @@ pub(crate) struct TcpServer {
     address: String,
     redis_wrapper: RedisWrapper,
     name: String,
-    size: u8,
+    size: i64,
 }
 
 impl TcpServer {
-    pub(crate) fn new(address: &str, redis_wrapper: RedisWrapper, name: String, size: u8) -> Self {
+    pub(crate) fn new(address: &str, redis_wrapper: RedisWrapper, name: String, size: i64) -> Self {
         TcpServer {
             address: address.to_string(),
             redis_wrapper,
@@ -63,11 +63,11 @@ struct ConnectionHandler {
     stream: Arc<Mutex<TcpStream>>,
     wrapper: RedisWrapper,
     name: String,
-    size: u8,
+    size: i64,
 }
 
 impl ConnectionHandler {
-    fn new(stream: TcpStream, wrapper: RedisWrapper, name: String, size: u8) -> Self {
+    fn new(stream: TcpStream, wrapper: RedisWrapper, name: String, size: i64) -> Self {
         ConnectionHandler {
             stream: Arc::new(Mutex::new(stream)),
             wrapper,
@@ -245,7 +245,7 @@ impl ConnectionHandler {
         info!("Processing message: {}", message);
 
         let string1 = remote_address.replace(":", "@");
-        let now = common_lib::time_utils::local_to_utc().timestamp();
+        let now = common_lib::time_utils::local_to_utc();
         let key = format!("tcp:last:{}", string1);
         self.wrapper
             .set_string_with_expiry(&key, &now.to_string(), 24 * 60 * 60)
@@ -266,8 +266,9 @@ impl ConnectionHandler {
             .expect("Failed to get hash");
         if option.is_some() {
             let rabbit = get_rabbitmq_instance().await.unwrap();
+            let guard = rabbit.lock().await;
 
-            rabbit
+            guard
                 .publish("", "pre_tcp_handler", json_string.as_str())
                 .await
                 .expect("publish message failed");

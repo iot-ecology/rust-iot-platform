@@ -1,8 +1,8 @@
-use crate::storage_handler::{calc_bucket_name, calc_measurement};
+use crate::storage_handler::{ calc_measurement};
 use bson::{Bson, Document};
 use chrono::Utc;
 use common_lib::influxdb_utils::InfluxDBManager;
-use common_lib::models::{AggregationConfig, CalcCache, InfluxQueryConfig};
+use common_lib::models::{AggregationConfig, InfluxQueryConfig};
 use common_lib::mongo_utils::MongoDBManager;
 use common_lib::redis_handler::RedisWrapper;
 use cron::Schedule;
@@ -18,13 +18,14 @@ use std::fmt;
 use std::str::FromStr;
 
 use crate::waring_dealy_handler::handler_waring_delay_string;
-use crate::waring_handler::calc_collection_name;
 use common_lib::config::InfluxConfig;
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::time_utils::local_to_utc;
 use lapin::options::{BasicAckOptions, BasicConsumeOptions};
 use lapin::types::FieldTable;
 use lapin::{Channel, Connection};
+use common_lib::servlet_common::CalcCache;
+use common_lib::ut::{calc_bucket_name, calc_collection_name};
 
 #[derive(Debug)]
 enum LocValue {

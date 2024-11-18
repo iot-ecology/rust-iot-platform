@@ -80,7 +80,7 @@ pub async fn print_clients_periodically(redis_wrapper: RedisWrapper, name: Strin
                 match value.parse::<i64>() {
                     Ok(last_active) => {
                         // 获取当前时间
-                        let current_time = common_lib::time_utils::local_to_utc().timestamp(); // 使用 chrono crate 获取 UTC 时间戳
+                        let current_time = common_lib::time_utils::local_to_utc(); // 使用 chrono crate 获取 UTC 时间戳
                         let time_difference = current_time - last_active;
 
                         debug!("Parsed last active time: {}", last_active);

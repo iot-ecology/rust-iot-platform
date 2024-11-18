@@ -3,10 +3,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CalcCache {
     pub id: u64,
-    pub param: Vec<CalcParamCache>,
+    pub param: Option<Vec<CalcParamCache>>,
     pub cron: String,
     pub script: String,
-    pub offset: u64,
+    pub offset: i64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

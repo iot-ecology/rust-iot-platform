@@ -144,12 +144,12 @@ fn get_delay_script(
 
     Ok(unique_res)
 }
-use crate::waring_handler::calc_collection_name;
 use common_lib::config::InfluxConfig;
 use common_lib::mongo_utils::MongoDBManager;
 use common_lib::redis_pool_utils::RedisOp;
 use quick_js::{Context, JsValue};
 use tokio::sync::MutexGuard;
+use common_lib::ut::calc_collection_name;
 
 fn call_js(js: String, param: &HashMap<String, Vec<Tv>>) -> bool {
     // 创建新的 JavaScript 上下文
