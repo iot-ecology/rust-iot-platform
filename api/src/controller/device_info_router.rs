@@ -135,39 +135,77 @@ pub async fn list_device_info(
 pub async fn update_device_info(
     data: Json<DeviceInfo>,
     device_info_api: &rocket::State<DeviceInfoBiz>,
+    product_api: &rocket::State<ProductBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
-    let x = device_info_api.by_id(data.id.unwrap()).await;
-    match x {
-        Ok(mut old) => {
-            old.sn = data.sn.clone();
-            let result = device_info_api.update(old.id.unwrap(), old).await;
-            match result {
-                Ok(u2) => {
-                    let success_json = json!({
-                        "code": 20000,
-                        "message": "更新成功",
-                        "data": u2
-                    });
-                    Custom(Status::Ok, Json(success_json))
-                }
-                Err(e) => {
-                    error!("error =  {:?}", e);
-
-                    let error_json = json!({
-                        "code": 40000,
-                        "message": "查询失败"
-                    });
-                    Custom(Status::InternalServerError, Json(error_json))
-                }
-            }
-        }
+    // Get existing device info
+    let old_device = match device_info_api.by_id(data.id.unwrap()).await {
+        Ok(device) => device,
         Err(e) => {
-            error!("error =  {:?}", e);
-
+            error!("Failed to find device: {:?}", e);
             let error_json = json!({
                 "code": 40000,
-                "message": "查询失败"
+                "message": "设备不存在"
+            });
+            return Custom(Status::NotFound, Json(error_json));
+        }
+    };
+
+    let mut new_device = old_device.clone();
+    new_device.product_id = data.product_id;
+    new_device.source = data.source;
+    new_device.manufacturing_date = data.manufacturing_date;
+    new_device.procurement_date = data.procurement_date;
+    new_device.warranty_expiry = data.warranty_expiry;
+    new_device.push_interval = data.push_interval;
+    new_device.error_rate = data.error_rate;
+    new_device.protocol = data.protocol.clone();
+
+    // Get product info for warranty calculation
+    let product = match product_api.by_id(new_device.product_id.unwrap()).await {
+        Ok(product) => product,
+        Err(e) => {
+            error!("Failed to find product: {:?}", e);
+            let error_json = json!({
+                "code": 40000,
+                "message": "产品不存在"
+            });
+            return Custom(Status::NotFound, Json(error_json));
+        }
+    };
+
+    // Calculate warranty expiry based on source and manufacturing date
+    if new_device.source == Some(2) {
+        new_device.manufacturing_date = new_device.procurement_date;
+        if let Some(mfg_date) = new_device.manufacturing_date {
+            let warranty_days = product.warranty_period.unwrap_or(0) as i64;
+            new_device.warranty_expiry = Some(mfg_date + Duration::days(warranty_days));
+        }
+    } else if let Some(mfg_date) = new_device.manufacturing_date {
+        let warranty_days = product.warranty_period.unwrap_or(0) as i64;
+        new_device.warranty_expiry = Some(mfg_date + Duration::days(warranty_days));
+    }
+
+    // Update device info
+    match device_info_api.update(new_device.id.unwrap(), new_device.clone()).await {
+        Ok(updated_device) => {
+            // Update Redis cache
+            if let Err(e) = device_info_api.set_redis(&updated_device).await {
+                error!("Failed to update Redis cache: {:?}", e);
+            }
+
+            let success_json = json!({
+                "code": 20000,
+                "message": "更新成功",
+                "data": old_device
+            });
+            Custom(Status::Ok, Json(success_json))
+        }
+        Err(e) => {
+            error!("Failed to update device: {:?}", e);
+            let error_json = json!({
+                "code": 40000,
+                "message": "更新失败"
             });
             Custom(Status::InternalServerError, Json(error_json))
         }

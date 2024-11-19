@@ -681,7 +681,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for DeviceGroup {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug,Clone)]
 pub struct DeviceInfo {
     pub product_id: Option<u64>,
     pub sn: Option<String>,

@@ -122,6 +122,30 @@ impl RedisOp {
             Err(e) => Err(e),
         }
     }
+    
+    /// 从列表中移除指定的值
+    /// count > 0: 从头到尾移除值为 value 的元素，数量为 count
+    /// count < 0: 从尾到头移除值为 value 的元素，数量为 count 的绝对值
+    /// count = 0: 移除所有值为 value 的元素
+    pub fn remove_from_list(&self, key: &str, count: i64, value: &str) -> Result<(), RedisError> {
+        let mut con = self.get_connection();
+        match con.lrem::<&str, &str, usize>(key, count as isize, value) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+        }
+    }
+
+    /// Get the number of elements in a sorted set
+    pub fn zcard(&self, key: &str) -> Result<u64, RedisError> {
+        let mut con = self.get_connection();
+        con.zcard(key)
+    }
+
+    /// Remove elements from a sorted set by rank (index)
+    pub fn zremrangebyrank(&self, key: &str, start: i64, stop: i64) -> Result<u64, RedisError> {
+        let mut con = self.get_connection();
+        con.zremrangebyrank(key, start as isize, stop as isize)
+    }
 
     /// 从列表中弹出值
     pub fn pop_list(&self, key: &str) -> Result<Option<String>, RedisError> {

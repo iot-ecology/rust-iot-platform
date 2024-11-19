@@ -72,6 +72,15 @@ impl DeviceInfoBiz {
 
         Ok(())
     }
+
+
+    pub async fn bind_mqtt(){}
+
+    pub async fn query_mqtt(&self,device_info_id:u64){}
+    pub async fn query_tcp(&self,device_info_id:u64){}
+    pub async fn query_http(&self,device_info_id:u64){}
+    pub async fn query_ws(&self,device_info_id:u64){}
+    pub async fn query_coap(&self,device_info_id:u64){}
 }
 
 #[async_trait::async_trait]

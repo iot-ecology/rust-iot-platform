@@ -10,9 +10,63 @@ pub struct SignalBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
 }
+
 impl SignalBiz {
     pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
         SignalBiz { redis, mysql }
+    }
+
+    pub async fn remove_old_cache(&self, threshold: u64, signal_id: u64, device_uid: u64, code: &str) -> Result<(), Error> {
+        let redis_key = format!("signal_delay_warning:{}:{}:{}", device_uid, code, signal_id);
+        
+        // Get current count of elements
+        let count = self.redis.get_zset_length(&redis_key)
+            .map_err(|e| anyhow::anyhow!("Failed to get sorted set size: {}", e))?;
+
+        if count <= threshold {
+            log::info!("No need to remove elements from {}", redis_key);
+            return Ok(());
+        }
+
+        // Remove extra elements (oldest ones) one by one
+        let to_remove = count - threshold;
+        self.redis.zremrangebyrank(&redis_key, 0, to_remove as i64 - 1);
+        log::info!("Removed {} extra elements from sorted set '{}'", to_remove, redis_key);
+        Ok(())
+    }
+
+    pub async fn set_signal_cache(&self, signal: &Signal) -> Result<(), Error> {
+        let json_data = serde_json::to_string(signal)
+            .map_err(|e| anyhow::anyhow!("Failed to serialize signal: {}", e))?;
+
+        let key = format!(
+            "signal:{}:{}",
+            signal.device_uid.unwrap_or_default(),
+            signal.identification_code.as_deref().unwrap_or_default()
+        );
+
+        self.redis
+            .push_list(key.as_str(), json_data.as_str())
+            .map_err(|e| anyhow::anyhow!("Failed to push signal to Redis list: {}", e))?;
+
+        Ok(())
+    }
+
+    pub async fn remove_signal_cache(&self, signal: &Signal) -> Result<(), Error> {
+        let json_data = serde_json::to_string(signal)
+            .map_err(|e| anyhow::anyhow!("Failed to serialize signal: {}", e))?;
+
+        let key = format!(
+            "signal:{}:{}",
+            signal.device_uid.unwrap_or_default(),
+            signal.identification_code.as_deref().unwrap_or_default()
+        );
+
+        self.redis
+            .remove_from_list(key.as_str(), 0, json_data.as_str())
+            .map_err(|e| anyhow::anyhow!("Failed to remove signal from Redis list: {}", e))?;
+
+        Ok(())
     }
 }
 

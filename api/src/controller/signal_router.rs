@@ -1,4 +1,5 @@
 use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
+use log::error;
 
 use crate::biz::signal_biz::SignalBiz;
 use crate::db::db_model::{Signal, SignalDelayWaring};
@@ -15,11 +16,40 @@ pub async fn create_signal(
     signal_api: &rocket::State<SignalBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
-    let error_json = json!({
-        "status": "error",
-        "message": ""
-    });
-    Custom(Status::InternalServerError, Json(error_json))
+    // Validate signal name
+    if data.name.as_ref().map_or(true, |name| name.is_empty()) {
+        let error_json = json!({
+            "code": 40000,
+            "message": "信号名称不能为空"
+        });
+        return Custom(Status::BadRequest, Json(error_json));
+    }
+
+    // Create signal in database
+    match signal_api.create(data.into_inner()).await {
+        Ok(created_signal) => {
+            // Set signal cache
+            if let Err(e) = signal_api.set_signal_cache(&created_signal).await {
+                log::warn!("Failed to set signal cache: {}", e);
+            }
+
+            let success_json = json!({
+                "code": 20000,
+                "message": "创建成功",
+                "data": created_signal
+            });
+            Custom(Status::Ok, Json(success_json))
+        }
+        Err(e) => {
+            log::error!("Failed to create signal: {}", e);
+            let error_json = json!({
+                "code": 40000,
+                "message": "创建失败",
+                "data": e.to_string()
+            });
+            Custom(Status::InternalServerError, Json(error_json))
+        }
+    }
 }
 
 #[post("/signal/update", format = "json", data = "<data>")]
@@ -28,11 +58,60 @@ pub async fn update_signal(
     signal_api: &rocket::State<SignalBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
-    let error_json = json!({
-        "status": "error",
-        "message": ""
-    });
-    Custom(Status::InternalServerError, Json(error_json))
+    let x = signal_api.by_id(data.id.unwrap()).await;
+    match x {
+        Ok(mut old) => {
+            old.protocol = data.protocol.clone();
+            old.identification_code = data.identification_code.clone();
+            old.device_uid = data.device_uid.clone();
+            old.name = data.name.clone();
+            old.alias = data.alias.clone();
+            old.signal_type = data.signal_type.clone();
+            old.unit = data.unit.clone();
+            old.cache_size = data.cache_size.clone();
+            signal_api.remove_signal_cache(&old).await.unwrap();
+            let result = signal_api.update(old.id.unwrap(), old).await;
+            match result {
+                Ok(u2) => {
+                    let success_json = json!({
+                        "code": 20000,
+                        "message": "更新成功",
+                        "data": u2
+                    });
+
+
+                    signal_api.remove_old_cache(u2.cache_size.unwrap(),
+                                                u2.id.unwrap(),
+                                                u2.device_uid.unwrap(),
+                                                u2.identification_code.clone().unwrap().as_str(),
+                    ).await;
+
+                    if let Err(e) = signal_api.set_signal_cache(&u2).await {
+                        log::warn!("Failed to set signal cache: {}", e);
+                    }
+                    Custom(Status::Ok, Json(success_json))
+                }
+                Err(e) => {
+                    error!("error =  {:?}", e);
+
+                    let error_json = json!({
+                        "code": 40000,
+                        "message": "查询失败"
+                    });
+                    Custom(Status::InternalServerError, Json(error_json))
+                }
+            }
+        }
+        Err(e) => {
+            error!("error =  {:?}", e);
+
+            let error_json = json!({
+                "code": 40000,
+                "message": "查询失败"
+            });
+            Custom(Status::InternalServerError, Json(error_json))
+        }
+    }
 }
 
 #[post("/signal/delete/<id>")]
