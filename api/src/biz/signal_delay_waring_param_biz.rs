@@ -1,6 +1,6 @@
 use crate::biz::signal_delay_waring_biz::SignalDelayWaringBiz;
 use crate::biz::user_biz::UserBiz;
-use crate::db::db_model::{SignalDelayWaringParam, SimCard, WebSocketHandler};
+use crate::db::db_model::{SignalDelayWaringParam, SimCard, WebSocketHandler, Signal};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
@@ -10,10 +10,39 @@ pub struct SignalDelayWaringParamBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
 }
+
 impl SignalDelayWaringParamBiz {
     pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
         SignalDelayWaringParamBiz { redis, mysql }
     }
+
+    pub async fn get_signal_by_id(&self, signal_id: u64) -> Result<Signal, Error> {
+        let signal = sqlx::query_as::<_, Signal>(
+            "SELECT * FROM signals WHERE id = ? AND deleted_at IS NULL"
+        )
+        .bind(signal_id)
+        .fetch_one(&self.mysql)
+        .await
+        .context("Failed to get signal")?;
+
+        Ok(signal)
+    }
+
+    pub async fn push_to_redis(&self, v: &SignalDelayWaringParam) -> Result<(), Error> {
+        let result = serde_json::to_string(v).unwrap();
+        self.redis.push_list("delay_param", &result)
+            .context("Failed to push to Redis")?;
+        Ok(())
+    }
+
+    pub async fn remove_from_redis(&self, v: &SignalDelayWaringParam) -> Result<(), Error> {
+        let json_str = serde_json::to_string(v).unwrap();
+        let count = self.redis.remove_from_list("delay_param", 0, &json_str)
+            .context("Failed to remove from Redis")?;
+        Ok(())
+    }
+
+    
 }
 
 #[async_trait::async_trait]
