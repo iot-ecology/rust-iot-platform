@@ -4,6 +4,7 @@ use crate::db::db_model::{DeviceInfo, Signal};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
+use serde_json;
 use sqlx::MySqlPool;
 
 #[derive(Debug)]
@@ -12,8 +13,64 @@ pub struct DeviceInfoBiz {
     pub mysql: MySqlPool,
 }
 impl DeviceInfoBiz {
+
+
+    pub async fn find_by_sn(&self, sn: Option<String>) -> Result<Option<DeviceInfo>, Error> {
+        if sn.is_none() {
+            return Ok(None);
+        }
+
+        let sql = "select * from device_infos where sn = ?";
+
+        let record = sqlx::query_as::<_, DeviceInfo>(sql)
+            .bind(sn.clone().unwrap())
+            .fetch_optional(&self.mysql)
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to fetch updated record from table '{}' with username {:?}",
+                    "device_infos",
+                    sn.clone()
+                )
+            });
+
+        return match record {
+            Ok(u) => Ok(u),
+            Err(ee) => Err(ee),
+        };
+    }
+
     pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
         DeviceInfoBiz { redis, mysql }
+    }
+
+    pub async fn set_redis(&self, device_info: &DeviceInfo) -> Result<(), Error> {
+        let json_data = serde_json::to_string(device_info)
+            .map_err(|e| anyhow::anyhow!("Failed to serialize device info: {}", e))?;
+
+        // 保存到 struct:device_info hash
+        if let Some(id) = device_info.id {
+            self.redis.set_hash(
+                "struct:device_info",
+                id.to_string().as_str(),
+                json_data.as_str(),
+            ).map_err(|e| anyhow::anyhow!("Failed to set hash for device id {}: {}", id, e))?;
+        }
+
+        // 保存到 share:device_info:{protocol}:{device_uid}:{identification_code}
+        if let (Some(protocol), Some(device_uid), Some(identification_code)) =
+            (device_info.protocol.as_ref(), device_info.device_uid, device_info.identification_code.as_ref()) {
+            let key = format!(
+                "share:device_info:{}:{}:{}",
+                protocol,
+                device_uid,
+                identification_code
+            );
+            self.redis.set_string(key.as_str(), json_data.as_str())
+                .map_err(|e| anyhow::anyhow!("Failed to set string for key {}: {}", key, e))?;
+        }
+
+        Ok(())
     }
 }
 

@@ -1,6 +1,6 @@
 use crate::biz::dept_biz::DeptBiz;
 use crate::biz::user_biz::UserBiz;
-use crate::db::db_model::{DeviceGroup, Signal};
+use crate::db::db_model::{DeviceGroup,  Signal};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
@@ -12,6 +12,32 @@ pub struct DeviceGroupBiz {
     pub mysql: MySqlPool,
 }
 impl DeviceGroupBiz {
+
+    pub async fn find_by_name(&self, username: Option<String>) -> Result<Option<DeviceGroup>, Error> {
+        if username.is_none() {
+            return Ok(None);
+        }
+
+        let sql = "select * from device_groups where name = ?";
+
+        let record = sqlx::query_as::<_, DeviceGroup>(sql)
+            .bind(username.clone().unwrap())
+            .fetch_optional(&self.mysql)
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to fetch updated record from table '{}' with username {:?}",
+                    "users",
+                    username.clone()
+                )
+            });
+
+        return match record {
+            Ok(u) => Ok(u),
+            Err(ee) => Err(ee),
+        };
+    }
+
     pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
         DeviceGroupBiz { redis, mysql }
     }
