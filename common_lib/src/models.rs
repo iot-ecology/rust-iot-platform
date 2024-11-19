@@ -175,7 +175,7 @@ pub struct Tv {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct InfluxQueryConfig {
     pub bucket: String,
     pub measurement: String,
@@ -184,9 +184,14 @@ pub struct InfluxQueryConfig {
     pub end_time: i64,
     pub aggregation: AggregationConfig,
     pub reduce: String, // sum, min, max, mean
+    #[serde(rename = "device_uid")]
+    pub device_uid: Option<u64>,
+
+    #[serde(rename = "protocol")]
+    pub protocol: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct AggregationConfig {
     pub every: i32,
     pub function: String, // e.g., "mean", "sum", "min", "max"
@@ -194,6 +199,48 @@ pub struct AggregationConfig {
 }
 
 impl InfluxQueryConfig {
+
+    pub fn generate_flux_query_string(&self) -> String {
+        // 构建字段过滤条件
+        let filters: Vec<String> = self.fields
+            .iter()
+            .map(|field| format!(r#"r["_field"] == "{}""#, field))
+            .collect();
+
+        // 构建时间范围条件
+        let time_range = if self.start_time != 0 && self.end_time != 0 {
+            format!("start: {}, stop: {}", self.start_time, self.end_time)
+        } else {
+            String::new()
+        };
+
+        // 构建过滤子句
+        let filter_clause = if !filters.is_empty() {
+            format!("|> filter(fn: (r) => {})", filters.join(" or "))
+        } else {
+            String::new()
+        };
+
+        // 构建完整的 Flux 查询，与 Go 版本完全一致
+        format!(
+            r#"
+        from(bucket: "{}")
+            |> range({})
+            {}
+            |> filter(fn: (r) => r["_measurement"] == "{}")
+            |> aggregateWindow(every: {}s, fn: {}, createEmpty: {})
+            |> yield(name: "first")
+    "#,
+            self.bucket,
+            time_range,
+            filter_clause,
+            self.measurement,
+            self.aggregation.every,
+            self.aggregation.function,
+            self.aggregation.create_empty
+        ).trim().to_string()
+    }
+
     // Generate a Flux query based on the InfluxQueryConfig
     pub fn generate_flux_query(&self) -> String {
         let filters: Vec<String> = self
@@ -286,6 +333,8 @@ mod tests {
             end_time: 1627851723,
             aggregation: aggregation_config,
             reduce: String::from("sum"),
+            device_uid: None,
+            protocol: None,
         };
 
         let flux_query = query_config.generate_flux_query();
@@ -312,6 +361,8 @@ mod tests {
             end_time: 1627851723,
             aggregation: aggregation_config,
             reduce: String::from("sum"),
+            device_uid: None,
+            protocol: None,
         };
 
         let flux_reduce_query = query_config.generate_flux_reduce();

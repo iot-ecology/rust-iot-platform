@@ -91,6 +91,8 @@ pub async fn calc_handler(
                                                     create_empty: false,
                                                 },
                                                 reduce: cache.reduce,
+                                                device_uid: None,
+                                                protocol: None,
                                             };
                                             let query_string =
                                                 influxdb_config.generate_flux_query();
@@ -160,6 +162,8 @@ pub async fn calc_handler(
                                                     create_empty: false,
                                                 },
                                                 reduce: cache.reduce,
+                                                device_uid: None,
+                                                protocol: None,
                                             };
                                             let query_string =
                                                 influxdb_config.generate_flux_reduce();

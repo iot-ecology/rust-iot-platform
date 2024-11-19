@@ -247,6 +247,8 @@ impl CalcRunBiz {
                     start_time,
                     end_time,
                     reduce: cache.reduce.clone(),
+                    device_uid: None,
+                    protocol: None,
                 };
 
                 let query_string = config.generate_flux_query();
@@ -314,11 +316,13 @@ impl CalcRunBiz {
                     start_time,
                     end_time,
                     reduce: cache.reduce.clone(),
+                    device_uid: None,
                     aggregation: AggregationConfig {
                         every: 1,
                         function: "mean".to_string(),
                         create_empty: false,
                     },
+                    protocol: None,
                 };
 
                 let query_string = config.generate_flux_reduce();
