@@ -28,13 +28,13 @@ use rocket::serde::json::Json;
 pub struct CalcRunBiz {
     pub redis: RedisOp,
     pub mysql: MySqlPool,
-    pub mongo: MongoDBManager,
+    pub mongo: &'static MongoDBManager,
     pub config: InfluxConfig,
 }
 
 impl CalcRunBiz {
-    pub fn new(redis: RedisOp, mysql: MySqlPool, mongo_dbmanager: MongoDBManager, config: InfluxConfig) -> Self {
-        CalcRunBiz { redis, mysql, mongo: mongo_dbmanager, config }
+    pub fn new(redis: RedisOp, mysql: MySqlPool, mongo: &'static MongoDBManager, config: InfluxConfig) -> Self {
+        CalcRunBiz { redis, mysql, mongo, config }
     }
 
     pub async fn QueryRuleExData(&self,

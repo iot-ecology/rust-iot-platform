@@ -375,8 +375,7 @@ impl rocket::fairing::Fairing for MySqlPoolFairing {
         let redis_op = RedisOp { pool: redis_pool };
 
 
-        let mongo_db_manager = MongoDBManager::new(self.mongo_config.clone()).await.unwrap();
-        
+        let mongo_db_manager = Box::leak(Box::new(MongoDBManager::new(self.mongo_config.clone()).await.unwrap()));
 
         let user_biz = UserBiz::new(redis_op.clone(), pool.clone());
         let websocket_handler_biz = WebSocketHandlerBiz::new(redis_op.clone(), pool.clone());
@@ -384,7 +383,14 @@ impl rocket::fairing::Fairing for MySqlPoolFairing {
         let sim_card_biz = SimCardBiz::new(redis_op.clone(), pool.clone());
         let signal_delay_waring_param_biz =
             SignalDelayWaringParamBiz::new(redis_op.clone(), pool.clone());
-        let signal_delay_waring_biz = SignalDelayWaringBiz::new(redis_op.clone(), pool.clone());
+        let signal_delay_waring_biz = SignalDelayWaringBiz::new(redis_op.clone(), pool.clone(),
+                                                            mongo_db_manager,
+                                                            self.mongo_config.clone()
+        );
+        let calc_run_biz = CalcRunBiz::new(redis_op.clone(), pool.clone(), mongo_db_manager, self.influxd_config.clone());
+
+
+
         let signal_biz = SignalBiz::new(redis_op.clone(), pool.clone());
         let shipment_record_biz = ShipmentRecordBiz::new(redis_op.clone(), pool.clone());
         let role_biz = RoleBiz::new(redis_op.clone(), pool.clone());
@@ -416,7 +422,6 @@ impl rocket::fairing::Fairing for MySqlPoolFairing {
             CassandraTransmitBindBiz::new(redis_op.clone(), pool.clone());
         let fei_shu_biz = FeiShuBiz::new(redis_op.clone(), pool.clone());
         let ding_ding_biz = DingDingBiz::new(redis_op.clone(), pool.clone());
-        let calc_run_biz = CalcRunBiz::new(redis_op.clone(), pool.clone(), mongo_db_manager, self.influxd_config.clone());
 
         Ok(rocket
             .manage(pool)
