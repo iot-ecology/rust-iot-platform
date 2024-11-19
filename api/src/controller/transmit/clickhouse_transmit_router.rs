@@ -36,7 +36,7 @@ pub async fn update_clickhouse_transmit(
 
 #[get("/ClickhouseTransmit/<id>")]
 pub async fn by_id_clickhouse_transmit(
-    id: u64,
+    id: i64,
     click_transmit_api: &rocket::State<ClickhouseTransmitBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -61,8 +61,8 @@ pub async fn list_clickhouse_transmit(
 
 #[get("/ClickhouseTransmit/page?<page>&<page_size>")]
 pub async fn page_clickhouse_transmit(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     click_transmit_api: &rocket::State<ClickhouseTransmitBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -75,7 +75,7 @@ pub async fn page_clickhouse_transmit(
 
 #[post("/ClickhouseTransmit/delete/<id>")]
 pub async fn delete_clickhouse_transmit(
-    id: u64,
+    id: i64,
     click_transmit_api: &rocket::State<ClickhouseTransmitBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

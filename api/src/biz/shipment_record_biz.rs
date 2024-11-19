@@ -65,7 +65,7 @@ impl CrudOperations<ShipmentRecord> for ShipmentRecordBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: ShipmentRecord) -> Result<ShipmentRecord, Error> {
+    async fn update(&self, id: i64, item: ShipmentRecord) -> Result<ShipmentRecord, Error> {
         let mut updates = vec![];
 
         if let Some(shipment_date) = item.shipment_date {
@@ -116,7 +116,7 @@ impl CrudOperations<ShipmentRecord> for ShipmentRecordBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<ShipmentRecord, Error> {
+    async fn delete(&self, id: i64) -> Result<ShipmentRecord, Error> {
         log::info!("Deleting shipment record with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "shipment_records", id).await
@@ -155,7 +155,7 @@ impl CrudOperations<ShipmentRecord> for ShipmentRecordBiz {
         return result;
     }
 
-    async fn by_id(&self, id: u64) -> Result<ShipmentRecord, Error> {
+    async fn by_id(&self, id: i64) -> Result<ShipmentRecord, Error> {
         let result = common_lib::sql_utils::by_id_common::<ShipmentRecord>(
             &self.mysql,
             "shipment_records",

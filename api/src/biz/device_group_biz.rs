@@ -60,7 +60,7 @@ impl CrudOperations<DeviceGroup> for DeviceGroupBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: DeviceGroup) -> Result<DeviceGroup, Error> {
+    async fn update(&self, id: i64, item: DeviceGroup) -> Result<DeviceGroup, Error> {
         let mut updates = vec![];
 
         if let Some(name) = item.name {
@@ -83,7 +83,7 @@ impl CrudOperations<DeviceGroup> for DeviceGroupBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<DeviceGroup, Error> {
+    async fn delete(&self, id: i64) -> Result<DeviceGroup, Error> {
         log::info!("Deleting DeviceGroup with ID {}", id);
         common_lib::sql_utils::delete_by_id(&self.mysql, "device_groups", id).await
     }
@@ -117,7 +117,7 @@ impl CrudOperations<DeviceGroup> for DeviceGroupBiz {
         result
     }
 
-    async fn by_id(&self, id: u64) -> Result<DeviceGroup, Error> {
+    async fn by_id(&self, id: i64) -> Result<DeviceGroup, Error> {
         let result =
             common_lib::sql_utils::by_id_common::<DeviceGroup>(&self.mysql, "device_groups", id)
                 .await;

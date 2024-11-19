@@ -71,7 +71,7 @@ pub async fn create_signal_waring_config(
 
 #[post("/signal-waring-config/delete/<id>")]
 pub async fn delete_signal_waring_config(
-    id: u64,
+    id: i64,
     signal_waring_config_api: &rocket::State<SignalWaringConfigBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -170,8 +170,8 @@ pub async fn update_signal_waring_config(
 #[get("/signal-waring-config/page?<page>&<page_size>&<signal_id>&<device_uid>&<identification_code>&<protocol>"
 )]
 pub async fn page_signal_waring_config(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     signal_id: Option<String>,
     device_uid: Option<String>,
     identification_code: Option<String>,

@@ -32,7 +32,7 @@ pub async fn login(
     login_param: Json<LoginParam>,
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
-) -> Result<Json<LoginResponse>, Status> {
+) -> rocket::response::status::Custom<Json<serde_json::Value>> {
     if let Some(user) = user_api
         .find_user_with_pwd(login_param.user_name.clone(), login_param.password.clone())
         .await
@@ -41,23 +41,34 @@ pub async fn login(
             user.id.unwrap(),
             user.username.clone().unwrap(),
             vec![1, 2, 3],
-        )
-            .map_err(|_| Status::InternalServerError)?;
-        Ok(Json(LoginResponse {
+        ).unwrap();
+
+        let error_json = json!({
+                "code": 20000,
+                "message": "操作成功",
+                "data": LoginResponse {
             token,
             uid: user.id.unwrap(),
             username: user.username.clone().unwrap(),
-        }))
+        }
+            });
+        Custom(Status::Ok, Json(error_json))
+
     } else {
-        Err(Status::Unauthorized)
+        let error_json = json!({
+                "code": 40000,
+                "message": "登录失败"
+            });
+        Custom(Status::InternalServerError, Json(error_json))
+
     }
 }
 
 /// 生成 JWT Token
 fn generate_token(
-    uid: u64,
+    uid: i64,
     user_name: String,
-    role_ids: Vec<u64>,
+    role_ids: Vec<i64>,
 ) -> Result<String, jsonwebtoken::errors::Error> {
     let expiration = Utc::now()
         .checked_add_signed(Duration::hours(24))
@@ -93,9 +104,9 @@ fn parse_token(token: &str) -> Result<MyClaims, jsonwebtoken::errors::Error> {
 /// JWT Claims
 #[derive(Debug, Serialize, Deserialize)]
 struct MyClaims {
-    uid: u64,
+    uid: i64,
     user_name: String,
-    role_ids: Vec<u64>,
+    role_ids: Vec<i64>,
     exp: usize,
 }
 
@@ -103,7 +114,7 @@ struct MyClaims {
 #[derive(Serialize)]
 struct LoginResponse {
     token: String,
-    uid: u64,
+    uid: i64,
     username: String,
 }
 use rocket::response::status::Custom;

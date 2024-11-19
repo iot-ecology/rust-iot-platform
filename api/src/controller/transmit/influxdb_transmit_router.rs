@@ -36,7 +36,7 @@ pub async fn update_influxdb_transmit(
 
 #[get("/InfluxdbTransmit/<id>")]
 pub async fn by_id_influxdb_transmit(
-    id: u64,
+    id: i64,
     influxdb_transmit_api: &rocket::State<InfluxDbTransmitBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -61,8 +61,8 @@ pub async fn list_influxdb_transmit(
 
 #[get("/InfluxdbTransmit/page?<page>&<page_size>")]
 pub async fn page_influxdb_transmit(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     influxdb_transmit_api: &rocket::State<InfluxDbTransmitBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -75,7 +75,7 @@ pub async fn page_influxdb_transmit(
 
 #[post("/InfluxdbTransmit/delete/<id>")]
 pub async fn delete_influxdb_transmit(
-    id: u64,
+    id: i64,
     influxdb_transmit_api: &rocket::State<InfluxDbTransmitBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

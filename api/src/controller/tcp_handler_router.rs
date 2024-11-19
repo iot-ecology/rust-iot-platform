@@ -140,7 +140,7 @@ pub async fn update_tcp_handler(
 
 #[get("/TcpHandler/<id>")]
 pub async fn by_id_tcp_handler(
-    id: u64,
+    id: i64,
     tcp_handler_api: &rocket::State<TcpHandlerBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -166,8 +166,8 @@ pub async fn by_id_tcp_handler(
 
 #[get("/TcpHandler/page?<page>&<page_size>&<name>")]
 pub async fn page_tcp_handler(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     name: Option<String>,
     tcp_handler_api: &rocket::State<TcpHandlerBiz>,
     config: &rocket::State<Config>,
@@ -224,7 +224,7 @@ pub async fn page_tcp_handler(
 
 #[post("/TcpHandler/delete/<id>")]
 pub async fn delete_tcp_handler(
-    id: u64,
+    id: i64,
     tcp_handler_api: &rocket::State<TcpHandlerBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

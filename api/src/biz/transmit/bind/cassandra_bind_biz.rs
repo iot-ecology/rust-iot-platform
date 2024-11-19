@@ -67,7 +67,7 @@ impl CrudOperations<CassandraTransmitBind> for CassandraTransmitBindBiz {
 
     async fn update(
         &self,
-        id: u64,
+        id: i64,
         item: CassandraTransmitBind,
     ) -> Result<CassandraTransmitBind, Error> {
         let mut updates = vec![];
@@ -124,7 +124,7 @@ impl CrudOperations<CassandraTransmitBind> for CassandraTransmitBindBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<CassandraTransmitBind, Error> {
+    async fn delete(&self, id: i64) -> Result<CassandraTransmitBind, Error> {
         log::info!("Deleting CassandraTransmitBind with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "cassandra_transmit_binds", id).await
@@ -167,7 +167,7 @@ impl CrudOperations<CassandraTransmitBind> for CassandraTransmitBindBiz {
         result
     }
 
-    async fn by_id(&self, id: u64) -> Result<CassandraTransmitBind, Error> {
+    async fn by_id(&self, id: i64) -> Result<CassandraTransmitBind, Error> {
         let result = sql_utils::by_id_common::<CassandraTransmitBind>(
             &self.mysql,
             "cassandra_transmit_binds",

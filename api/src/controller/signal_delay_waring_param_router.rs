@@ -147,10 +147,10 @@ pub async fn update_signal_delay_waring_param(
 
 #[get("/signal-delay-waring-param/page?<page>&<page_size>&<name>&<signal_delay_waring_id>")]
 pub async fn page_signal_delay_waring_param(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     name: Option<String>,
-    signal_delay_waring_id: Option<u64>,
+    signal_delay_waring_id: Option<i64>,
     signal_delay_waring_param_api: &rocket::State<SignalDelayWaringParamBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -208,7 +208,7 @@ pub async fn page_signal_delay_waring_param(
 
 #[post("/signal-delay-waring-param/delete/<id>")]
 pub async fn delete_signal_delay_waring_param(
-    id: u64,
+    id: i64,
     signal_delay_waring_param_api: &rocket::State<SignalDelayWaringParamBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

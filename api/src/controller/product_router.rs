@@ -117,7 +117,7 @@ pub async fn update_product(
 
 #[get("/product/<id>")]
 pub async fn by_id_product(
-    id: u64,
+    id: i64,
     product_api: &rocket::State<ProductBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -132,6 +132,8 @@ pub async fn by_id_product(
             Custom(Status::Ok, Json(success_json))
         }
         Err(e) => {
+            log::error!("e ={}",e);
+
             let success_json = json!({
                 "code": 40000,
                 "message": "查询失败",
@@ -157,6 +159,7 @@ pub async fn list_product(
             Custom(Status::Ok, Json(success_json))
         }
         Err(e) => {
+            log::error!("e ={}",e);
             let success_json = json!({
                 "code": 40000,
                 "message": "查询失败",
@@ -168,8 +171,8 @@ pub async fn list_product(
 
 #[get("/product/page?<page>&<page_size>&<name>")]
 pub async fn page_product(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     name: Option<String>,
     product_api: &rocket::State<ProductBiz>,
     config: &rocket::State<Config>,
@@ -226,7 +229,7 @@ pub async fn page_product(
 
 #[post("/product/delete/<id>")]
 pub async fn delete_product(
-    id: u64,
+    id: i64,
     product_api: &rocket::State<ProductBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

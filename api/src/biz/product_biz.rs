@@ -99,7 +99,7 @@ impl CrudOperations<Product> for ProductBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: Product) -> Result<Product, Error> {
+    async fn update(&self, id: i64, item: Product) -> Result<Product, Error> {
         let mut updates = vec![];
 
         if let Some(name) = item.name {
@@ -158,7 +158,7 @@ impl CrudOperations<Product> for ProductBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<Product, Error> {
+    async fn delete(&self, id: i64) -> Result<Product, Error> {
         log::info!("Deleting product with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "products", id).await
@@ -192,7 +192,7 @@ impl CrudOperations<Product> for ProductBiz {
         return result;
     }
 
-    async fn by_id(&self, id: u64) -> Result<Product, Error> {
+    async fn by_id(&self, id: i64) -> Result<Product, Error> {
         let result =
             common_lib::sql_utils::by_id_common::<Product>(&self.mysql, "products", id).await;
         result

@@ -16,7 +16,7 @@ impl WebSocketHandlerBiz {
     pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
         WebSocketHandlerBiz { redis, mysql }
     }
-    pub async fn find_by_device_info_id(&self, device_info_id: u64) -> Result<Option<WebSocketHandler>, Error> {
+    pub async fn find_by_device_info_id(&self, device_info_id: i64) -> Result<Option<WebSocketHandler>, Error> {
         let sql = "select * from websocket_handlers where 1=1 and device_info_id = ?";
 
         let record = sqlx::query_as::<_, WebSocketHandler>(sql).bind(device_info_id.to_string())
@@ -125,7 +125,7 @@ impl CrudOperations<WebSocketHandler> for WebSocketHandlerBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: WebSocketHandler) -> Result<WebSocketHandler, Error> {
+    async fn update(&self, id: i64, item: WebSocketHandler) -> Result<WebSocketHandler, Error> {
         let mut updates = vec![];
 
         if let Some(device_info_id) = item.device_info_id {
@@ -179,7 +179,7 @@ impl CrudOperations<WebSocketHandler> for WebSocketHandlerBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<WebSocketHandler, Error> {
+    async fn delete(&self, id: i64) -> Result<WebSocketHandler, Error> {
         log::info!("Deleting WebSocketHandler with ID {}", id);
         common_lib::sql_utils::delete_by_id(&self.mysql, "websocket_handlers", id).await
     }
@@ -218,7 +218,7 @@ impl CrudOperations<WebSocketHandler> for WebSocketHandlerBiz {
         result
     }
 
-    async fn by_id(&self, id: u64) -> Result<WebSocketHandler, Error> {
+    async fn by_id(&self, id: i64) -> Result<WebSocketHandler, Error> {
         let result = common_lib::sql_utils::by_id_common::<WebSocketHandler>(
             &self.mysql,
             "websocket_handlers",

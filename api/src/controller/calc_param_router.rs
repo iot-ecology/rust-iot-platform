@@ -99,11 +99,11 @@ pub async fn update_calc_param(
 
 #[get("/calc-param/page?<page>&<page_size>&<name>&<rule_id>&<signal_name>")]
 pub async fn page_calc_param(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     name: Option<String>,
-    rule_id: Option<u64>,
-    signal_name: Option<u64>,
+    rule_id: Option<i64>,
+    signal_name: Option<i64>,
     calc_param_api: &rocket::State<CalcParamBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -171,7 +171,7 @@ pub async fn page_calc_param(
 
 #[post("/calc-param/delete/<id>")]
 pub async fn delete_calc_param(
-    id: u64,
+    id: i64,
     calc_param_api: &rocket::State<CalcParamBiz>,
     calc_run_api: &rocket::State<CalcRunBiz>,
     config: &rocket::State<Config>,

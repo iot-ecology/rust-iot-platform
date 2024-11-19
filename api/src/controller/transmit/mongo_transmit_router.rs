@@ -36,7 +36,7 @@ pub async fn update_mongo_transmit(
 
 #[get("/MongoTransmit/<id>")]
 pub async fn by_id_mongo_transmit(
-    id: u64,
+    id: i64,
     mongo_transmit_api: &rocket::State<MongoTransmitBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -61,8 +61,8 @@ pub async fn list_mongo_transmit(
 
 #[get("/MongoTransmit/page?<page>&<page_size>")]
 pub async fn page_mongo_transmit(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     mongo_transmit_api: &rocket::State<MongoTransmitBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -75,7 +75,7 @@ pub async fn page_mongo_transmit(
 
 #[post("/MongoTransmit/delete/<id>")]
 pub async fn delete_mongo_transmit(
-    id: u64,
+    id: i64,
     mongo_transmit_api: &rocket::State<MongoTransmitBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

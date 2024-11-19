@@ -9,8 +9,8 @@ use rocket::{get, post};
 use serde_json::json;
 #[get("/MessageList/page?<page>&<page_size>")]
 pub async fn page_message_list(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     message_list_api: &rocket::State<MessageListBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

@@ -28,7 +28,7 @@ impl HttpHandlerBiz {
             ws.device_info_id.unwrap().to_string().as_str(),
         ).expect("TODO: panic message");
     }
-    pub async fn find_by_device_info_id(&self, device_info_id: u64) -> Result<Option<HttpHandler>, Error> {
+    pub async fn find_by_device_info_id(&self, device_info_id: i64) -> Result<Option<HttpHandler>, Error> {
         let sql = "select * from http_handlers where 1=1 and device_info_id = ?";
 
         let record = sqlx::query_as::<_, HttpHandler>(sql).bind(device_info_id.to_string())
@@ -104,7 +104,7 @@ impl CrudOperations<HttpHandler> for HttpHandlerBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: HttpHandler) -> Result<HttpHandler, Error> {
+    async fn update(&self, id: i64, item: HttpHandler) -> Result<HttpHandler, Error> {
         let mut updates = vec![];
 
         if let Some(device_info_id) = item.device_info_id {
@@ -143,7 +143,7 @@ impl CrudOperations<HttpHandler> for HttpHandlerBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<HttpHandler, Error> {
+    async fn delete(&self, id: i64) -> Result<HttpHandler, Error> {
         log::info!("Deleting HttpHandler with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "http_handlers", id).await
@@ -178,7 +178,7 @@ impl CrudOperations<HttpHandler> for HttpHandlerBiz {
         return result;
     }
 
-    async fn by_id(&self, id: u64) -> Result<HttpHandler, Error> {
+    async fn by_id(&self, id: i64) -> Result<HttpHandler, Error> {
         let result =
             common_lib::sql_utils::by_id_common::<HttpHandler>(&self.mysql, "http_handlers", id)
                 .await;

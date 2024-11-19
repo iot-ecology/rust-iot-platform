@@ -110,7 +110,7 @@ pub enum DataValue {
 #[derive(Serialize, Deserialize)]
 pub struct Signal {
     pub name: String,
-    pub cache_size: u64,
+    pub cache_size: i64,
     #[serde(rename = "ID")] // 在序列化时使用 "ID"
     pub id: i64,
     pub r#type: String,
@@ -130,12 +130,12 @@ pub struct SignalWaringConfig {
     #[serde(rename = "unit")]
     pub unit: Option<String>, // 单位
     #[serde(rename = "ID")]
-    pub id: u64, // ID
+    pub id: i64, // ID
 }
 
 #[derive(Debug)]
 pub struct SignalMapping {
-    pub cache_size: u64,
+    pub cache_size: i64,
     pub id: i64,
     pub numb: bool,
 }
@@ -165,7 +165,7 @@ pub struct SignalDelayWaring {
     pub name: String,
     pub script: String,
     #[serde(rename = "ID")]
-    pub id: u64,
+    pub id: i64,
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -185,7 +185,7 @@ pub struct InfluxQueryConfig {
     pub aggregation: AggregationConfig,
     pub reduce: String, // sum, min, max, mean
     #[serde(rename = "device_uid")]
-    pub device_uid: Option<u64>,
+    pub device_uid: Option<i64>,
 
     #[serde(rename = "protocol")]
     pub protocol: Option<String>,

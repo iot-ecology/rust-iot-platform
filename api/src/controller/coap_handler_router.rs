@@ -140,7 +140,7 @@ pub async fn update_coap_handler(
 
 #[get("/CoapHandler/<id>")]
 pub async fn by_id_coap_handler(
-    id: u64,
+    id: i64,
     coap_handler_api: &rocket::State<CoapHandlerBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -166,9 +166,9 @@ pub async fn by_id_coap_handler(
 
 #[get("/CoapHandler/page?<page>&<page_size>&<name>")]
 pub async fn page_coap_handler(
-    page: Option<u64>,
+    page: Option<i64>,
     name: Option<String>,
-    page_size: Option<u64>,
+    page_size: Option<i64>,
     coap_handler_api: &rocket::State<CoapHandlerBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -224,7 +224,7 @@ pub async fn page_coap_handler(
 
 #[post("/CoapHandler/delete/<id>")]
 pub async fn delete_coap_handler(
-    id: u64,
+    id: i64,
     coap_handler_api: &rocket::State<CoapHandlerBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

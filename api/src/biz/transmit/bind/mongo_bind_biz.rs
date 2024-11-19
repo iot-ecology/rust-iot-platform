@@ -62,7 +62,7 @@ impl CrudOperations<MongoTransmitBind> for MongoTransmitBindBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: MongoTransmitBind) -> Result<MongoTransmitBind, Error> {
+    async fn update(&self, id: i64, item: MongoTransmitBind) -> Result<MongoTransmitBind, Error> {
         let mut updates = vec![];
 
         if let Some(device_uid) = item.device_uid {
@@ -113,7 +113,7 @@ impl CrudOperations<MongoTransmitBind> for MongoTransmitBindBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<MongoTransmitBind, Error> {
+    async fn delete(&self, id: i64) -> Result<MongoTransmitBind, Error> {
         log::info!("Deleting MongoTransmitBind with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "mongo_transmit_binds", id).await
@@ -153,7 +153,7 @@ impl CrudOperations<MongoTransmitBind> for MongoTransmitBindBiz {
         result
     }
 
-    async fn by_id(&self, id: u64) -> Result<MongoTransmitBind, Error> {
+    async fn by_id(&self, id: i64) -> Result<MongoTransmitBind, Error> {
         let result =
             sql_utils::by_id_common::<MongoTransmitBind>(&self.mysql, "mongo_transmit_binds", id)
                 .await;

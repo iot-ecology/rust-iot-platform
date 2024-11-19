@@ -16,7 +16,7 @@ impl SignalBiz {
         SignalBiz { redis, mysql }
     }
 
-    pub async fn remove_old_cache(&self, threshold: u64, signal_id: u64, device_uid: u64, code: &str) -> Result<(), Error> {
+    pub async fn remove_old_cache(&self, threshold: i64, signal_id: i64, device_uid: i64, code: &str) -> Result<(), Error> {
         let redis_key = format!("signal_delay_warning:{}:{}:{}", device_uid, code, signal_id);
 
         // Get current count of elements
@@ -114,7 +114,7 @@ impl CrudOperations<Signal> for SignalBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: Signal) -> Result<Signal, Error> {
+    async fn update(&self, id: i64, item: Signal) -> Result<Signal, Error> {
         let mut updates = vec![];
 
         if let Some(protocol) = item.protocol {
@@ -161,7 +161,7 @@ impl CrudOperations<Signal> for SignalBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<Signal, Error> {
+    async fn delete(&self, id: i64) -> Result<Signal, Error> {
         log::info!("Deleting signal with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "signals", id).await
@@ -191,7 +191,7 @@ impl CrudOperations<Signal> for SignalBiz {
         return result;
     }
 
-    async fn by_id(&self, id: u64) -> Result<Signal, Error> {
+    async fn by_id(&self, id: i64) -> Result<Signal, Error> {
         let result =
             common_lib::sql_utils::by_id_common::<Signal>(&self.mysql, "signals", id).await;
         result

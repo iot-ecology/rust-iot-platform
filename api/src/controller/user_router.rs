@@ -147,8 +147,8 @@ pub async fn page_user(
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
     username: Option<String>,
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
     let page = page.unwrap_or(1);
     let page_size = page_size.unwrap_or(10);
@@ -202,7 +202,7 @@ pub async fn page_user(
 
 #[post("/User/delete/<id>")]
 pub async fn delete_user(
-    id: u64,
+    id: i64,
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -227,7 +227,7 @@ pub async fn delete_user(
 
 #[get("/User/<id>")]
 pub async fn by_id_user(
-    id: u64,
+    id: i64,
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

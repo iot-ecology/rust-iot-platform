@@ -140,7 +140,7 @@ pub async fn update_websocket_handler(
 
 #[get("/WebsocketHandler/<id>")]
 pub async fn by_id_websocket_handler(
-    id: u64,
+    id: i64,
     ws_handler_api: &rocket::State<WebSocketHandlerBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -168,9 +168,9 @@ pub async fn by_id_websocket_handler(
 pub async fn page_websocket_handler(
     ws_handler_api: &rocket::State<WebSocketHandlerBiz>,
     config: &rocket::State<Config>,
-    page: Option<u64>,
+    page: Option<i64>,
     name: Option<String>,
-    page_size: Option<u64>,
+    page_size: Option<i64>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
     let page = page.unwrap_or(1);
     let page_size = page_size.unwrap_or(10);
@@ -224,7 +224,7 @@ pub async fn page_websocket_handler(
 
 #[post("/WebsocketHandler/delete/<id>")]
 pub async fn delete_websocket_handler(
-    id: u64,
+    id: i64,
     ws_handler_api: &rocket::State<WebSocketHandlerBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

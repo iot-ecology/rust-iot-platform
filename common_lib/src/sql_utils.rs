@@ -7,7 +7,7 @@ use std::fmt::Debug;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct User {
-    pub id: u64,
+    pub id: i64,
     pub username: Option<String>,
     pub password: Option<String>,
     pub email: Option<String>,
@@ -72,17 +72,17 @@ where
 
 #[derive(Debug)]
 pub struct PaginationParams {
-    pub page: u64,
-    pub size: u64,
+    pub page: i64,
+    pub size: i64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PaginationResult<T> {
     pub data: Vec<T>,
     pub total: i64,
-    pub page: u64,
-    pub size: u64,
-    pub total_pages: u64,
+    pub page: i64,
+    pub size: i64,
+    pub total_pages: i64,
 }
 
 #[derive(Debug)]
@@ -191,23 +191,56 @@ where
     for value in &bindings {
         query_builder = query_builder.bind(value);
     }
-    let items = query_builder
-        .fetch_all(pool)
-        .await
-        .with_context(|| format!("Failed to fetch paginated records from '{}'", table_name))?;
+    let items = match query_builder.fetch_all(pool).await.with_context(|| {
+        format!("Failed to fetch paginated records from '{}'", table_name)
+    }) {
+        Ok(results) => {
+            log::info!(
+                "Successfully fetched {} records from table '{}' with filters {:?}",
+                results.len(),
+                table_name,
+                filters
+            );
+            results
+        }
+        Err(e) => {
+            log::error!(
+                "Database query error: table='{}', filters={:?}, query='{}', error={}",
+                table_name,
+                filters,
+                query,
+                e
+            );
+            return Err(e);
+        }
+    };
 
     // 执行计数查询
     let mut count_query_builder = sqlx::query_scalar(&count_query);
     for value in &bindings {
         count_query_builder = count_query_builder.bind(value);
     }
-    let total: i64 = count_query_builder
-        .fetch_one(pool)
-        .await
-        .with_context(|| format!("Failed to fetch record count for '{}'", table_name))?;
+    let total: i64 = match count_query_builder.fetch_one(pool).await.with_context(|| {
+        format!("Failed to fetch record count for '{}'", table_name)
+    }) {
+        Ok(total) => {
+            log::info!("Successfully fetched record count for table '{}'", table_name);
+            total
+        }
+        Err(e) => {
+            log::error!(
+                "Database query error: table='{}', filters={:?}, query='{}', error={}",
+                table_name,
+                filters,
+                count_query,
+                e
+            );
+            return Err(e);
+        }
+    };
 
     // 计算总页数
-    let total_pages = ((total as f64) / (pagination.size as f64)).ceil() as u64;
+    let total_pages = ((total as f64) / (pagination.size as f64)).ceil() as i64;
 
     Ok(PaginationResult {
         data: items,
@@ -238,7 +271,7 @@ where
     }
 
     // 完成查询语句
-    let mut query = format!("SELECT * FROM {} WHERE 1=1{}", table_name, where_clause);
+    let mut query = format!("SELECT * FROM {} WHERE 1=1 {}", table_name, where_clause);
     println!("Executing query: {}", query);
 
     // 创建查询构建器并绑定参数
@@ -248,16 +281,29 @@ where
     }
 
     // 执行查询并返回结果
-    let items = query_builder.fetch_all(pool).await.with_context(|| {
-        format!(
-            "Failed to fetch records from table '{}' with filters {:?}",
-            table_name, filters
-        )
-    })?;
-
-    Ok(items)
+    match query_builder.fetch_all(pool).await {
+        Ok(results) => {
+            log::info!(
+                "Successfully fetched {} records from table '{}' with filters {:?}",
+                results.len(),
+                table_name,
+                filters
+            );
+            Ok(results)
+        }
+        Err(e) => {
+            log::error!(
+                "Database query error: table='{}', filters={:?}, query='{}', error={}",
+                table_name,
+                filters,
+                query,
+                e
+            );
+            Err(e.into())
+        }
+    }
 }
-pub async fn by_id_common<T>(pool: &Pool<MySql>, table_name: &str, id: u64) -> Result<T, Error>
+pub async fn by_id_common<T>(pool: &Pool<MySql>, table_name: &str, id: i64) -> Result<T, Error>
 where
     T: for<'r> FromRow<'r, sqlx::mysql::MySqlRow> + Send + Unpin + Debug,
 {
@@ -266,7 +312,7 @@ where
     println!("Executing query: {}", query);
 
     // 创建查询构建器并执行查询
-    let result = sqlx::query_as::<_, T>(&query)
+    let result = match sqlx::query_as::<_, T>(&query)
         .bind(id.clone())
         .fetch_one(pool)
         .await
@@ -275,12 +321,27 @@ where
                 "Failed to fetch record from table '{}' with id '{}'",
                 table_name, id
             )
-        })?;
+        }) {
+        Ok(result) => {
+            log::info!("Successfully fetched record from table '{}' with id '{}'", table_name, id);
+            result
+        }
+        Err(e) => {
+            log::error!(
+                "Database query error: table='{}', id={}, query='{}', error={}",
+                table_name,
+                id,
+                query,
+                e
+            );
+            return Err(e);
+        }
+    };
 
     Ok(result)
 }
 
-pub async fn delete_by_id<T>(pool: &Pool<MySql>, table_name: &str, id: u64) -> Result<T, Error>
+pub async fn delete_by_id<T>(pool: &Pool<MySql>, table_name: &str, id: i64) -> Result<T, Error>
 where
     T: for<'r> FromRow<'r, sqlx::mysql::MySqlRow> + Send + Unpin + Debug,
 {
@@ -290,7 +351,7 @@ where
 
     let result = by_id_common(pool, table_name, id).await;
     // 执行更新操作并捕获可能的错误
-    let affected_rows = sqlx::query(&query)
+    let affected_rows = match sqlx::query(&query)
         .bind(id)
         .execute(pool)
         .await
@@ -299,7 +360,22 @@ where
                 "Failed to execute delete on table '{}' with id {}",
                 table_name, id
             )
-        })?;
+        }) {
+        Ok(affected_rows) => {
+            log::info!("Successfully executed delete on table '{}' with id '{}'", table_name, id);
+            affected_rows
+        }
+        Err(e) => {
+            log::error!(
+                "Database query error: table='{}', id={}, query='{}', error={}",
+                table_name,
+                id,
+                query,
+                e
+            );
+            return Err(e);
+        }
+    };
 
     // 检查是否有行受影响
     if affected_rows.rows_affected() == 0 {
@@ -313,7 +389,7 @@ use anyhow::{Error, Result};
 pub async fn update_by_id<T>(
     pool: &Pool<MySql>,
     table_name: &str,
-    id: u64,
+    id: i64,
     updates: Vec<(&str, String)>,
 ) -> Result<T, Error>
 where
@@ -347,12 +423,27 @@ where
     query_builder = query_builder.bind(id);
 
     // 执行更新操作并捕获可能的错误
-    let affected_rows = query_builder.execute(pool).await.with_context(|| {
+    let affected_rows = match query_builder.execute(pool).await.with_context(|| {
         format!(
             "Failed to execute update on table '{}' with id {}",
             table_name, id
         )
-    })?;
+    }) {
+        Ok(affected_rows) => {
+            log::info!("Successfully executed update on table '{}' with id '{}'", table_name, id);
+            affected_rows
+        }
+        Err(e) => {
+            log::error!(
+                "Database query error: table='{}', id={}, query='{}', error={}",
+                table_name,
+                id,
+                query,
+                e
+            );
+            return Err(e);
+        }
+    };
 
     if affected_rows.rows_affected() == 0 {
         return Err(anyhow::anyhow!("No rows affected for id {}", id));
@@ -360,7 +451,7 @@ where
 
     // 构建查询以返回更新后的记录
     let select_query = format!("SELECT * FROM {} WHERE id = ?", table_name);
-    let updated_record = sqlx::query_as::<_, T>(&select_query)
+    let updated_record = match sqlx::query_as::<_, T>(&select_query)
         .bind(id)
         .fetch_one(pool)
         .await
@@ -369,7 +460,22 @@ where
                 "Failed to fetch updated record from table '{}' with id {}",
                 table_name, id
             )
-        })?;
+        }) {
+        Ok(updated_record) => {
+            log::info!("Successfully fetched updated record from table '{}' with id '{}'", table_name, id);
+            updated_record
+        }
+        Err(e) => {
+            log::error!(
+                "Database query error: table='{}', id={}, query='{}', error={}",
+                table_name,
+                id,
+                select_query,
+                e
+            );
+            return Err(e);
+        }
+    };
 
     Ok(updated_record)
 }
@@ -380,8 +486,8 @@ where
     T: for<'r> FromRow<'r, sqlx::mysql::MySqlRow> + Send + Unpin + Debug,
 {
     async fn create(&self, item: T) -> Result<T, Error>;
-    async fn update(&self, id: u64, item: T) -> Result<T, Error>;
-    async fn delete(&self, id: u64) -> Result<T, Error>;
+    async fn update(&self, id: i64, item: T) -> Result<T, Error>;
+    async fn delete(&self, id: i64) -> Result<T, Error>;
     async fn page(
         &self,
         filters: Vec<FilterInfo>,
@@ -389,7 +495,7 @@ where
     ) -> Result<PaginationResult<T>, Error>;
     async fn list(&self, filters: Vec<FilterInfo>) -> Result<Vec<T>, Error>;
 
-    async fn by_id(&self, id: u64) -> Result<T, Error>;
+    async fn by_id(&self, id: i64) -> Result<T, Error>;
 }
 
 pub async fn insert<T>(
@@ -433,14 +539,26 @@ where
     }
 
     // 执行插入操作并捕获可能的数据库错误
-    query_builder
-        .execute(pool)
-        .await
-        .with_context(|| format!("Failed to execute insert into table '{}'", table_name))?;
+    match query_builder.execute(pool).await.with_context(|| {
+        format!("Failed to execute insert into table '{}'", table_name)
+    }) {
+        Ok(_) => {
+            log::info!("Successfully executed insert into table '{}'", table_name);
+        }
+        Err(e) => {
+            log::error!(
+                "Database query error: table='{}', query='{}', error={}",
+                table_name,
+                query,
+                e
+            );
+            return Err(e);
+        }
+    };
 
     // 插入后获取新插入的记录
     let select_query = format!("SELECT * FROM {} ORDER BY id DESC LIMIT 1", table_name);
-    let inserted_record = sqlx::query_as::<_, T>(&select_query)
+    let inserted_record = match sqlx::query_as::<_, T>(&select_query)
         .fetch_one(pool)
         .await
         .with_context(|| {
@@ -448,7 +566,21 @@ where
                 "Failed to fetch newly inserted record from table '{}'",
                 table_name
             )
-        })?;
+        }) {
+        Ok(inserted_record) => {
+            log::info!("Successfully fetched newly inserted record from table '{}'", table_name);
+            inserted_record
+        }
+        Err(e) => {
+            log::error!(
+                "Database query error: table='{}', query='{}', error={}",
+                table_name,
+                select_query,
+                e
+            );
+            return Err(e);
+        }
+    };
 
     Ok(inserted_record)
 }

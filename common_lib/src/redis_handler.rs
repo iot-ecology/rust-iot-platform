@@ -90,9 +90,9 @@ impl RedisWrapper {
         let members: Vec<(String, f64)> = con.zrange_withscores(key, 0, -1).await?;
         Ok(members)
     }
-    pub async fn get_zset_length(&self, key: &str) -> Result<u64, RedisError> {
+    pub async fn get_zset_length(&self, key: &str) -> Result<i64, RedisError> {
         let mut con = self.get_connection().await?;
-        let length: u64 = con.zcard(key).await?;
+        let length: i64 = con.zcard(key).await?;
         Ok(length)
     }
     pub async fn delete_zset(&self, key: &str, member: &str) -> Result<(), RedisError> {

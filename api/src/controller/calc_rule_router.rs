@@ -109,8 +109,8 @@ pub async fn update_calc_rule(
 
 #[get("/calc-rule/page?<page>&<page_size>&<name>")]
 pub async fn page_calc_rule(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     name: Option<String>,
     calc_rule_api: &rocket::State<CalcRuleBiz>,
     config: &rocket::State<Config>,
@@ -167,7 +167,7 @@ pub async fn page_calc_rule(
 
 #[post("/calc-rule/delete/<id>")]
 pub async fn delete_calc_rule(
-    id: u64,
+    id: i64,
     calc_rule_api: &rocket::State<CalcRuleBiz>,
     calc_run_api: &rocket::State<CalcRunBiz>,
     config: &rocket::State<Config>,
@@ -195,7 +195,7 @@ pub async fn delete_calc_rule(
 
 #[post("/calc-rule/start/<id>")]
 pub async fn start_calc_rule(
-    id: u64,
+    id: i64,
     calc_rule_api: &rocket::State<CalcRuleBiz>,
     calc_run_api: &rocket::State<CalcRunBiz>,
     config: &rocket::State<Config>,
@@ -221,7 +221,7 @@ pub async fn start_calc_rule(
 
 #[post("/calc-rule/stop/<id>")]
 pub async fn stop_calc_rule(
-    id: u64,
+    id: i64,
     calc_rule_api: &rocket::State<CalcRuleBiz>,
     calc_run_api: &rocket::State<CalcRunBiz>,
     config: &rocket::State<Config>,
@@ -247,7 +247,7 @@ pub async fn stop_calc_rule(
 
 #[post("/calc-rule/refresh/<id>")]
 pub async fn refresh_calc_rule(
-    id: u64,
+    id: i64,
     calc_run_api: &rocket::State<CalcRunBiz>,
     calc_rule_api: &rocket::State<CalcRuleBiz>,
     config: &rocket::State<Config>,
@@ -303,7 +303,7 @@ pub async fn mock_calc_rule(
 
 #[get("/calc-rule/rd?<rule_id>&<start_time>&<end_time>")]
 pub async fn calc_rule_result(
-    rule_id: Option<u64>,
+    rule_id: Option<i64>,
     start_time: Option<i64>,
     end_time: Option<i64>,
     calc_rule_api: &rocket::State<CalcRuleBiz>,

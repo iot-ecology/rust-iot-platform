@@ -53,7 +53,7 @@ impl CrudOperations<CalcRule> for CalcRuleBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: CalcRule) -> Result<CalcRule, Error> {
+    async fn update(&self, id: i64, item: CalcRule) -> Result<CalcRule, Error> {
         let mut updates = vec![];
 
         if let Some(name) = item.name {
@@ -91,7 +91,7 @@ impl CrudOperations<CalcRule> for CalcRuleBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<CalcRule, Error> {
+    async fn delete(&self, id: i64) -> Result<CalcRule, Error> {
         log::info!("Deleting CalcRule with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "calc_rules", id).await
@@ -121,7 +121,7 @@ impl CrudOperations<CalcRule> for CalcRuleBiz {
         result
     }
 
-    async fn by_id(&self, id: u64) -> Result<CalcRule, Error> {
+    async fn by_id(&self, id: i64) -> Result<CalcRule, Error> {
         let result = sql_utils::by_id_common::<CalcRule>(&self.mysql, "calc_rules", id).await;
         result
     }

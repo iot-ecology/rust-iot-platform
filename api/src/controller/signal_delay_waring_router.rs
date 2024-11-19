@@ -108,7 +108,7 @@ pub async fn update_signal_delay_waring(
 
 #[post("/signal-delay-waring/delete/<id>")]
 pub async fn delete_signal_delay_waring(
-    id: u64,
+    id: i64,
     signal_delay_waring_api: &rocket::State<SignalDelayWaringBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -135,7 +135,7 @@ pub async fn delete_signal_delay_waring(
 
 #[post("/signal-delay-waring/Mock/<id>")]
 pub async fn mock_signal_delay_waring(
-    id: u64,
+    id: i64,
     signal_delay_waring_api: &rocket::State<SignalDelayWaringBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -148,7 +148,7 @@ pub async fn mock_signal_delay_waring(
 
 #[post("/signal-delay-waring/GenParam/<id>")]
 pub async fn gen_param_signal_delay_waring(
-    id: u64,
+    id: i64,
     signal_delay_waring_api: &rocket::State<SignalDelayWaringBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -198,7 +198,7 @@ pub async fn list_signal_delay_waring(
 
 #[get("/signal-delay-waring/byId/<id>")]
 pub async fn by_id_signal_delay_waring(
-    id: u64,
+    id: i64,
     signal_delay_waring_api: &rocket::State<SignalDelayWaringBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -224,8 +224,8 @@ pub async fn by_id_signal_delay_waring(
 
 #[get("/signal-delay-waring/page?<page>&<page_size>&<name>")]
 pub async fn page_signal_delay_waring(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     name: Option<String>,
     signal_delay_waring_api: &rocket::State<SignalDelayWaringBiz>,
     config: &rocket::State<Config>,

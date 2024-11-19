@@ -44,7 +44,7 @@ impl SignalDelayWaringBiz {
         self.redis.set_hash("signal_delay_config", warning_config.id.unwrap().to_string().as_str(), &result).unwrap();
     }
 
-    pub async fn remove_redis(&self, id: u64) -> Result<(), Error> {
+    pub async fn remove_redis(&self, id: i64) -> Result<(), Error> {
         match self.redis.delete_hash_field("signal_delay_config", id.to_string().as_str()) {
             Ok(_) => Ok(()),
             Err(e) => Err(Error::msg(format!("Failed to remove from Redis: {}", e)))
@@ -76,7 +76,7 @@ impl CrudOperations<SignalDelayWaring> for SignalDelayWaringBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: SignalDelayWaring) -> Result<SignalDelayWaring, Error> {
+    async fn update(&self, id: i64, item: SignalDelayWaring) -> Result<SignalDelayWaring, Error> {
         let mut updates = vec![];
 
         if let Some(name) = item.name {
@@ -106,7 +106,7 @@ impl CrudOperations<SignalDelayWaring> for SignalDelayWaringBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<SignalDelayWaring, Error> {
+    async fn delete(&self, id: i64) -> Result<SignalDelayWaring, Error> {
         log::info!("Deleting signal delay warning with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "signal_delay_warings", id).await
@@ -146,7 +146,7 @@ impl CrudOperations<SignalDelayWaring> for SignalDelayWaringBiz {
         return result;
     }
 
-    async fn by_id(&self, id: u64) -> Result<SignalDelayWaring, Error> {
+    async fn by_id(&self, id: i64) -> Result<SignalDelayWaring, Error> {
         let result = common_lib::sql_utils::by_id_common::<SignalDelayWaring>(
             &self.mysql,
             "signal_delay_warings",

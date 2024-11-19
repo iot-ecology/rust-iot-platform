@@ -71,7 +71,7 @@ impl CrudOperations<InfluxDbTransmitBind> for InfluxDbTransmitBindBiz {
 
     async fn update(
         &self,
-        id: u64,
+        id: i64,
         item: InfluxDbTransmitBind,
     ) -> Result<InfluxDbTransmitBind, Error> {
         let mut updates = vec![];
@@ -132,7 +132,7 @@ impl CrudOperations<InfluxDbTransmitBind> for InfluxDbTransmitBindBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<InfluxDbTransmitBind, Error> {
+    async fn delete(&self, id: i64) -> Result<InfluxDbTransmitBind, Error> {
         log::info!("Deleting InfluxDbTransmitBind with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "influxdb_transmit_binds", id).await
@@ -175,7 +175,7 @@ impl CrudOperations<InfluxDbTransmitBind> for InfluxDbTransmitBindBiz {
         result
     }
 
-    async fn by_id(&self, id: u64) -> Result<InfluxDbTransmitBind, Error> {
+    async fn by_id(&self, id: i64) -> Result<InfluxDbTransmitBind, Error> {
         let result = sql_utils::by_id_common::<InfluxDbTransmitBind>(
             &self.mysql,
             "influxdb_transmit_binds",

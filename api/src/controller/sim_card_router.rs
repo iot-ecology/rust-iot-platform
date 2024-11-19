@@ -83,8 +83,8 @@ pub async fn update_sim_card(
 
 #[get("/SimCard/page?<page>&<page_size>&<AccessNumber>&<iccid>")]
 pub async fn page_sim_card(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     AccessNumber: Option<String>,
     iccid: Option<String>,
     sim_card_api: &rocket::State<SimCardBiz>,
@@ -150,7 +150,7 @@ pub async fn page_sim_card(
 
 #[post("/SimCard/delete/<id>")]
 pub async fn delete_sim_card(
-    id: u64,
+    id: i64,
     sim_card_api: &rocket::State<SimCardBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -175,7 +175,7 @@ pub async fn delete_sim_card(
 
 #[get("/SimCard/<id>")]
 pub async fn by_id_sim_card(
-    id: u64,
+    id: i64,
     sim_card_api: &rocket::State<SimCardBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

@@ -36,7 +36,7 @@ pub async fn update_dingding(
 
 #[get("/DingDing/<id>")]
 pub async fn by_id_dingding(
-    id: u64,
+    id: i64,
     dingding_api: &rocket::State<DingDingBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -49,8 +49,8 @@ pub async fn by_id_dingding(
 
 #[get("/DingDing/page?<page>&<page_size>")]
 pub async fn page_dingding(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     dingding_api: &rocket::State<DingDingBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -63,7 +63,7 @@ pub async fn page_dingding(
 
 #[post("/DingDing/delete/<id>")]
 pub async fn delete_dingding(
-    id: u64,
+    id: i64,
     dingding_api: &rocket::State<DingDingBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

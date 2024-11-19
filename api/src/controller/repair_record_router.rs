@@ -85,7 +85,7 @@ pub async fn update_repair_record(
 
 #[get("/RepairRecord/<id>")]
 pub async fn by_id_repair_record(
-    id: u64,
+    id: i64,
     repair_record_api: &rocket::State<RepairRecordBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -111,8 +111,8 @@ pub async fn by_id_repair_record(
 
 #[get("/RepairRecord/page?<page>&<page_size>&<name>")]
 pub async fn page_repair_record(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     name: Option<String>,
     repair_record_api: &rocket::State<RepairRecordBiz>,
     config: &rocket::State<Config>,
@@ -169,7 +169,7 @@ pub async fn page_repair_record(
 
 #[post("/RepairRecord/delete/<id>")]
 pub async fn delete_repair_record(
-    id: u64,
+    id: i64,
     repair_record_api: &rocket::State<RepairRecordBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

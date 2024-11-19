@@ -44,7 +44,7 @@ impl CrudOperations<FeiShu> for FeiShuBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: FeiShu) -> Result<FeiShu, Error> {
+    async fn update(&self, id: i64, item: FeiShu) -> Result<FeiShu, Error> {
         let mut updates = vec![];
 
         if let Some(name) = item.name {
@@ -73,7 +73,7 @@ impl CrudOperations<FeiShu> for FeiShuBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<FeiShu, Error> {
+    async fn delete(&self, id: i64) -> Result<FeiShu, Error> {
         log::info!("Deleting FeiShu with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "feishus", id).await
@@ -103,7 +103,7 @@ impl CrudOperations<FeiShu> for FeiShuBiz {
         result
     }
 
-    async fn by_id(&self, id: u64) -> Result<FeiShu, Error> {
+    async fn by_id(&self, id: i64) -> Result<FeiShu, Error> {
         let result = sql_utils::by_id_common::<FeiShu>(&self.mysql, "feishus", id).await;
         result
     }

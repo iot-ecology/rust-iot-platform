@@ -71,7 +71,7 @@ impl CrudOperations<ClickhouseTransmitBind> for ClickhouseTransmitBindBiz {
 
     async fn update(
         &self,
-        id: u64,
+        id: i64,
         item: ClickhouseTransmitBind,
     ) -> Result<ClickhouseTransmitBind, Error> {
         let mut updates = vec![];
@@ -128,7 +128,7 @@ impl CrudOperations<ClickhouseTransmitBind> for ClickhouseTransmitBindBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<ClickhouseTransmitBind, Error> {
+    async fn delete(&self, id: i64) -> Result<ClickhouseTransmitBind, Error> {
         log::info!("Deleting ClickhouseTransmitBind with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "clickhouse_transmit_binds", id).await
@@ -171,7 +171,7 @@ impl CrudOperations<ClickhouseTransmitBind> for ClickhouseTransmitBindBiz {
         result
     }
 
-    async fn by_id(&self, id: u64) -> Result<ClickhouseTransmitBind, Error> {
+    async fn by_id(&self, id: i64) -> Result<ClickhouseTransmitBind, Error> {
         let result = sql_utils::by_id_common::<ClickhouseTransmitBind>(
             &self.mysql,
             "clickhouse_transmit_binds",

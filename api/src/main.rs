@@ -104,10 +104,16 @@ impl rocket::fairing::Fairing for CORS {
 
     async fn on_response<'r>(&self, _request: &'r Request<'_>, response: &mut Response<'r>) {
         response.set_header(Header::new("Access-Control-Allow-Origin", "*"));
-        response.set_header(Header::new("Access-Control-Allow-Methods", "POST, GET, PATCH, OPTIONS, DELETE"));
-        response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
+        response.set_header(Header::new("Access-Control-Allow-Methods", "POST, GET, PATCH, PUT, DELETE, OPTIONS"));
+        response.set_header(Header::new("Access-Control-Allow-Headers", "Content-Type, Authorization"));
         response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
     }
+}
+use rocket::options;
+
+#[options("/<_..>")]
+pub fn all_options() {
+    // 空函数体，响应会被 CORS fairing 处理
 }
 
 #[launch]
@@ -119,6 +125,7 @@ fn rocket() -> _ {
     // 构建并启动 Rocket 应用
     rocket::build()
         .attach(CORS)  // 添加 CORS 支持
+        .mount("/", routes![all_options])  // 添加全局 OPTIONS 路由处理
         .attach(RabbitMQFairing {
             config: config1.mq_config.clone(),
         })
@@ -188,6 +195,7 @@ fn rocket() -> _ {
                 product_router::delete_product,
                 product_router::page_product,
                 product_router::by_id_product,
+                product_router::list_product,
                 // MQTT client routes
                 mqtt_client_router::page_mqtt,
                 mqtt_client_router::list_mqtt,
@@ -391,6 +399,7 @@ impl rocket::fairing::Fairing for MySqlPoolFairing {
     }
     async fn on_ignite(&self, rocket: Rocket<Build>) -> Result<Rocket<Build>, Rocket<Build>> {
         let string = gen_mysql_url(&self.config);
+        log::info!("mysql url = {}",string);
 
         let pool = MySqlPool::connect(&string).await.unwrap();
 

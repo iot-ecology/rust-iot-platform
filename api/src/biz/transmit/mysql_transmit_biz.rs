@@ -54,7 +54,7 @@ impl CrudOperations<MysqlTransmit> for MysqlTransmitBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: MysqlTransmit) -> Result<MysqlTransmit, Error> {
+    async fn update(&self, id: i64, item: MysqlTransmit) -> Result<MysqlTransmit, Error> {
         let mut updates = vec![];
 
         if let Some(name) = item.name {
@@ -93,7 +93,7 @@ impl CrudOperations<MysqlTransmit> for MysqlTransmitBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<MysqlTransmit, Error> {
+    async fn delete(&self, id: i64) -> Result<MysqlTransmit, Error> {
         log::info!("Deleting MysqlTransmit with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "mysql_transmits", id).await
@@ -132,7 +132,7 @@ impl CrudOperations<MysqlTransmit> for MysqlTransmitBiz {
         result
     }
 
-    async fn by_id(&self, id: u64) -> Result<MysqlTransmit, Error> {
+    async fn by_id(&self, id: i64) -> Result<MysqlTransmit, Error> {
         let result =
             sql_utils::by_id_common::<MysqlTransmit>(&self.mysql, "mysql_transmits", id).await;
         result

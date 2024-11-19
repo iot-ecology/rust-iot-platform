@@ -16,7 +16,7 @@ impl SignalDelayWaringParamBiz {
         SignalDelayWaringParamBiz { redis, mysql }
     }
 
-    pub async fn get_signal_by_id(&self, signal_id: u64) -> Result<Signal, Error> {
+    pub async fn get_signal_by_id(&self, signal_id: i64) -> Result<Signal, Error> {
         let signal = sqlx::query_as::<_, Signal>(
             "SELECT * FROM signals WHERE id = ? AND deleted_at IS NULL"
         )
@@ -93,7 +93,7 @@ impl CrudOperations<SignalDelayWaringParam> for SignalDelayWaringParamBiz {
 
     async fn update(
         &self,
-        id: u64,
+        id: i64,
         item: SignalDelayWaringParam,
     ) -> Result<SignalDelayWaringParam, Error> {
         let mut updates = vec![];
@@ -146,7 +146,7 @@ impl CrudOperations<SignalDelayWaringParam> for SignalDelayWaringParamBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<SignalDelayWaringParam, Error> {
+    async fn delete(&self, id: i64) -> Result<SignalDelayWaringParam, Error> {
         log::info!("Deleting signal delay warning param with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "signal_delay_waring_params", id).await
@@ -188,7 +188,7 @@ impl CrudOperations<SignalDelayWaringParam> for SignalDelayWaringParamBiz {
         return result;
     }
 
-    async fn by_id(&self, id: u64) -> Result<SignalDelayWaringParam, Error> {
+    async fn by_id(&self, id: i64) -> Result<SignalDelayWaringParam, Error> {
         let result = common_lib::sql_utils::by_id_common::<SignalDelayWaringParam>(
             &self.mysql,
             "signal_delay_waring_params",

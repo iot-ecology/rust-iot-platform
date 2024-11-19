@@ -61,7 +61,7 @@ impl CrudOperations<CalcParam> for CalcParamBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: CalcParam) -> Result<CalcParam, Error> {
+    async fn update(&self, id: i64, item: CalcParam) -> Result<CalcParam, Error> {
         let mut updates = vec![];
 
         if let Some(protocol) = item.protocol {
@@ -107,7 +107,7 @@ impl CrudOperations<CalcParam> for CalcParamBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<CalcParam, Error> {
+    async fn delete(&self, id: i64) -> Result<CalcParam, Error> {
         log::info!("Deleting CalcParam with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "calc_params", id).await
@@ -137,7 +137,7 @@ impl CrudOperations<CalcParam> for CalcParamBiz {
         result
     }
 
-    async fn by_id(&self, id: u64) -> Result<CalcParam, Error> {
+    async fn by_id(&self, id: i64) -> Result<CalcParam, Error> {
         let result = sql_utils::by_id_common::<CalcParam>(&self.mysql, "calc_params", id).await;
         result
     }

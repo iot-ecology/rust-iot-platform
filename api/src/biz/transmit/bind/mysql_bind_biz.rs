@@ -59,7 +59,7 @@ impl CrudOperations<MysqlTransmitBind> for MysqlTransmitBindBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: MysqlTransmitBind) -> Result<MysqlTransmitBind, Error> {
+    async fn update(&self, id: i64, item: MysqlTransmitBind) -> Result<MysqlTransmitBind, Error> {
         let mut updates = vec![];
 
         if let Some(protocol) = item.protocol {
@@ -106,7 +106,7 @@ impl CrudOperations<MysqlTransmitBind> for MysqlTransmitBindBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<MysqlTransmitBind, Error> {
+    async fn delete(&self, id: i64) -> Result<MysqlTransmitBind, Error> {
         log::info!("Deleting MysqlTransmitBind with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "mysql_transmit_binds", id).await
@@ -146,7 +146,7 @@ impl CrudOperations<MysqlTransmitBind> for MysqlTransmitBindBiz {
         result
     }
 
-    async fn by_id(&self, id: u64) -> Result<MysqlTransmitBind, Error> {
+    async fn by_id(&self, id: i64) -> Result<MysqlTransmitBind, Error> {
         let result =
             sql_utils::by_id_common::<MysqlTransmitBind>(&self.mysql, "mysql_transmit_binds", id)
                 .await;

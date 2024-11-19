@@ -62,7 +62,7 @@ impl CrudOperations<Dashboard> for DashboardBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: Dashboard) -> Result<Dashboard, Error> {
+    async fn update(&self, id: i64, item: Dashboard) -> Result<Dashboard, Error> {
         let mut updates = vec![];
 
         if let Some(name) = item.name {
@@ -84,7 +84,7 @@ impl CrudOperations<Dashboard> for DashboardBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<Dashboard, Error> {
+    async fn delete(&self, id: i64) -> Result<Dashboard, Error> {
         log::info!("Deleting dashboard with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "dashboards", id).await
@@ -114,7 +114,7 @@ impl CrudOperations<Dashboard> for DashboardBiz {
         result
     }
 
-    async fn by_id(&self, id: u64) -> Result<Dashboard, Error> {
+    async fn by_id(&self, id: i64) -> Result<Dashboard, Error> {
         let result = sql_utils::by_id_common::<Dashboard>(&self.mysql, "dashboards", id).await;
         result
     }

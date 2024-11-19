@@ -38,7 +38,7 @@ impl CalcRunBiz {
     }
 
     pub async fn QueryRuleExData(&self,
-                                 rule_id: u64,
+                                 rule_id: i64,
                                  start_time: i64,
                                  end_time: i64,
                                  mongo_config: common_lib::config::MongoConfig,
@@ -84,7 +84,7 @@ impl CalcRunBiz {
         }
     }
 
-    pub async fn start(&self, role_id: u64) -> Result<bool> {
+    pub async fn start(&self, role_id: i64) -> Result<bool> {
         let calc_cache = self.refresh_rule(role_id).await?;
 
 
@@ -103,7 +103,7 @@ impl CalcRunBiz {
         Ok(true)
     }
 
-    pub async fn stop(&self, role_id: u64) -> Result<bool> {
+    pub async fn stop(&self, role_id: i64) -> Result<bool> {
         let sql = "select * from calc_rules where id = ?";
 
         let record = sqlx::query_as::<_, CalcRule>(sql)
@@ -155,7 +155,7 @@ impl CalcRunBiz {
         self.mongo.create_collection(string.as_str()).await.unwrap();
     }
 
-    pub async fn refresh_rule(&self, role_id: u64) -> Result<CalcCache> {
+    pub async fn refresh_rule(&self, role_id: i64) -> Result<CalcCache> {
         let sql = "select * from calc_rules where id = ?";
 
         let record = sqlx::query_as::<_, CalcRule>(sql).bind(role_id.to_string()).fetch_optional(&self.mysql).await.with_context(|| {
@@ -204,7 +204,7 @@ impl CalcRunBiz {
         })
     }
 
-    pub async fn mock_calc(&self, start_time: i64, end_time: i64, id: u64) -> Option<String> {
+    pub async fn mock_calc(&self, start_time: i64, end_time: i64, id: i64) -> Option<String> {
         // Get calc cache from Redis
         let result = match self.redis.get_hash("calc_cache", &id.to_string()) {
             Ok(val) => val,

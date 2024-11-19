@@ -110,8 +110,8 @@ pub async fn page_role(
     role_api: &rocket::State<RoleBiz>,
     config: &rocket::State<Config>,
     name: Option<String>,
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
     let page = page.unwrap_or(1);
     let page_size = page_size.unwrap_or(10);
@@ -165,7 +165,7 @@ pub async fn page_role(
 
 #[post("/Role/delete/<id>")]
 pub async fn delete_role(
-    id: u64,
+    id: i64,
     role_api: &rocket::State<RoleBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -190,7 +190,7 @@ pub async fn delete_role(
 
 #[get("/Role/<id>")]
 pub async fn by_id_role(
-    id: u64,
+    id: i64,
     role_api: &rocket::State<RoleBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

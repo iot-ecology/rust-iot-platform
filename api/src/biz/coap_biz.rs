@@ -28,7 +28,7 @@ impl CoapHandlerBiz {
         ).expect("TODO: panic message");
     }
 
-    pub async fn find_by_device_info_id(&self, device_info_id: u64) -> Result<Option<CoapHandler>, Error> {
+    pub async fn find_by_device_info_id(&self, device_info_id: i64) -> Result<Option<CoapHandler>, Error> {
         let sql = "select * from coap_handlers where 1=1 and device_info_id = ?";
 
         let record = sqlx::query_as::<_, CoapHandler>(sql).bind(device_info_id.to_string())
@@ -99,7 +99,7 @@ impl CrudOperations<CoapHandler> for CoapHandlerBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: CoapHandler) -> Result<CoapHandler, Error> {
+    async fn update(&self, id: i64, item: CoapHandler) -> Result<CoapHandler, Error> {
         let mut updates = vec![];
 
         if let Some(device_info_id) = item.device_info_id {
@@ -132,7 +132,7 @@ impl CrudOperations<CoapHandler> for CoapHandlerBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<CoapHandler, Error> {
+    async fn delete(&self, id: i64) -> Result<CoapHandler, Error> {
         log::info!("Deleting CoapHandler with ID {}", id);
 
         sql_utils::delete_by_id(&self.mysql, "coap_handlers", id).await
@@ -161,7 +161,7 @@ impl CrudOperations<CoapHandler> for CoapHandlerBiz {
         result
     }
 
-    async fn by_id(&self, id: u64) -> Result<CoapHandler, Error> {
+    async fn by_id(&self, id: i64) -> Result<CoapHandler, Error> {
         let result = sql_utils::by_id_common::<CoapHandler>(&self.mysql, "coap_handlers", id).await;
         result
     }

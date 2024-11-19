@@ -116,7 +116,7 @@ pub async fn update_signal(
 
 #[post("/signal/delete/<id>")]
 pub async fn delete_signal(
-    id: u64,
+    id: i64,
     signal_api: &rocket::State<SignalBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -141,8 +141,8 @@ pub async fn delete_signal(
 
 #[get("/signal/page?<page>&<page_size>&<device_uid>&<protocol>&<type>")]
 pub async fn page_signal(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     device_uid: Option<String>,
     protocol: Option<String>,
     r#type: Option<String>,
@@ -213,7 +213,7 @@ pub async fn page_signal(
 
 #[get("/signal/byId/<id>")]
 pub async fn signal_by_id(
-    id: u64,
+    id: i64,
     signal_api: &rocket::State<SignalBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

@@ -17,12 +17,12 @@ impl UserBiz {
         UserBiz { redis, mysql }
     }
 
-    pub async fn get_user_by_id(&self, user_id: u64) -> Result<User, Error> {
+    pub async fn get_user_by_id(&self, user_id: i64) -> Result<User, Error> {
         let user = self.query_mysql_for_user(user_id).await;
         user
     }
 
-    async fn query_mysql_for_user(&self, user_id: u64) -> Result<User, Error> {
+    async fn query_mysql_for_user(&self, user_id: i64) -> Result<User, Error> {
         let x = self.by_id(user_id).await;
         x
     }
@@ -106,7 +106,7 @@ impl CrudOperations<User> for UserBiz {
 
         result
     }
-    async fn update(&self, id: u64, item: User) -> Result<User, Error> {
+    async fn update(&self, id: i64, item: User) -> Result<User, Error> {
         let mut updates = vec![];
 
         if let Some(username) = item.username {
@@ -143,7 +143,7 @@ impl CrudOperations<User> for UserBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<User, Error> {
+    async fn delete(&self, id: i64) -> Result<User, Error> {
         log::info!("Deleting user with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "users", id).await
@@ -173,7 +173,7 @@ impl CrudOperations<User> for UserBiz {
         return result;
     }
 
-    async fn by_id(&self, id: u64) -> Result<User, Error> {
+    async fn by_id(&self, id: i64) -> Result<User, Error> {
         let result = common_lib::sql_utils::by_id_common::<User>(&self.mysql, "users", id).await;
         result
     }

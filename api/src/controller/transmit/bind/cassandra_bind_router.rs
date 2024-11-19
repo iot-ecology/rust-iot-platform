@@ -38,7 +38,7 @@ pub async fn update_cassandra_transmit_bind(
 
 #[get("/CassandraTransmitBind/<id>")]
 pub async fn by_id_cassandra_transmit_bind(
-    id: u64,
+    id: i64,
     cassandra_transmit_bind_api: &rocket::State<CassandraTransmitBindBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -52,8 +52,8 @@ pub async fn by_id_cassandra_transmit_bind(
 
 #[get("/CassandraTransmitBind/page?<page>&<page_size>")]
 pub async fn page_cassandra_transmit_bind(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     cassandra_transmit_bind_api: &rocket::State<CassandraTransmitBindBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -67,7 +67,7 @@ pub async fn page_cassandra_transmit_bind(
 
 #[post("/CassandraTransmitBind/delete/<id>")]
 pub async fn delete_cassandra_transmit_bind(
-    id: u64,
+    id: i64,
     cassandra_transmit_bind_api: &rocket::State<CassandraTransmitBindBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

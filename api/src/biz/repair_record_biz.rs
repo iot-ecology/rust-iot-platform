@@ -54,7 +54,7 @@ impl CrudOperations<RepairRecord> for RepairRecordBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: RepairRecord) -> Result<RepairRecord, Error> {
+    async fn update(&self, id: i64, item: RepairRecord) -> Result<RepairRecord, Error> {
         let mut updates = vec![];
 
         if let Some(device_group_group_id) = item.device_group_group_id {
@@ -97,7 +97,7 @@ impl CrudOperations<RepairRecord> for RepairRecordBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<RepairRecord, Error> {
+    async fn delete(&self, id: i64) -> Result<RepairRecord, Error> {
         log::info!("Deleting repair record with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "repair_records", id).await
@@ -136,7 +136,7 @@ impl CrudOperations<RepairRecord> for RepairRecordBiz {
         return result;
     }
 
-    async fn by_id(&self, id: u64) -> Result<RepairRecord, Error> {
+    async fn by_id(&self, id: i64) -> Result<RepairRecord, Error> {
         let result =
             common_lib::sql_utils::by_id_common::<RepairRecord>(&self.mysql, "repair_records", id)
                 .await;

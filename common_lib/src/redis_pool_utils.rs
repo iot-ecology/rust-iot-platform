@@ -41,7 +41,7 @@ impl RedisOp {
         &self,
         lock_key: &str,
         lock_value: &str,
-        ttl: u64,
+        ttl: i64,
     ) -> Result<bool, redis::RedisError> {
         let mut con = self.get_connection();
 
@@ -136,13 +136,13 @@ impl RedisOp {
     }
 
     /// Get the number of elements in a sorted set
-    pub fn zcard(&self, key: &str) -> Result<u64, RedisError> {
+    pub fn zcard(&self, key: &str) -> Result<i64, RedisError> {
         let mut con = self.get_connection();
         con.zcard(key)
     }
 
     /// Remove elements from a sorted set by rank (index)
-    pub fn zremrangebyrank(&self, key: &str, start: i64, stop: i64) -> Result<u64, RedisError> {
+    pub fn zremrangebyrank(&self, key: &str, start: i64, stop: i64) -> Result<i64, RedisError> {
         let mut con = self.get_connection();
         con.zremrangebyrank(key, start as isize, stop as isize)
     }
@@ -193,7 +193,7 @@ impl RedisOp {
     }
 
     /// 获取 Zset 长度
-    pub fn get_zset_length(&self, key: &str) -> Result<u64, RedisError> {
+    pub fn get_zset_length(&self, key: &str) -> Result<i64, RedisError> {
         let mut con = self.get_connection();
         match con.zcard(key) {
             Ok(length) => Ok(length),

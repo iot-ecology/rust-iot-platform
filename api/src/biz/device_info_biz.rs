@@ -74,11 +74,11 @@ impl DeviceInfoBiz {
 
     pub async fn bind_mqtt() {}
 
-    pub async fn query_mqtt(&self, device_info_id: u64) {}
-    pub async fn query_tcp(&self, device_info_id: u64) {}
-    pub async fn query_http(&self, device_info_id: u64) {}
-    pub async fn query_ws(&self, device_info_id: u64) {}
-    pub async fn query_coap(&self, device_info_id: u64) {}
+    pub async fn query_mqtt(&self, device_info_id: i64) {}
+    pub async fn query_tcp(&self, device_info_id: i64) {}
+    pub async fn query_http(&self, device_info_id: i64) {}
+    pub async fn query_ws(&self, device_info_id: i64) {}
+    pub async fn query_coap(&self, device_info_id: i64) {}
 }
 
 #[async_trait::async_trait]
@@ -138,7 +138,7 @@ impl CrudOperations<DeviceInfo> for DeviceInfoBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: DeviceInfo) -> Result<DeviceInfo, Error> {
+    async fn update(&self, id: i64, item: DeviceInfo) -> Result<DeviceInfo, Error> {
         let mut updates = vec![];
 
         if let Some(product_id) = item.product_id {
@@ -201,7 +201,7 @@ impl CrudOperations<DeviceInfo> for DeviceInfoBiz {
         }
     }
 
-    async fn delete(&self, id: u64) -> Result<DeviceInfo, Error> {
+    async fn delete(&self, id: i64) -> Result<DeviceInfo, Error> {
         log::info!("Deleting DeviceInfo with ID {}", id);
         common_lib::sql_utils::delete_by_id(&self.mysql, "device_infos", id).await
     }
@@ -235,7 +235,7 @@ impl CrudOperations<DeviceInfo> for DeviceInfoBiz {
         result
     }
 
-    async fn by_id(&self, id: u64) -> Result<DeviceInfo, Error> {
+    async fn by_id(&self, id: i64) -> Result<DeviceInfo, Error> {
         let result =
             common_lib::sql_utils::by_id_common::<DeviceInfo>(&self.mysql, "device_infos", id)
                 .await;

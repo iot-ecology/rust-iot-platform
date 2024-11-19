@@ -38,7 +38,7 @@ impl CrudOperations<SimCard> for SimCardBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: SimCard) -> Result<SimCard, Error> {
+    async fn update(&self, id: i64, item: SimCard) -> Result<SimCard, Error> {
         let mut updates = vec![];
 
         updates.push(("access_number", item.access_number));
@@ -61,7 +61,7 @@ impl CrudOperations<SimCard> for SimCardBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<SimCard, Error> {
+    async fn delete(&self, id: i64) -> Result<SimCard, Error> {
         log::info!("Deleting sim card with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "sim_cards", id).await
@@ -96,7 +96,7 @@ impl CrudOperations<SimCard> for SimCardBiz {
         return result;
     }
 
-    async fn by_id(&self, id: u64) -> Result<SimCard, Error> {
+    async fn by_id(&self, id: i64) -> Result<SimCard, Error> {
         let result =
             common_lib::sql_utils::by_id_common::<SimCard>(&self.mysql, "sim_cards", id).await;
         result

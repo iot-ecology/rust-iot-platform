@@ -37,8 +37,8 @@ pub async fn update_shipment_record(
 
 #[get("/ShipmentRecord/page?<page>&<page_size>")]
 pub async fn page_shipment_record(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     shipment_record_api: &rocket::State<ShipmentRecordBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -51,7 +51,7 @@ pub async fn page_shipment_record(
 
 #[post("/ShipmentRecord/delete/<id>")]
 pub async fn delete_shipment_record(
-    id: u64,
+    id: i64,
     shipment_record_api: &rocket::State<ShipmentRecordBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -64,7 +64,7 @@ pub async fn delete_shipment_record(
 
 #[get("/ShipmentRecord/<id>")]
 pub async fn by_id_shipment_record(
-    id: u64,
+    id: i64,
     shipment_record_api: &rocket::State<ShipmentRecordBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -77,7 +77,7 @@ pub async fn by_id_shipment_record(
 
 #[get("/ShipmentRecord/FindByShipmentProductDetail/<id>")]
 pub async fn find_by_shipment_product_detail(
-    id: u64,
+    id: i64,
     shipment_record_api: &rocket::State<ShipmentRecordBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

@@ -36,7 +36,7 @@ pub async fn update_feishu(
 
 #[get("/FeiShuId/<id>")]
 pub async fn by_id_feishu(
-    id: u64,
+    id: i64,
     feishu_api: &rocket::State<FeiShuBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -49,8 +49,8 @@ pub async fn by_id_feishu(
 
 #[get("/FeiShuId/page?<page>&<page_size>")]
 pub async fn page_feishu(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     feishu_api: &rocket::State<FeiShuBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -63,7 +63,7 @@ pub async fn page_feishu(
 
 #[post("/FeiShuId/delete/<id>")]
 pub async fn delete_feishu(
-    id: u64,
+    id: i64,
     feishu_api: &rocket::State<FeiShuBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

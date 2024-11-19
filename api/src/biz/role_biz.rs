@@ -65,7 +65,7 @@ impl CrudOperations<Role> for RoleBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: Role) -> Result<Role, Error> {
+    async fn update(&self, id: i64, item: Role) -> Result<Role, Error> {
         let mut updates = vec![];
 
         if let Some(name) = item.name {
@@ -91,7 +91,7 @@ impl CrudOperations<Role> for RoleBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<Role, Error> {
+    async fn delete(&self, id: i64) -> Result<Role, Error> {
         log::info!("Deleting role with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "roles", id).await
@@ -121,7 +121,7 @@ impl CrudOperations<Role> for RoleBiz {
         return result;
     }
 
-    async fn by_id(&self, id: u64) -> Result<Role, Error> {
+    async fn by_id(&self, id: i64) -> Result<Role, Error> {
         let result = common_lib::sql_utils::by_id_common::<Role>(&self.mysql, "roles", id).await;
         result
     }

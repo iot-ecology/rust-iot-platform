@@ -117,7 +117,7 @@ pub async fn update_dashboard(
 
 #[get("/dashboard/<id>")]
 pub async fn by_id_dashboard(
-    id: u64,
+    id: i64,
     dashboard_api: &rocket::State<DashboardBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -142,8 +142,8 @@ pub async fn by_id_dashboard(
 
 #[get("/dashboard/page?<page>&<page_size>&<name>")]
 pub async fn page_dashboard(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     name: Option<String>,
     dashboard_api: &rocket::State<DashboardBiz>,
     config: &rocket::State<Config>,
@@ -198,7 +198,7 @@ pub async fn page_dashboard(
 
 #[post("/dashboard/delete/<id>")]
 pub async fn delete_dashboard(
-    id: u64,
+    id: i64,
     dashboard_api: &rocket::State<DashboardBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

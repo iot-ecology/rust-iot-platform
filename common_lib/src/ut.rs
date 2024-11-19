@@ -1,9 +1,9 @@
-pub fn calc_bucket_name(prefix: &str, protocol: &str, id: u64) -> String {
+pub fn calc_bucket_name(prefix: &str, protocol: &str, id: i64) -> String {
     format!("{}_{}_{}", prefix, protocol, id % 100)
 }
 
 
-pub fn calc_collection_name(prefix: &str, id: u64) -> String {
+pub fn calc_collection_name(prefix: &str, id: i64) -> String {
     let string = format!("{}_{}", prefix, id % 100);
     return string;
 }

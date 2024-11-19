@@ -37,7 +37,7 @@ pub async fn update_production_plan(
 
 #[get("/ProductionPlan/<id>")]
 pub async fn by_id_production_plan(
-    id: u64,
+    id: i64,
     production_plan_api: &rocket::State<ProductionPlanBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -50,8 +50,8 @@ pub async fn by_id_production_plan(
 
 #[get("/ProductionPlan/page?<page>&<page_size>")]
 pub async fn page_production_plan(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     production_plan_api: &rocket::State<ProductionPlanBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -64,7 +64,7 @@ pub async fn page_production_plan(
 
 #[post("/ProductionPlan/delete/<id>")]
 pub async fn delete_production_plan(
-    id: u64,
+    id: i64,
     production_plan_api: &rocket::State<ProductionPlanBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {

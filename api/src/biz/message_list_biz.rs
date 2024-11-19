@@ -46,7 +46,7 @@ impl CrudOperations<MessageList> for MessageListBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: MessageList) -> Result<MessageList, Error> {
+    async fn update(&self, id: i64, item: MessageList) -> Result<MessageList, Error> {
         let mut updates = vec![];
 
         if let Some(content) = item.content {
@@ -81,7 +81,7 @@ impl CrudOperations<MessageList> for MessageListBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<MessageList, Error> {
+    async fn delete(&self, id: i64) -> Result<MessageList, Error> {
         log::info!("Deleting message list with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "message_lists", id).await
@@ -116,7 +116,7 @@ impl CrudOperations<MessageList> for MessageListBiz {
         return result;
     }
 
-    async fn by_id(&self, id: u64) -> Result<MessageList, Error> {
+    async fn by_id(&self, id: i64) -> Result<MessageList, Error> {
         let result =
             common_lib::sql_utils::by_id_common::<MessageList>(&self.mysql, "message_lists", id)
                 .await;

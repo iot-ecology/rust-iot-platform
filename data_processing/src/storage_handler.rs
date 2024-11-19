@@ -43,7 +43,7 @@ pub async fn storage_data_row(
     };
 
     // 解析设备 UID
-    let device_uid: u64 = match device_uid_string.parse::<u64>() {
+    let device_uid: i64 = match device_uid_string.parse::<i64>() {
         Ok(uid) => uid,
         Err(_) => {
             error!("Not a valid u32 number: {}", device_uid_string);

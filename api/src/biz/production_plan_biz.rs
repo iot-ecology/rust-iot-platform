@@ -53,7 +53,7 @@ impl CrudOperations<ProductionPlan> for ProductionPlanBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: ProductionPlan) -> Result<ProductionPlan, Error> {
+    async fn update(&self, id: i64, item: ProductionPlan) -> Result<ProductionPlan, Error> {
         let mut updates = vec![];
 
         if let Some(name) = item.name {
@@ -92,7 +92,7 @@ impl CrudOperations<ProductionPlan> for ProductionPlanBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<ProductionPlan, Error> {
+    async fn delete(&self, id: i64) -> Result<ProductionPlan, Error> {
         log::info!("Deleting production plan with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "production_plans", id).await
@@ -131,7 +131,7 @@ impl CrudOperations<ProductionPlan> for ProductionPlanBiz {
         return result;
     }
 
-    async fn by_id(&self, id: u64) -> Result<ProductionPlan, Error> {
+    async fn by_id(&self, id: i64) -> Result<ProductionPlan, Error> {
         let result = common_lib::sql_utils::by_id_common::<ProductionPlan>(
             &self.mysql,
             "production_plans",

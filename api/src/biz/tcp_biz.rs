@@ -19,7 +19,7 @@ impl TcpHandlerBiz {
         TcpHandlerBiz { redis, mysql }
     }
 
-    pub async fn find_by_device_info_id(&self, device_info_id: u64) -> Result<Option<TcpHandler>, Error> {
+    pub async fn find_by_device_info_id(&self, device_info_id: i64) -> Result<Option<TcpHandler>, Error> {
         let sql = "select * from tcp_handlers where 1=1 and device_info_id = ?";
 
         let record = sqlx::query_as::<_, TcpHandler>(sql).bind(device_info_id.to_string())
@@ -111,7 +111,7 @@ impl CrudOperations<TcpHandler> for TcpHandlerBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: TcpHandler) -> Result<TcpHandler, Error> {
+    async fn update(&self, id: i64, item: TcpHandler) -> Result<TcpHandler, Error> {
         let mut updates = vec![];
 
         if let Some(username) = item.username {
@@ -153,7 +153,7 @@ impl CrudOperations<TcpHandler> for TcpHandlerBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<TcpHandler, Error> {
+    async fn delete(&self, id: i64) -> Result<TcpHandler, Error> {
         log::info!("Deleting tcp handler with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "tcp_handlers", id).await
@@ -188,7 +188,7 @@ impl CrudOperations<TcpHandler> for TcpHandlerBiz {
         return result;
     }
 
-    async fn by_id(&self, id: u64) -> Result<TcpHandler, Error> {
+    async fn by_id(&self, id: i64) -> Result<TcpHandler, Error> {
         let result =
             common_lib::sql_utils::by_id_common::<TcpHandler>(&self.mysql, "tcp_handlers", id)
                 .await;

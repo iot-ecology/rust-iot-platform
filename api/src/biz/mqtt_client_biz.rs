@@ -61,7 +61,7 @@ impl CrudOperations<MqttClient> for MqttClientBiz {
         result
     }
 
-    async fn update(&self, id: u64, item: MqttClient) -> Result<MqttClient, Error> {
+    async fn update(&self, id: i64, item: MqttClient) -> Result<MqttClient, Error> {
         let mut updates = vec![];
 
         if let Some(host) = item.host {
@@ -112,7 +112,7 @@ impl CrudOperations<MqttClient> for MqttClientBiz {
         };
     }
 
-    async fn delete(&self, id: u64) -> Result<MqttClient, Error> {
+    async fn delete(&self, id: i64) -> Result<MqttClient, Error> {
         log::info!("Deleting mqtt client with ID {}", id);
 
         common_lib::sql_utils::delete_by_id(&self.mysql, "mqtt_clients", id).await
@@ -147,7 +147,7 @@ impl CrudOperations<MqttClient> for MqttClientBiz {
         return result;
     }
 
-    async fn by_id(&self, id: u64) -> Result<MqttClient, Error> {
+    async fn by_id(&self, id: i64) -> Result<MqttClient, Error> {
         let result =
             common_lib::sql_utils::by_id_common::<MqttClient>(&self.mysql, "mqtt_clients", id)
                 .await;

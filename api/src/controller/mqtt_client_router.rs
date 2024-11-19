@@ -24,8 +24,8 @@ pub async fn create_mqtt(
 
 #[get("/mqtt/page?<page>&<page_size>")]
 pub async fn page_mqtt(
-    page: Option<u64>,
-    page_size: Option<u64>,
+    page: Option<i64>,
+    page_size: Option<i64>,
     mqtt_api: &rocket::State<MqttClientBiz>,
     config: &rocket::State<Config>,
 ) -> Custom<Json<serde_json::Value>> {
@@ -50,7 +50,7 @@ pub async fn list_mqtt(
 
 #[get("/mqtt/byId/<id>")]
 pub async fn by_id_mqtt(
-    id: u64,
+    id: i64,
     mqtt_api: &rocket::State<MqttClientBiz>,
     config: &rocket::State<Config>,
 ) -> Custom<Json<serde_json::Value>> {
@@ -100,7 +100,7 @@ pub async fn update_mqtt(
 
 #[post("/mqtt/delete/<id>")]
 pub async fn delete_mqtt(
-    id: u64,
+    id: i64,
     mqtt_api: &rocket::State<MqttClientBiz>,
     config: &rocket::State<Config>,
 ) -> Custom<Json<serde_json::Value>> {

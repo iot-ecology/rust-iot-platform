@@ -20,7 +20,7 @@ impl SignalWaringConfigBiz {
     }
 
 
-    pub async fn set_signal_waring_cache(&self, signal_id: u64, config: &SignalWaringConfig) -> Result<(), Error> {
+    pub async fn set_signal_waring_cache(&self, signal_id: i64, config: &SignalWaringConfig) -> Result<(), Error> {
         let config_json = serde_json::to_string(config)
             .map_err(|e| Error::msg(format!("Failed to serialize config: {}", e)))?;
 
@@ -31,7 +31,7 @@ impl SignalWaringConfigBiz {
         Ok(())
     }
 
-    pub async fn remove_signal_waring_cache(&self, signal_id: u64, config: &SignalWaringConfig) -> Result<(), Error> {
+    pub async fn remove_signal_waring_cache(&self, signal_id: i64, config: &SignalWaringConfig) -> Result<(), Error> {
         let config_json = serde_json::to_string(config)
             .map_err(|e| Error::msg(format!("Failed to serialize config: {}", e)))?;
 
@@ -96,7 +96,7 @@ impl CrudOperations<SignalWaringConfig> for SignalWaringConfigBiz {
         return result;
     }
 
-    async fn update(&self, id: u64, item: SignalWaringConfig) -> Result<SignalWaringConfig, Error> {
+    async fn update(&self, id: i64, item: SignalWaringConfig) -> Result<SignalWaringConfig, Error> {
         let mut updates = vec![];
 
         if let Some(protocol) = item.protocol {
@@ -131,12 +131,12 @@ impl CrudOperations<SignalWaringConfig> for SignalWaringConfigBiz {
         return result;
     }
 
-    async fn delete(&self, id: u64) -> Result<SignalWaringConfig, Error> {
+    async fn delete(&self, id: i64) -> Result<SignalWaringConfig, Error> {
         let result = common_lib::sql_utils::delete_by_id::<SignalWaringConfig>(&self.mysql, "signal_waring_configs", id).await;
         return result;
     }
 
-    async fn by_id(&self, id: u64) -> Result<SignalWaringConfig, Error> {
+    async fn by_id(&self, id: i64) -> Result<SignalWaringConfig, Error> {
         let result = common_lib::sql_utils::by_id_common::<SignalWaringConfig>(&self.mysql, "signal_waring_configs", id).await;
         return result;
     }

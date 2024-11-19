@@ -1,11 +1,12 @@
 use chrono::{DateTime, NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, Row};
+use log::{error, warn};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     pub username: Option<String>,
     pub password: Option<String>,
     pub email: Option<String>,
@@ -54,14 +55,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for User {
 pub struct CalcParam {
     pub protocol: Option<String>,
     pub identification_code: Option<String>,
-    pub device_uid: Option<u64>,
+    pub device_uid: Option<i64>,
     pub name: Option<String>,
     pub signal_name: Option<String>,
-    pub signal_id: Option<u64>,
+    pub signal_id: Option<i64>,
     pub reduce: Option<String>,
-    pub calc_rule_id: Option<u64>,
+    pub calc_rule_id: Option<i64>,
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -111,7 +112,7 @@ pub struct CalcRule {
     pub start: Option<bool>,
     pub mock_value: Option<String>,
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -153,7 +154,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for CalcRule {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CassandraTransmitBind {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -174,7 +175,7 @@ pub struct CassandraTransmitBind {
         default
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
-    pub device_uid: Option<u64>,
+    pub device_uid: Option<i64>,
     pub protocol: Option<String>,
     pub identification_code: Option<String>,
     pub cassandra_transmit_id: Option<i32>,
@@ -206,7 +207,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for CassandraTransmitBind {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CassandraTransmit {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -253,7 +254,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for CassandraTransmit {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ClickhouseTransmitBind {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -274,7 +275,7 @@ pub struct ClickhouseTransmitBind {
         default
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
-    pub device_uid: Option<u64>,
+    pub device_uid: Option<i64>,
     pub protocol: Option<String>,
     pub identification_code: Option<String>,
     pub clickhouse_transmit_id: Option<i32>,
@@ -305,7 +306,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for ClickhouseTransmitBind {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ClickhouseTransmit {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -351,13 +352,13 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for ClickhouseTransmit {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CoapHandler {
-    pub device_info_id: Option<u64>,
+    pub device_info_id: Option<i64>,
     pub name: Option<String>,
     pub username: Option<String>,
     pub password: Option<String>,
     pub script: Option<String>,
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -400,7 +401,7 @@ pub struct Dashboard {
     pub name: Option<String>,
     pub config: Option<String>,
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -439,7 +440,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for Dashboard {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Dept {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -461,7 +462,7 @@ pub struct Dept {
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
     pub name: Option<String>,
-    pub parent_id: Option<u64>,
+    pub parent_id: Option<i64>,
 }
 
 impl FromRow<'_, sqlx::mysql::MySqlRow> for Dept {
@@ -480,7 +481,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for Dept {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DeviceBindMqttClient {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -501,8 +502,8 @@ pub struct DeviceBindMqttClient {
         default
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
-    pub device_info_id: Option<u64>,
-    pub mqtt_client_id: Option<u64>,
+    pub device_info_id: Option<i64>,
+    pub mqtt_client_id: Option<i64>,
     pub identification_code: Option<String>,
 }
 impl FromRow<'_, sqlx::mysql::MySqlRow> for DeviceBindMqttClient {
@@ -522,7 +523,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for DeviceBindMqttClient {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DeviceBindTcpHandler {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -543,8 +544,8 @@ pub struct DeviceBindTcpHandler {
         default
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
-    pub device_info_id: Option<u64>,
-    pub tcp_handler_id: Option<u64>,
+    pub device_info_id: Option<i64>,
+    pub tcp_handler_id: Option<i64>,
     pub identification_code: Option<String>,
 }
 impl FromRow<'_, sqlx::mysql::MySqlRow> for DeviceBindTcpHandler {
@@ -564,7 +565,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for DeviceBindTcpHandler {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DeviceGroupBindMqttClient {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -585,8 +586,8 @@ pub struct DeviceGroupBindMqttClient {
         default
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
-    pub device_group_id: Option<u64>,
-    pub mqtt_client_id: Option<u64>,
+    pub device_group_id: Option<i64>,
+    pub mqtt_client_id: Option<i64>,
 }
 impl FromRow<'_, sqlx::mysql::MySqlRow> for DeviceGroupBindMqttClient {
     fn from_row(row: &'_ sqlx::mysql::MySqlRow) -> Result<Self, sqlx::Error> {
@@ -603,10 +604,10 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for DeviceGroupBindMqttClient {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DeviceGroupDevice {
-    pub device_info_id: Option<u64>,
-    pub device_group_id: Option<u64>,
+    pub device_info_id: Option<i64>,
+    pub device_group_id: Option<i64>,
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -646,7 +647,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for DeviceGroupDevice {
 pub struct DeviceGroup {
     pub name: Option<String>,
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -683,7 +684,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for DeviceGroup {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DeviceInfo {
-    pub product_id: Option<u64>,
+    pub product_id: Option<i64>,
     pub sn: Option<String>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
@@ -697,18 +698,18 @@ pub struct DeviceInfo {
         default
     )]
     pub procurement_date: Option<chrono::NaiveDateTime>,
-    pub source: Option<u64>,
+    pub source: Option<i64>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime",
         default
     )]
     pub warranty_expiry: Option<chrono::NaiveDateTime>,
-    pub push_interval: Option<u64>,
+    pub push_interval: Option<i64>,
     pub error_rate: Option<f64>,
     pub protocol: Option<String>,
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -730,7 +731,7 @@ pub struct DeviceInfo {
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
     pub identification_code: Option<String>,
-    pub device_uid: Option<u64>,
+    pub device_uid: Option<i64>,
 }
 
 impl FromRow<'_, sqlx::mysql::MySqlRow> for DeviceInfo {
@@ -758,7 +759,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for DeviceInfo {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DingDing {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -803,7 +804,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for DingDing {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FeiShu {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -847,13 +848,13 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for FeiShu {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct HttpHandler {
-    pub device_info_id: Option<u64>,
+    pub device_info_id: Option<i64>,
     pub name: Option<String>,
     pub username: Option<String>,
     pub password: Option<String>,
     pub script: Option<String>,
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -895,7 +896,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for HttpHandler {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct InfluxDbTransmitBind {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -916,7 +917,7 @@ pub struct InfluxDbTransmitBind {
         default
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
-    pub device_uid: Option<u64>,
+    pub device_uid: Option<i64>,
     pub protocol: Option<String>,
     pub identification_code: Option<String>,
     pub influxdb_transmit_id: Option<i32>,
@@ -950,7 +951,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for InfluxDbTransmitBind {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct InfluxDbTransmit {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -995,7 +996,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for InfluxDbTransmit {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MessageList {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -1018,7 +1019,7 @@ pub struct MessageList {
     pub deleted_at: Option<chrono::NaiveDateTime>,
     pub content: Option<String>,
     pub en_content: Option<String>,
-    pub message_type_id: Option<u64>,
+    pub message_type_id: Option<i64>,
     pub ref_id: Option<String>,
 }
 
@@ -1040,7 +1041,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for MessageList {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MessageTypeBindRole {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -1061,8 +1062,8 @@ pub struct MessageTypeBindRole {
         default
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
-    pub message_type: Option<u64>,
-    pub role_id: Option<u64>,
+    pub message_type: Option<i64>,
+    pub role_id: Option<i64>,
 }
 impl FromRow<'_, sqlx::mysql::MySqlRow> for MessageTypeBindRole {
     fn from_row(row: &'_ sqlx::mysql::MySqlRow) -> Result<Self, sqlx::Error> {
@@ -1080,7 +1081,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for MessageTypeBindRole {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MongoTransmitBind {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -1101,7 +1102,7 @@ pub struct MongoTransmitBind {
         default
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
-    pub device_uid: Option<u64>,
+    pub device_uid: Option<i64>,
     pub protocol: Option<String>,
     pub identification_code: Option<String>,
     pub mysql_transmit_id: Option<i32>,
@@ -1133,7 +1134,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for MongoTransmitBind {
 
 pub struct MongoTransmit {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -1180,7 +1181,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for MongoTransmit {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MqttClient {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -1202,7 +1203,7 @@ pub struct MqttClient {
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
     pub host: Option<String>,
-    pub port: Option<u64>,
+    pub port: Option<i64>,
     pub client_id: Option<String>,
     pub username: Option<String>,
     pub password: Option<String>,
@@ -1234,7 +1235,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for MqttClient {
 
 pub struct MysqlTransmitBind {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -1285,7 +1286,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for MysqlTransmitBind {
 
 pub struct MysqlTransmit {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -1335,7 +1336,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for MysqlTransmit {
 
 pub struct ProductPlan {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -1356,9 +1357,9 @@ pub struct ProductPlan {
         default
     )]
     pub deleted_at: Option<chrono::NaiveDateTime>,
-    pub production_plan_id: Option<u64>,
-    pub product_id: Option<u64>,
-    pub quantity: Option<u64>,
+    pub production_plan_id: Option<i64>,
+    pub product_id: Option<i64>,
+    pub quantity: Option<i64>,
 }
 
 impl FromRow<'_, sqlx::mysql::MySqlRow> for ProductPlan {
@@ -1378,7 +1379,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for ProductPlan {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ProductionPlan {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -1435,15 +1436,15 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for ProductionPlan {
 
 pub struct Product {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     pub name: Option<String>,
     pub description: Option<String>,
     pub sku: Option<String>,
     pub price: Option<f64>,
     pub cost: Option<f64>,
-    pub quantity: Option<u64>,
-    pub minimum_stock: Option<u64>,
-    pub warranty_period: Option<u64>,
+    pub quantity: Option<i64>,
+    pub minimum_stock: Option<i64>,
+    pub warranty_period: Option<i64>,
     pub status: Option<String>,
     pub tags: Option<String>,
     pub image_url: Option<String>,
@@ -1469,24 +1470,146 @@ pub struct Product {
     pub deleted_at: Option<chrono::NaiveDateTime>,
 }
 
+
 impl FromRow<'_, sqlx::mysql::MySqlRow> for Product {
     fn from_row(row: &'_ sqlx::mysql::MySqlRow) -> Result<Self, sqlx::Error> {
+        let id: Option<i64> = match row.try_get("id") {
+            Ok(value) => Some(value),
+            Err(e) => {
+                error!("Failed to parse 'id': {:?}", e);
+                None
+            }
+        };
+
+        let name: Option<String> = match row.try_get("name") {
+            Ok(value) => Some(value),
+            Err(e) => {
+                error!("Failed to parse 'name': {:?}", e);
+                None
+            }
+        };
+
+        let description: Option<String> = match row.try_get("description") {
+            Ok(value) => Some(value),
+            Err(e) => {
+                error!("Failed to parse 'description': {:?}", e);
+                None
+            }
+        };
+
+        let sku: Option<String> = match row.try_get("sku") {
+            Ok(value) => Some(value),
+            Err(e) => {
+                error!("Failed to parse 'sku': {:?}", e);
+                None
+            }
+        };
+
+        let price: Option<f64> = match row.try_get("price") {
+            Ok(value) => Some(value),
+            Err(e) => {
+                error!("Failed to parse 'price': {:?}", e);
+                None
+            }
+        };
+
+        let cost: Option<f64> = match row.try_get("cost") {
+            Ok(value) => Some(value),
+            Err(e) => {
+                error!("Failed to parse 'cost': {:?}", e);
+                None
+            }
+        };
+
+        let quantity: Option<i64> = match row.try_get::<Option<i64>, _>("quantity") {
+            Ok(Some(q)) => Some(q as i64),
+            Ok(None) => None,
+            Err(e) => {
+                error!("Failed to parse 'quantity': {:?}", e);
+                None
+            }
+        };
+
+        let minimum_stock: Option<i64> = match row.try_get("minimum_stock") {
+            Ok(value) => Some(value),
+            Err(e) => {
+                error!("Failed to parse 'minimum_stock': {:?}", e);
+                None
+            }
+        };
+
+        let warranty_period: Option<i64> = match row.try_get("warranty_period") {
+            Ok(value) => Some(value),
+            Err(e) => {
+                error!("Failed to parse 'warranty_period': {:?}", e);
+                None
+            }
+        };
+
+        let status: Option<String> = match row.try_get("status") {
+            Ok(value) => Some(value),
+            Err(e) => {
+                error!("Failed to parse 'status': {:?}", e);
+                None
+            }
+        };
+
+        let tags: Option<String> = match row.try_get("tags") {
+            Ok(value) => Some(value),
+            Err(e) => {
+                error!("Failed to parse 'tags': {:?}", e);
+                None
+            }
+        };
+
+        let image_url: Option<String> = match row.try_get("image_url") {
+            Ok(value) => Some(value),
+            Err(e) => {
+                error!("Failed to parse 'image_url': {:?}", e);
+                None
+            }
+        };
+
+        let created_at: Option<chrono::NaiveDateTime> = match row.try_get("created_at") {
+            Ok(value) => Some(value),
+            Err(e) => {
+                error!("Failed to parse 'created_at': {:?}", e);
+                None
+            }
+        };
+
+        let updated_at: Option<chrono::NaiveDateTime> = match row.try_get("updated_at") {
+            Ok(value) => Some(value),
+            Err(e) => {
+                error!("Failed to parse 'updated_at': {:?}", e);
+                None
+            }
+        };
+
+        let deleted_at: Option<chrono::NaiveDateTime> = match row.try_get("deleted_at") {
+            Ok(value) => Some(value),
+            Err(e) => {
+                error!("Failed to parse 'deleted_at': {:?}", e);
+                None
+            }
+        };
+
         Ok(Product {
-            id: row.try_get("id")?,
-            name: row.try_get("name")?,
-            description: row.try_get("description")?,
-            sku: row.try_get("sku")?,
-            price: row.try_get("price")?,
-            cost: row.try_get("cost")?,
-            quantity: row.try_get("quantity")?,
-            minimum_stock: row.try_get("minimum_stock")?,
-            warranty_period: row.try_get("warranty_period")?,
-            status: row.try_get("status")?,
-            tags: row.try_get("tags")?,
-            image_url: row.try_get("image_url")?,
-            created_at: row.try_get("created_at")?,
-            updated_at: row.try_get("updated_at")?,
-            deleted_at: row.try_get("deleted_at")?,
+            id: id,
+            name,
+            description,
+            sku,
+            price,
+            cost,
+            quantity,
+            minimum_stock,
+            warranty_period,
+            status,
+            tags,
+            image_url,
+            created_at,
+            updated_at,
+            deleted_at,
         })
     }
 }
@@ -1495,9 +1618,9 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for Product {
 
 pub struct RepairRecord {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
-    pub device_group_group_id: Option<u64>,
-    pub device_info_id: Option<u64>,
+    pub id: Option<i64>,
+    pub device_group_group_id: Option<i64>,
+    pub device_info_id: Option<i64>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime",
@@ -1550,7 +1673,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for RepairRecord {
 
 pub struct Role {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     pub name: Option<String>,
     pub description: Option<String>,
     pub can_del: Option<bool>,
@@ -1594,11 +1717,11 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for Role {
 
 pub struct ShipmentProductDetail {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
-    pub shipment_record_id: Option<u64>,
-    pub product_id: Option<u64>,
-    pub device_info_id: Option<u64>,
-    pub quantity: Option<u64>,
+    pub id: Option<i64>,
+    pub shipment_record_id: Option<i64>,
+    pub product_id: Option<i64>,
+    pub device_info_id: Option<i64>,
+    pub quantity: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -1639,7 +1762,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for ShipmentProductDetail {
 
 pub struct ShipmentRecord {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     #[serde(
         serialize_with = "serialize_naive_datetime",
         deserialize_with = "deserialize_naive_datetime",
@@ -1698,14 +1821,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for ShipmentRecord {
 
 pub struct SignalDelayWaringParam {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     pub protocol: Option<String>,
     pub identification_code: Option<String>,
-    pub device_uid: Option<u64>,
+    pub device_uid: Option<i64>,
     pub name: Option<String>,
     pub signal_name: Option<String>,
-    pub signal_id: Option<u64>,
-    pub signal_delay_waring_id: Option<u64>,
+    pub signal_id: Option<i64>,
+    pub signal_delay_waring_id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -1750,7 +1873,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for SignalDelayWaringParam {
 
 pub struct SignalDelayWaring {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     pub name: Option<String>,
     pub script: Option<String>,
     #[serde(
@@ -1791,14 +1914,14 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for SignalDelayWaring {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SignalWaringConfig {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
-    pub signal_id: Option<u64>,
+    pub id: Option<i64>,
+    pub signal_id: Option<i64>,
     pub min: Option<f64>,
     pub max: Option<f64>,
-    pub in_or_out: Option<u64>,
+    pub in_or_out: Option<i64>,
     pub protocol: Option<String>,
     pub identification_code: Option<String>,
-    pub device_uid: Option<u64>,
+    pub device_uid: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -1843,15 +1966,15 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for SignalWaringConfig {
 
 pub struct Signal {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     pub protocol: Option<String>,
     pub identification_code: Option<String>,
-    pub device_uid: Option<u64>,
+    pub device_uid: Option<i64>,
     pub name: Option<String>,
     pub alias: Option<String>,
     pub signal_type: Option<String>,
     pub unit: Option<String>,
-    pub cache_size: Option<u64>,
+    pub cache_size: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -1896,7 +2019,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for Signal {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SimCard {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+    pub id: Option<i64>,
     pub access_number: String,
     pub iccid: String,
     pub imsi: String,
@@ -1948,9 +2071,9 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for SimCard {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SimUseHistory {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
-    pub sim_id: Option<u64>,
-    pub device_info_id: Option<u64>,
+    pub id: Option<i64>,
+    pub sim_id: Option<i64>,
+    pub device_info_id: Option<i64>,
     pub description: Option<String>,
     #[serde(
         rename = "CreatedAt",
@@ -1991,8 +2114,8 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for SimUseHistory {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TcpHandler {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
-    pub device_info_id: Option<u64>,
+    pub id: Option<i64>,
+    pub device_info_id: Option<i64>,
     pub username: Option<String>,
     pub password: Option<String>,
     pub name: Option<String>,
@@ -2039,9 +2162,9 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for TcpHandler {
 
 pub struct UserBindDeviceInfo {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
-    pub user_id: Option<u64>,
-    pub device_id: Option<u64>,
+    pub id: Option<i64>,
+    pub user_id: Option<i64>,
+    pub device_id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -2080,9 +2203,9 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for UserBindDeviceInfo {
 
 pub struct UserDept {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
-    pub user_id: Option<u64>,
-    pub dept_id: Option<u64>,
+    pub id: Option<i64>,
+    pub user_id: Option<i64>,
+    pub dept_id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -2121,9 +2244,9 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for UserDept {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UserRole {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
-    pub user_id: Option<u64>,
-    pub role_id: Option<u64>,
+    pub id: Option<i64>,
+    pub user_id: Option<i64>,
+    pub role_id: Option<i64>,
     #[serde(
         rename = "CreatedAt",
         skip_serializing_if = "Option::is_none",
@@ -2162,8 +2285,8 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for UserRole {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WebSocketHandler {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
-    pub device_info_id: Option<u64>,
+    pub id: Option<i64>,
+    pub device_info_id: Option<i64>,
     pub name: Option<String>,
     pub username: Option<String>,
     pub password: Option<String>,
