@@ -89,7 +89,7 @@ impl CrudOperations<RepairRecord> for RepairRecordBiz {
             id,
             updates,
         )
-        .await;
+            .await;
 
         return match result {
             Ok(it) => Ok(it),
@@ -120,7 +120,7 @@ impl CrudOperations<RepairRecord> for RepairRecordBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }

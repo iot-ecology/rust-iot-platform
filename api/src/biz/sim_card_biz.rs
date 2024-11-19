@@ -84,7 +84,7 @@ impl CrudOperations<SimCard> for SimCardBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }

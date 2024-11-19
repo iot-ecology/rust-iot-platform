@@ -64,7 +64,7 @@ impl CrudOperations<ClickhouseTransmitBind> for ClickhouseTransmitBindBiz {
             "clickhouse_transmit_binds",
             updates,
         )
-        .await;
+            .await;
 
         result
     }
@@ -120,7 +120,7 @@ impl CrudOperations<ClickhouseTransmitBind> for ClickhouseTransmitBindBiz {
             id,
             updates,
         )
-        .await;
+            .await;
 
         match result {
             Ok(it) => Ok(it),
@@ -151,7 +151,7 @@ impl CrudOperations<ClickhouseTransmitBind> for ClickhouseTransmitBindBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }
@@ -167,7 +167,7 @@ impl CrudOperations<ClickhouseTransmitBind> for ClickhouseTransmitBindBiz {
             "clickhouse_transmit_binds",
             filters,
         )
-        .await;
+            .await;
         result
     }
 
@@ -177,7 +177,7 @@ impl CrudOperations<ClickhouseTransmitBind> for ClickhouseTransmitBindBiz {
             "clickhouse_transmit_binds",
             id,
         )
-        .await;
+            .await;
         result
     }
 }

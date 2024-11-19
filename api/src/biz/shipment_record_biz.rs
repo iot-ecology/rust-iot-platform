@@ -60,7 +60,7 @@ impl CrudOperations<ShipmentRecord> for ShipmentRecordBiz {
             "shipment_records",
             updates,
         )
-        .await;
+            .await;
 
         result
     }
@@ -108,7 +108,7 @@ impl CrudOperations<ShipmentRecord> for ShipmentRecordBiz {
             id,
             updates,
         )
-        .await;
+            .await;
 
         return match result {
             Ok(it) => Ok(it),
@@ -139,7 +139,7 @@ impl CrudOperations<ShipmentRecord> for ShipmentRecordBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }
@@ -161,7 +161,7 @@ impl CrudOperations<ShipmentRecord> for ShipmentRecordBiz {
             "shipment_records",
             id,
         )
-        .await;
+            .await;
         result
     }
 }

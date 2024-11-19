@@ -1,29 +1,29 @@
-use serde_json::json;
 use crate::db::db_model::{CalcParam, CalcRule};
 use anyhow::{Context, Result};
-use r2d2_redis::redis::Commands;
-use common_lib::mongo_utils::MongoDBManager;
-use common_lib::redis_pool_utils::RedisOp;
-use common_lib::servlet_common::{CalcCache, CalcParamCache};
-use common_lib::ut::{calc_bucket_name, calc_collection_name, calc_measurement};
-use rocket::serde::json;
-use sqlx::MySqlPool;
-use cron::Schedule;
 use chrono::Utc;
-use log::{error, info};
-use serde_json::{Map};
-use std::collections::{BTreeMap, HashMap};
-use futures_lite::StreamExt;
-use influxdb2_structmap::value::Value;
-use quick_js::JsValue;
-use rocket::http::Status;
 use common_lib::config::InfluxConfig;
 use common_lib::influxdb_utils::{InfluxDBManager, LocValue};
 use common_lib::models::{AggregationConfig, InfluxQueryConfig};
+use common_lib::mongo_utils::MongoDBManager;
+use common_lib::redis_pool_utils::RedisOp;
+use common_lib::servlet_common::{CalcCache, CalcParamCache};
 use common_lib::time_utils::get_next_time;
+use common_lib::ut::{calc_bucket_name, calc_collection_name, calc_measurement};
+use cron::Schedule;
+use futures_lite::StreamExt;
+use influxdb2_structmap::value::Value;
+use log::{error, info};
 use mongodb::{bson::doc, options::FindOptions};
+use quick_js::JsValue;
+use r2d2_redis::redis::Commands;
+use rocket::http::Status;
 use rocket::response::status::Custom;
+use rocket::serde::json;
 use rocket::serde::json::Json;
+use serde_json::json;
+use serde_json::Map;
+use sqlx::MySqlPool;
+use std::collections::{BTreeMap, HashMap};
 
 pub struct CalcRunBiz {
     pub redis: RedisOp,
@@ -38,14 +38,14 @@ impl CalcRunBiz {
     }
 
     pub async fn QueryRuleExData(&self,
-                                rule_id: u64,
-                                start_time: i64,
-                                end_time: i64,
-                                mongo_config: common_lib::config::MongoConfig,
+                                 rule_id: u64,
+                                 start_time: i64,
+                                 end_time: i64,
+                                 mongo_config: common_lib::config::MongoConfig,
     ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
         // 构建集合名称
         let collection_name = calc_collection_name(&mongo_config.collection.unwrap(), rule_id);
-        
+
         // 构建查询条件
         let filter = doc! {
             "calc_rule_id": rule_id as i64,
@@ -56,13 +56,12 @@ impl CalcRunBiz {
         };
 
 
-
         // 执行查询
         match self.mongo.collection(&collection_name).find(filter).await {
             Ok(cursor) => {
                 let mut results = Vec::new();
                 let mut cursor = cursor;
-                
+
                 while let Ok(Some(doc)) = cursor.try_next().await {
                     results.push(doc);
                 }
@@ -152,7 +151,7 @@ impl CalcRunBiz {
     }
 
     pub async fn InitMongoCollection(&self, d: &CalcRule, collection: String) {
-        let string = calc_collection_name(collection.as_str(), d.id.unwrap() );
+        let string = calc_collection_name(collection.as_str(), d.id.unwrap());
         self.mongo.create_collection(string.as_str()).await.unwrap();
     }
 
@@ -229,7 +228,7 @@ impl CalcRunBiz {
             self.config.clone().port?,
             &self.config.clone().org.unwrap(),
             &self.config.clone().token.unwrap(),
-                                            );
+        );
         let mut m: HashMap<String, LocValue> = HashMap::new();
 
         for cache in calc_cache.param.unwrap().iter() {
@@ -359,18 +358,10 @@ impl CalcRunBiz {
                         );
                     }
                 }
-
-
             };
-
         }
 
         let pa = serde_json::to_string(&m).unwrap();
-
-
-
-
-
 
 
         let fff = {
@@ -391,7 +382,7 @@ impl CalcRunBiz {
             let value = context.call_function("main", [value2]).unwrap();
             context.call_function("main3", [value]).unwrap()
         };
-        return  match fff {
+        return match fff {
             JsValue::String(json_str) => {
 
 

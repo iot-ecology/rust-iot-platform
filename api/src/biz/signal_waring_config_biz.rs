@@ -1,14 +1,11 @@
-use crate::biz::shipment_record_biz::ShipmentRecordBiz;
-use crate::biz::user_biz::UserBiz;
-use crate::db::db_model::{SignalWaringConfig, SimCard, WebSocketHandler};
-use anyhow::{Context, Error, Result};
-use common_lib::redis_pool_utils::RedisOp;
-use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
-use sqlx::MySqlPool;
-use serde_json;
+use crate::db::db_model::SignalWaringConfig;
+use anyhow::{Error, Result};
 use common_lib::config::MongoConfig;
 use common_lib::mongo_utils::MongoDBManager;
-use crate::biz::signal_delay_waring_biz::SignalDelayWaringBiz;
+use common_lib::redis_pool_utils::RedisOp;
+use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
+use serde_json;
+use sqlx::MySqlPool;
 
 pub struct SignalWaringConfigBiz {
     pub redis: RedisOp,
@@ -26,22 +23,22 @@ impl SignalWaringConfigBiz {
     pub async fn set_signal_waring_cache(&self, signal_id: u64, config: &SignalWaringConfig) -> Result<(), Error> {
         let config_json = serde_json::to_string(config)
             .map_err(|e| Error::msg(format!("Failed to serialize config: {}", e)))?;
-        
+
         let key = format!("waring:{}", signal_id);
         self.redis.push_list(&key, config_json.as_str())
             .map_err(|e| Error::msg(format!("Failed to push to Redis list: {}", e)))?;
-        
+
         Ok(())
     }
 
     pub async fn remove_signal_waring_cache(&self, signal_id: u64, config: &SignalWaringConfig) -> Result<(), Error> {
         let config_json = serde_json::to_string(config)
             .map_err(|e| Error::msg(format!("Failed to serialize config: {}", e)))?;
-        
+
         let key = format!("waring:{}", signal_id);
         self.redis.remove_from_list(&key, 0, config_json.as_str())
             .map_err(|e| Error::msg(format!("Failed to remove from Redis list: {}", e)))?;
-        
+
         Ok(())
     }
 
@@ -52,7 +49,7 @@ impl SignalWaringConfigBiz {
 
         let collection_name = common_lib::ut::calc_collection_name(
             waring_collection,
-            warning_config.id.ok_or_else(|| Error::msg("Warning config id not found"))?
+            warning_config.id.ok_or_else(|| Error::msg("Warning config id not found"))?,
         );
 
         if let Err(e) = self.mongo.create_collection(&collection_name).await {
@@ -100,7 +97,6 @@ impl CrudOperations<SignalWaringConfig> for SignalWaringConfigBiz {
     }
 
     async fn update(&self, id: u64, item: SignalWaringConfig) -> Result<SignalWaringConfig, Error> {
-
         let mut updates = vec![];
 
         if let Some(protocol) = item.protocol {
@@ -161,7 +157,7 @@ impl CrudOperations<SignalWaringConfig> for SignalWaringConfigBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
         return result;
     }
 }

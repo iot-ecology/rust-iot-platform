@@ -48,7 +48,7 @@ impl CrudOperations<ProductionPlan> for ProductionPlanBiz {
             "production_plans",
             updates,
         )
-        .await;
+            .await;
 
         result
     }
@@ -84,7 +84,7 @@ impl CrudOperations<ProductionPlan> for ProductionPlanBiz {
             id,
             updates,
         )
-        .await;
+            .await;
 
         return match result {
             Ok(it) => Ok(it),
@@ -115,7 +115,7 @@ impl CrudOperations<ProductionPlan> for ProductionPlanBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }
@@ -137,7 +137,7 @@ impl CrudOperations<ProductionPlan> for ProductionPlanBiz {
             "production_plans",
             id,
         )
-        .await;
+            .await;
         result
     }
 }

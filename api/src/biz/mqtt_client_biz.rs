@@ -104,7 +104,7 @@ impl CrudOperations<MqttClient> for MqttClientBiz {
             id,
             updates,
         )
-        .await;
+            .await;
 
         return match result {
             Ok(it) => Ok(it),
@@ -135,7 +135,7 @@ impl CrudOperations<MqttClient> for MqttClientBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }

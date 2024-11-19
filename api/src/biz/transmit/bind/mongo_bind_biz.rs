@@ -105,7 +105,7 @@ impl CrudOperations<MongoTransmitBind> for MongoTransmitBindBiz {
             id,
             updates,
         )
-        .await;
+            .await;
 
         match result {
             Ok(it) => Ok(it),
@@ -136,7 +136,7 @@ impl CrudOperations<MongoTransmitBind> for MongoTransmitBindBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }

@@ -1,8 +1,8 @@
-use log::error;
 use crate::biz::device_group_biz::DeviceGroupBiz;
 use crate::db::db_model::DeviceGroup;
 use common_lib::config::Config;
 use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
+use log::error;
 use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;

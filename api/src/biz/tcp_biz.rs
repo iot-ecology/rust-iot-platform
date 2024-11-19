@@ -146,7 +146,7 @@ impl CrudOperations<TcpHandler> for TcpHandlerBiz {
             id,
             updates,
         )
-        .await;
+            .await;
         return match result {
             Ok(it) => Ok(it),
             Err(err) => Err(err),
@@ -176,7 +176,7 @@ impl CrudOperations<TcpHandler> for TcpHandlerBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }

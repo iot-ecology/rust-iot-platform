@@ -82,7 +82,7 @@ impl CrudOperations<CassandraTransmit> for CassandraTransmitBiz {
             id,
             updates,
         )
-        .await;
+            .await;
 
         match result {
             Ok(it) => Ok(it),
@@ -113,7 +113,7 @@ impl CrudOperations<CassandraTransmit> for CassandraTransmitBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }

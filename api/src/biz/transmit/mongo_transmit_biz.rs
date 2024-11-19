@@ -108,7 +108,7 @@ impl CrudOperations<MongoTransmit> for MongoTransmitBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }

@@ -1,6 +1,7 @@
-use log::error;
 use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
+use log::error;
 
+use crate::biz::signal_waring_config_biz::SignalWaringConfigBiz;
 use crate::db::db_model::{Signal, SignalDelayWaring, SignalWaringConfig};
 use common_lib::config::Config;
 use rocket::http::Status;
@@ -8,7 +9,6 @@ use rocket::response::status::Custom;
 use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
-use crate::biz::signal_waring_config_biz::SignalWaringConfigBiz;
 
 #[post("/signal-waring-config/create", format = "json", data = "<data>")]
 pub async fn create_signal_waring_config(
@@ -31,7 +31,7 @@ pub async fn create_signal_waring_config(
             // Set cache
             if let Err(e) = signal_waring_config_api.set_signal_waring_cache(
                 config.signal_id.unwrap(),
-                &config
+                &config,
             ).await {
                 error!("Failed to set signal warning cache: {}", e);
                 let error_json = json!({
@@ -101,7 +101,7 @@ pub async fn update_signal_waring_config(
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
     let req = data.into_inner();
-    
+
     // Get the old config
     let old_config = match signal_waring_config_api.by_id(req.id.unwrap_or(0)).await {
         Ok(config) => config,
@@ -117,7 +117,7 @@ pub async fn update_signal_waring_config(
     // Remove old config from cache
     if let Err(e) = signal_waring_config_api.remove_signal_waring_cache(
         old_config.signal_id.unwrap(),
-        &old_config
+        &old_config,
     ).await {
         error!("Failed to remove old config from cache: {}", e);
         let error_json = json!({
@@ -139,7 +139,7 @@ pub async fn update_signal_waring_config(
             // Set new config in cache
             if let Err(e) = signal_waring_config_api.set_signal_waring_cache(
                 updated_config.signal_id.unwrap(),
-                &updated_config
+                &updated_config,
             ).await {
                 error!("Failed to set new config in cache: {}", e);
                 let error_json = json!({
@@ -167,7 +167,8 @@ pub async fn update_signal_waring_config(
     }
 }
 
-#[get("/signal-waring-config/page?<page>&<page_size>&<signal_id>&<device_uid>&<identification_code>&<protocol>")]
+#[get("/signal-waring-config/page?<page>&<page_size>&<signal_id>&<device_uid>&<identification_code>&<protocol>"
+)]
 pub async fn page_signal_waring_config(
     page: Option<u64>,
     page_size: Option<u64>,
@@ -208,7 +209,7 @@ pub async fn page_signal_waring_config(
     let protocol = protocol.unwrap_or_else(|| "mqtt".to_string());
 
     let mut filters = Vec::new();
-    
+
     if let Some(sid) = signal_id {
         filters.push(FilterInfo {
             field: "signal_id".to_string(),

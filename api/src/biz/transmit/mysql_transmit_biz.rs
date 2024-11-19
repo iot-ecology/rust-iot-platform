@@ -116,7 +116,7 @@ impl CrudOperations<MysqlTransmit> for MysqlTransmitBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }

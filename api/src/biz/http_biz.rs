@@ -135,7 +135,7 @@ impl CrudOperations<HttpHandler> for HttpHandlerBiz {
             id,
             updates,
         )
-        .await;
+            .await;
 
         return match result {
             Ok(it) => Ok(it),
@@ -166,7 +166,7 @@ impl CrudOperations<HttpHandler> for HttpHandlerBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }

@@ -50,7 +50,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for User {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug,Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CalcParam {
     pub protocol: Option<String>,
     pub identification_code: Option<String>,
@@ -681,7 +681,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for DeviceGroup {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug,Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DeviceInfo {
     pub product_id: Option<u64>,
     pub sn: Option<String>,
@@ -1788,7 +1788,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for SignalDelayWaring {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug,Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SignalWaringConfig {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
     pub id: Option<u64>,

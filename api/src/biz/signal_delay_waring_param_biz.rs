@@ -1,6 +1,6 @@
 use crate::biz::signal_delay_waring_biz::SignalDelayWaringBiz;
 use crate::biz::user_biz::UserBiz;
-use crate::db::db_model::{SignalDelayWaringParam, SimCard, WebSocketHandler, Signal};
+use crate::db::db_model::{Signal, SignalDelayWaringParam, SimCard, WebSocketHandler};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
@@ -20,10 +20,10 @@ impl SignalDelayWaringParamBiz {
         let signal = sqlx::query_as::<_, Signal>(
             "SELECT * FROM signals WHERE id = ? AND deleted_at IS NULL"
         )
-        .bind(signal_id)
-        .fetch_one(&self.mysql)
-        .await
-        .context("Failed to get signal")?;
+            .bind(signal_id)
+            .fetch_one(&self.mysql)
+            .await
+            .context("Failed to get signal")?;
 
         Ok(signal)
     }
@@ -41,8 +41,6 @@ impl SignalDelayWaringParamBiz {
             .context("Failed to remove from Redis")?;
         Ok(())
     }
-
-    
 }
 
 #[async_trait::async_trait]
@@ -88,7 +86,7 @@ impl CrudOperations<SignalDelayWaringParam> for SignalDelayWaringParamBiz {
             "signal_delay_waring_params",
             updates,
         )
-        .await;
+            .await;
 
         result
     }
@@ -140,7 +138,7 @@ impl CrudOperations<SignalDelayWaringParam> for SignalDelayWaringParamBiz {
             id,
             updates,
         )
-        .await;
+            .await;
 
         return match result {
             Ok(it) => Ok(it),
@@ -171,7 +169,7 @@ impl CrudOperations<SignalDelayWaringParam> for SignalDelayWaringParamBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }
@@ -186,7 +184,7 @@ impl CrudOperations<SignalDelayWaringParam> for SignalDelayWaringParamBiz {
             "signal_delay_waring_params",
             filters,
         )
-        .await;
+            .await;
         return result;
     }
 
@@ -196,7 +194,7 @@ impl CrudOperations<SignalDelayWaringParam> for SignalDelayWaringParamBiz {
             "signal_delay_waring_params",
             id,
         )
-        .await;
+            .await;
         result
     }
 }

@@ -81,7 +81,7 @@ impl CrudOperations<ClickhouseTransmit> for ClickhouseTransmitBiz {
             id,
             updates,
         )
-        .await;
+            .await;
 
         match result {
             Ok(it) => Ok(it),
@@ -112,7 +112,7 @@ impl CrudOperations<ClickhouseTransmit> for ClickhouseTransmitBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }

@@ -73,7 +73,7 @@ impl CrudOperations<MessageList> for MessageListBiz {
             id,
             updates,
         )
-        .await;
+            .await;
 
         return match result {
             Ok(it) => Ok(it),
@@ -104,7 +104,7 @@ impl CrudOperations<MessageList> for MessageListBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }

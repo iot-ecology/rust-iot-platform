@@ -45,3 +45,11 @@ pub async fn index(
     info!("{:?}", config);
     "Counter updated"
 }
+#[get("/beat")]
+pub async fn beat(
+    redis_op: &rocket::State<RedisOp>,
+    mysql_op: &rocket::State<MySqlPool>,
+    config: &State<Config>,
+) -> &'static str {
+    "beat"
+}

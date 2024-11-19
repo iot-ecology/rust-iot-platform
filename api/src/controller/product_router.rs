@@ -1,5 +1,5 @@
-use log::error;
 use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
+use log::error;
 
 use crate::biz::product_biz::ProductBiz;
 use crate::db::db_model::{MqttClient, Product};

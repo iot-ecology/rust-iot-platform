@@ -98,7 +98,7 @@ impl CrudOperations<MysqlTransmitBind> for MysqlTransmitBindBiz {
             id,
             updates,
         )
-        .await;
+            .await;
 
         match result {
             Ok(it) => Ok(it),
@@ -129,7 +129,7 @@ impl CrudOperations<MysqlTransmitBind> for MysqlTransmitBindBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }

@@ -118,7 +118,7 @@ pub async fn update_signal_delay_waring_param(
     new_param.signal_id = data.signal_id;
 
     // Update in database and Redis
-    match signal_delay_waring_param_api.update(new_param.id.unwrap(),new_param).await {
+    match signal_delay_waring_param_api.update(new_param.id.unwrap(), new_param).await {
         Ok(updated) => {
             // Push updated value to Redis
             if let Err(e) = signal_delay_waring_param_api.push_to_redis(&updated).await {
@@ -170,7 +170,7 @@ pub async fn page_signal_delay_waring_param(
         value: name.unwrap_or_else(String::new),
         operation: FilterOperation::AllLike,
         value2: None,
-    },FilterInfo {
+    }, FilterInfo {
         field: "signal_delay_waring_id".to_string(),
         value: signal_delay_waring_id.unwrap_or_default().to_string(),
         operation: FilterOperation::AllLike,

@@ -121,7 +121,7 @@ impl CrudOperations<WebSocketHandler> for WebSocketHandlerBiz {
             "websocket_handlers",
             updates,
         )
-        .await;
+            .await;
         result
     }
 
@@ -172,7 +172,7 @@ impl CrudOperations<WebSocketHandler> for WebSocketHandlerBiz {
             id,
             updates,
         )
-        .await;
+            .await;
         match result {
             Ok(it) => Ok(it),
             Err(err) => Err(err),
@@ -200,7 +200,7 @@ impl CrudOperations<WebSocketHandler> for WebSocketHandlerBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
         result
     }
 
@@ -214,7 +214,7 @@ impl CrudOperations<WebSocketHandler> for WebSocketHandlerBiz {
             "websocket_handlers",
             filters,
         )
-        .await;
+            .await;
         result
     }
 
@@ -224,7 +224,7 @@ impl CrudOperations<WebSocketHandler> for WebSocketHandlerBiz {
             "websocket_handlers",
             id,
         )
-        .await;
+            .await;
         result
     }
 }

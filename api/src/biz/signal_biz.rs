@@ -18,7 +18,7 @@ impl SignalBiz {
 
     pub async fn remove_old_cache(&self, threshold: u64, signal_id: u64, device_uid: u64, code: &str) -> Result<(), Error> {
         let redis_key = format!("signal_delay_warning:{}:{}:{}", device_uid, code, signal_id);
-        
+
         // Get current count of elements
         let count = self.redis.get_zset_length(&redis_key)
             .map_err(|e| anyhow::anyhow!("Failed to get sorted set size: {}", e))?;

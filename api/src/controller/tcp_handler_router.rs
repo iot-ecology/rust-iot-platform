@@ -46,7 +46,7 @@ pub async fn create_tcp_handler(
                     .unwrap()
                     .as_str(),
                 "tcp",
-                u.device_info_id.unwrap() ,
+                u.device_info_id.unwrap(),
             );
             let db_manager = InfluxDBManager::new(
                 &config.influx_config.clone().unwrap().host.unwrap(),
@@ -102,7 +102,7 @@ pub async fn update_tcp_handler(
                             .unwrap()
                             .as_str(),
                         "tcp",
-                        u2.device_info_id.unwrap() ,
+                        u2.device_info_id.unwrap(),
                     );
 
                     let db_manager = InfluxDBManager::new(

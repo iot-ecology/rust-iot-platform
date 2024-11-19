@@ -13,8 +13,6 @@ pub struct DeviceInfoBiz {
     pub mysql: MySqlPool,
 }
 impl DeviceInfoBiz {
-
-
     pub async fn find_by_sn(&self, sn: Option<String>) -> Result<Option<DeviceInfo>, Error> {
         if sn.is_none() {
             return Ok(None);
@@ -74,13 +72,13 @@ impl DeviceInfoBiz {
     }
 
 
-    pub async fn bind_mqtt(){}
+    pub async fn bind_mqtt() {}
 
-    pub async fn query_mqtt(&self,device_info_id:u64){}
-    pub async fn query_tcp(&self,device_info_id:u64){}
-    pub async fn query_http(&self,device_info_id:u64){}
-    pub async fn query_ws(&self,device_info_id:u64){}
-    pub async fn query_coap(&self,device_info_id:u64){}
+    pub async fn query_mqtt(&self, device_info_id: u64) {}
+    pub async fn query_tcp(&self, device_info_id: u64) {}
+    pub async fn query_http(&self, device_info_id: u64) {}
+    pub async fn query_ws(&self, device_info_id: u64) {}
+    pub async fn query_coap(&self, device_info_id: u64) {}
 }
 
 #[async_trait::async_trait]
@@ -195,7 +193,7 @@ impl CrudOperations<DeviceInfo> for DeviceInfoBiz {
             id,
             updates,
         )
-        .await;
+            .await;
 
         match result {
             Ok(it) => Ok(it),
@@ -225,7 +223,7 @@ impl CrudOperations<DeviceInfo> for DeviceInfoBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }

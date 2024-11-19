@@ -1,6 +1,6 @@
 use crate::biz::dept_biz::DeptBiz;
 use crate::biz::user_biz::UserBiz;
-use crate::db::db_model::{DeviceGroup,  Signal};
+use crate::db::db_model::{DeviceGroup, Signal};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils::{CrudOperations, FilterInfo, PaginationParams, PaginationResult};
@@ -12,7 +12,6 @@ pub struct DeviceGroupBiz {
     pub mysql: MySqlPool,
 }
 impl DeviceGroupBiz {
-
     pub async fn find_by_name(&self, username: Option<String>) -> Result<Option<DeviceGroup>, Error> {
         if username.is_none() {
             return Ok(None);
@@ -76,7 +75,7 @@ impl CrudOperations<DeviceGroup> for DeviceGroupBiz {
             id,
             updates,
         )
-        .await;
+            .await;
 
         match result {
             Ok(it) => Ok(it),
@@ -106,7 +105,7 @@ impl CrudOperations<DeviceGroup> for DeviceGroupBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }

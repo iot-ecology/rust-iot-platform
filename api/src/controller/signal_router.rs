@@ -81,9 +81,9 @@ pub async fn update_signal(
 
 
                     let _ = signal_api.remove_old_cache(u2.cache_size.unwrap(),
-                                                u2.id.unwrap(),
-                                                u2.device_uid.unwrap(),
-                                                u2.identification_code.clone().unwrap().as_str(),
+                                                        u2.id.unwrap(),
+                                                        u2.device_uid.unwrap(),
+                                                        u2.identification_code.clone().unwrap().as_str(),
                     ).await;
 
                     if let Err(e) = signal_api.set_signal_cache(&u2).await {
@@ -252,7 +252,7 @@ pub async fn init_cache(
                     log::error!("Failed to set signal cache: {}", e);
                 }
             }
-            
+
             let success_json = json!({
                 "code": 20000,
                 "message": "缓存初始化成功",

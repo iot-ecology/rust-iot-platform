@@ -50,7 +50,7 @@ use crate::controller::user_router::{
 };
 use common_lib::config::{read_config_tb, InfluxConfig, MongoConfig, MySQLConfig, RedisConfig};
 use common_lib::mysql_utils::gen_mysql_url;
-use common_lib::rabbit_utils::{RabbitMQ, RabbitMQFairing};
+use common_lib::rabbit_utils::RabbitMQFairing;
 use common_lib::redis_pool_utils::{create_redis_pool_from_config, RedisOp};
 use rocket::fairing::{Info, Kind};
 use rocket::request::FromRequest;
@@ -88,6 +88,28 @@ mod controller;
 mod db;
 mod ut;
 
+use rocket::http::Header;
+use rocket::{Request, Response};
+
+pub struct CORS;
+
+#[rocket::async_trait]
+impl rocket::fairing::Fairing for CORS {
+    fn info(&self) -> Info {
+        Info {
+            name: "Add CORS headers to responses",
+            kind: Kind::Response,
+        }
+    }
+
+    async fn on_response<'r>(&self, _request: &'r Request<'_>, response: &mut Response<'r>) {
+        response.set_header(Header::new("Access-Control-Allow-Origin", "*"));
+        response.set_header(Header::new("Access-Control-Allow-Methods", "POST, GET, PATCH, OPTIONS, DELETE"));
+        response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
+        response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
+    }
+}
+
 #[launch]
 fn rocket() -> _ {
     common_lib::init_logger(); // 初始化日志记录
@@ -96,6 +118,7 @@ fn rocket() -> _ {
 
     // 构建并启动 Rocket 应用
     rocket::build()
+        .attach(CORS)  // 添加 CORS 支持
         .attach(RabbitMQFairing {
             config: config1.mq_config.clone(),
         })
@@ -116,6 +139,7 @@ fn rocket() -> _ {
             routes![
                 // Existing routes
                 crate::controller::demo_api::index,
+                crate::controller::demo_api::beat,
                 user_index,
                 create_user,
                 update_user,
@@ -384,16 +408,15 @@ impl rocket::fairing::Fairing for MySqlPoolFairing {
         let signal_delay_waring_param_biz =
             SignalDelayWaringParamBiz::new(redis_op.clone(), pool.clone());
         let signal_delay_waring_biz = SignalDelayWaringBiz::new(redis_op.clone(), pool.clone(),
-                                                            mongo_db_manager,
-                                                            self.mongo_config.clone()
+                                                                mongo_db_manager,
+                                                                self.mongo_config.clone(),
         );
         let calc_run_biz = CalcRunBiz::new(redis_op.clone(), pool.clone(), mongo_db_manager, self.influxd_config.clone());
 
 
-
         let signal_biz = SignalBiz::new(redis_op.clone(), pool.clone());
-        let signal_waring_config_biz = SignalWaringConfigBiz::new(redis_op.clone(), pool.clone(),mongo_db_manager,
-                                                                  self.mongo_config.clone()
+        let signal_waring_config_biz = SignalWaringConfigBiz::new(redis_op.clone(), pool.clone(), mongo_db_manager,
+                                                                  self.mongo_config.clone(),
         );
         let shipment_record_biz = ShipmentRecordBiz::new(redis_op.clone(), pool.clone());
         let role_biz = RoleBiz::new(redis_op.clone(), pool.clone());
@@ -468,16 +491,15 @@ impl rocket::fairing::Fairing for MySqlPoolFairing {
     }
 }
 pub struct AuthToken(String);
+use crate::biz::calc_run_biz::CalcRunBiz;
+use crate::biz::signal_waring_config_biz::SignalWaringConfigBiz;
+use common_lib::mongo_utils::MongoDBManager;
 use rocket::serde::json::Json;
 use rocket::{
     self,
     http::Status,
-    post,
-    request::{Outcome, Request},
+    request::{Outcome, },
 };
-use common_lib::mongo_utils::MongoDBManager;
-use crate::biz::calc_run_biz::CalcRunBiz;
-use crate::biz::signal_waring_config_biz::SignalWaringConfigBiz;
 
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for AuthToken {
@@ -488,8 +510,8 @@ impl<'r> FromRequest<'r> for AuthToken {
             "/login".to_string(),
             // "/userinfo".to_string(),
         ]
-        .into_iter()
-        .collect();
+            .into_iter()
+            .collect();
 
         let path = request.uri().path();
 

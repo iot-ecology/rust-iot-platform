@@ -1,5 +1,5 @@
-use log::error;
 use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
+use log::error;
 
 use crate::biz::repair_record_biz::RepairRecordBiz;
 use crate::db::db_model::{ProductionPlan, RepairRecord};
@@ -16,7 +16,6 @@ pub async fn create_repair_record(
     repair_record_api: &rocket::State<RepairRecordBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
-
     match repair_record_api.create(data.into_inner()).await {
         Ok(u) => {
             let success_json = json!({

@@ -4,7 +4,7 @@ use log::error;
 use crate::biz::calc_run_biz::CalcRunBiz;
 use crate::db::db_model::CalcRule;
 use common_lib::config::Config;
-use common_lib::servlet_common::{ QueryEvent};
+use common_lib::servlet_common::QueryEvent;
 use common_lib::sql_utils::{CrudOperations, FilterInfo, FilterOperation, PaginationParams};
 use rocket::http::Status;
 use rocket::response::status::Custom;

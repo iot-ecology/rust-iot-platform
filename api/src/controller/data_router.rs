@@ -1,15 +1,15 @@
 use crate::biz::mqtt_client_biz::MqttClientBiz;
 use common_lib::config::Config;
+use common_lib::influxdb_utils::InfluxDBManager;
+use common_lib::models::InfluxQueryConfig;
+use common_lib::ut::calc_bucket_name;
+use influxdb2_structmap::GenericMap;
 use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde_json::json;
-use common_lib::influxdb_utils::InfluxDBManager;
-use common_lib::models::InfluxQueryConfig;
-use common_lib::ut::calc_bucket_name;
 use std::collections::HashMap;
-use influxdb2_structmap::GenericMap;
 
 #[post("/query/influxdb", format = "json", data = "<data>")]
 pub async fn query_influxdb(
@@ -21,7 +21,7 @@ pub async fn query_influxdb(
         Some(cfg) => cfg,
         None => return rocket::response::status::Custom(
             Status::InternalServerError,
-            Json(json!({ "error": "Influx configuration is missing" }))
+            Json(json!({ "error": "Influx configuration is missing" })),
         )
     };
 
@@ -29,7 +29,7 @@ pub async fn query_influxdb(
         Some(b) => b.clone(),
         None => return rocket::response::status::Custom(
             Status::InternalServerError,
-            Json(json!({ "error": "Bucket configuration is missing" }))
+            Json(json!({ "error": "Bucket configuration is missing" })),
         )
     };
 
@@ -37,7 +37,7 @@ pub async fn query_influxdb(
         Some(p) => p.clone(),
         None => return rocket::response::status::Custom(
             Status::BadRequest,
-            Json(json!({ "error": "Protocol is required" }))
+            Json(json!({ "error": "Protocol is required" })),
         )
     };
 
@@ -45,7 +45,7 @@ pub async fn query_influxdb(
         Some(uid) => uid,
         None => return rocket::response::status::Custom(
             Status::BadRequest,
-            Json(json!({ "error": "Device UID is required" }))
+            Json(json!({ "error": "Device UID is required" })),
         )
     };
 
@@ -53,7 +53,6 @@ pub async fn query_influxdb(
     let mut data_inner = data.into_inner();
     data_inner.bucket = calc_bucket_name(bucket.as_str(), protocol.as_str(), device_uid);
     let query_string = data_inner.generate_flux_query();
-
 
 
     let manager = InfluxDBManager::new(
@@ -68,7 +67,7 @@ pub async fn query_influxdb(
         Ok(result) => result,
         Err(e) => return rocket::response::status::Custom(
             Status::InternalServerError,
-            Json(json!({ "error": format!("Query failed: {}", e) }))
+            Json(json!({ "error": format!("Query failed: {}", e) })),
         )
     };
 
@@ -83,7 +82,7 @@ pub async fn query_influxdb(
 
     rocket::response::status::Custom(
         Status::Ok,
-        Json(json!({ "data": grouped_data }))
+        Json(json!({ "data": grouped_data })),
     )
 }
 
@@ -144,7 +143,7 @@ pub async fn query_influxdb_string(
             Json(json!({ 
                 "status": "error",
                 "message": "Influx configuration is missing" 
-            }))
+            })),
         )
     };
 
@@ -155,7 +154,7 @@ pub async fn query_influxdb_string(
             Json(json!({ 
                 "status": "error",
                 "message": "Bucket configuration is missing" 
-            }))
+            })),
         )
     };
 
@@ -166,7 +165,7 @@ pub async fn query_influxdb_string(
             Json(json!({ 
                 "status": "error",
                 "message": "Protocol is required" 
-            }))
+            })),
         )
     };
 
@@ -177,7 +176,7 @@ pub async fn query_influxdb_string(
             Json(json!({ 
                 "status": "error",
                 "message": "Device UID is required" 
-            }))
+            })),
         )
     };
 
@@ -189,7 +188,6 @@ pub async fn query_influxdb_string(
     let manager = InfluxDBManager::new(
         &influx_config.clone().host.unwrap(),
         influx_config.clone().port.unwrap(),
-
         &influx_config.clone().org.unwrap(),
         &influx_config.clone().token.unwrap(),
     );
@@ -202,7 +200,7 @@ pub async fn query_influxdb_string(
             Json(json!({ 
                 "status": "error",
                 "message": format!("Query failed: {}", e) 
-            }))
+            })),
         )
     };
 
@@ -223,6 +221,6 @@ pub async fn query_influxdb_string(
         Json(json!({
             "status": "success",
             "data": grouped_data
-        }))
+        })),
     )
 }

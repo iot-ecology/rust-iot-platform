@@ -42,7 +42,7 @@ pub async fn login(
             user.username.clone().unwrap(),
             vec![1, 2, 3],
         )
-        .map_err(|_| Status::InternalServerError)?;
+            .map_err(|_| Status::InternalServerError)?;
         Ok(Json(LoginResponse {
             token,
             uid: user.id.unwrap(),

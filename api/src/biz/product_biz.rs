@@ -40,7 +40,6 @@ impl ProductBiz {
             Err(ee) => Err(ee),
         };
     }
-
 }
 
 #[async_trait::async_trait]
@@ -182,7 +181,7 @@ impl CrudOperations<Product> for ProductBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }

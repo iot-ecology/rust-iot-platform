@@ -64,7 +64,7 @@ impl CrudOperations<InfluxDbTransmitBind> for InfluxDbTransmitBindBiz {
             "influxdb_transmit_binds",
             updates,
         )
-        .await;
+            .await;
 
         result
     }
@@ -124,7 +124,7 @@ impl CrudOperations<InfluxDbTransmitBind> for InfluxDbTransmitBindBiz {
             id,
             updates,
         )
-        .await;
+            .await;
 
         match result {
             Ok(it) => Ok(it),
@@ -155,7 +155,7 @@ impl CrudOperations<InfluxDbTransmitBind> for InfluxDbTransmitBindBiz {
             filters,
             pagination,
         )
-        .await;
+            .await;
 
         result
     }
@@ -171,7 +171,7 @@ impl CrudOperations<InfluxDbTransmitBind> for InfluxDbTransmitBindBiz {
             "influxdb_transmit_binds",
             filters,
         )
-        .await;
+            .await;
         result
     }
 
@@ -181,7 +181,7 @@ impl CrudOperations<InfluxDbTransmitBind> for InfluxDbTransmitBindBiz {
             "influxdb_transmit_binds",
             id,
         )
-        .await;
+            .await;
         result
     }
 }
