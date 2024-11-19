@@ -23,3 +23,12 @@ pub struct CalcParamCache {
     #[serde(rename = "signal_id")]
     pub signal_id: u64, // 信号表的外键ID
 }
+#[derive(Debug, Serialize, Deserialize)]
+pub struct QueryEvent {
+    #[serde(rename = "start_time")]
+    pub start_time: i64,
+    #[serde(rename = "end_time")]
+    pub end_time: i64,
+    #[serde(rename = "ID")]
+    pub id: u64,
+}

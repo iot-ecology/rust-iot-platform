@@ -3,7 +3,7 @@ pub fn calc_bucket_name(prefix: &str, protocol: &str, id: u64) -> String {
 }
 
 
-pub fn calc_collection_name(prefix: &str, id: i32) -> String {
+pub fn calc_collection_name(prefix: &str, id: u64) -> String {
     let string = format!("{}_{}", prefix, id % 100);
     return string;
 }

@@ -12,6 +12,31 @@ pub struct DashboardBiz {
     pub mysql: MySqlPool,
 }
 impl DashboardBiz {
+    pub async fn find_by_name(&self, username: Option<String>) -> Result<Option<Dashboard>, Error> {
+        if username.is_none() {
+            return Ok(None);
+        }
+
+        let sql = "select * from dashboards where name = ?";
+
+        let record = sqlx::query_as::<_, Dashboard>(sql)
+            .bind(username.clone().unwrap())
+            .fetch_optional(&self.mysql)
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to fetch updated record from table '{}' with username {:?}",
+                    "users",
+                    username.clone()
+                )
+            });
+
+        return match record {
+            Ok(u) => Ok(u),
+            Err(ee) => Err(ee),
+        };
+    }
+
     pub fn new(redis: RedisOp, mysql: MySqlPool) -> Self {
         DashboardBiz { redis, mysql }
     }

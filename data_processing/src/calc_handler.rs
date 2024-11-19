@@ -243,7 +243,7 @@ pub async fn calc_handler(
 
                                             let string = calc_collection_name(
                                                 calc_collection.as_str(),
-                                                ccc.id as i32,
+                                                ccc.id ,
                                             );
                                             let collection =
                                                 mongo.db.collection::<Document>(string.as_str());
