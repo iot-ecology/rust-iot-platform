@@ -392,6 +392,9 @@ impl rocket::fairing::Fairing for MySqlPoolFairing {
 
 
         let signal_biz = SignalBiz::new(redis_op.clone(), pool.clone());
+        let signal_waring_config_biz = SignalWaringConfigBiz::new(redis_op.clone(), pool.clone(),mongo_db_manager,
+                                                                  self.mongo_config.clone()
+        );
         let shipment_record_biz = ShipmentRecordBiz::new(redis_op.clone(), pool.clone());
         let role_biz = RoleBiz::new(redis_op.clone(), pool.clone());
         let repair_record_biz = RepairRecordBiz::new(redis_op.clone(), pool.clone());
@@ -434,6 +437,7 @@ impl rocket::fairing::Fairing for MySqlPoolFairing {
             .manage(signal_delay_waring_param_biz)
             .manage(signal_delay_waring_biz)
             .manage(signal_biz)
+            .manage(signal_waring_config_biz)
             .manage(shipment_record_biz)
             .manage(role_biz)
             .manage(repair_record_biz)
@@ -473,6 +477,7 @@ use rocket::{
 };
 use common_lib::mongo_utils::MongoDBManager;
 use crate::biz::calc_run_biz::CalcRunBiz;
+use crate::biz::signal_waring_config_biz::SignalWaringConfigBiz;
 
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for AuthToken {

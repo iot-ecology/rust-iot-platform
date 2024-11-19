@@ -1788,7 +1788,7 @@ impl FromRow<'_, sqlx::mysql::MySqlRow> for SignalDelayWaring {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug,Clone)]
 pub struct SignalWaringConfig {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
     pub id: Option<u64>,

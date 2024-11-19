@@ -29,3 +29,4 @@ pub mod tcp_biz;
 pub mod transmit;
 pub mod user_biz;
 pub mod ws_biz;
+pub mod signal_waring_config_biz;
