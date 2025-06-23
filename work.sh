@@ -1,4 +1,7 @@
-/*
+#!/bin/bash
+
+
+header='/*
 Copyright [2025] [Zen HuiFer]
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +16,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+'
 
-pub fn calc_bucket_name(prefix: &str, protocol: &str, id: i64) -> String {
-    format!("{}_{}_{}", prefix, protocol, id % 100)
-}
-
-
-pub fn calc_collection_name(prefix: &str, id: i64) -> String {
-    let string = format!("{}_{}", prefix, id % 100);
-    return string;
-}
-pub fn calc_measurement(device_uid: &str, identification_code: &str, protocol: &str) -> String {
-    format!("{}_{}_{}", protocol, device_uid, identification_code)
-}
+# 遍历所有 .go 文件
+find . -type f -name "*.rs" | while read -r file; do
+    # 判断文件是否已有版权头（检查前几行是否包含关键词 Copyright）
+    if head -n 10 "$file" | grep -q "Copyright"; then
+        echo "Skipped (already has header): $file"
+    else
+        echo "Adding header to $file"
+        # 创建临时文件，先写header，再写原文件内容
+        tmpfile=$(mktemp)
+        echo "$header" > "$tmpfile"
+        cat "$file" >> "$tmpfile"
+        mv "$tmpfile" "$file"
+    fi
+done
