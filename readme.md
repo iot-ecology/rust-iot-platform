@@ -42,3 +42,14 @@ We welcome PRs to improve the project. Any suggestions or issues can be raised i
 
 [Apache 2.0 License](LICENSE)
 
+
+
+## Security configuration
+
+The API requires a cryptographically random `JWT_SECRET` environment variable for JWT signing and verification. Configure a secret of at least 32 bytes before starting the API; do not commit the value to source control.
+
+Example:
+
+```sh
+export JWT_SECRET="replace-with-a-random-secret-at-least-32-bytes-long"
+```
