@@ -24,6 +24,7 @@ pub struct User {
     #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
     pub username: Option<String>,
+    #[serde(skip_serializing)]
     pub password: Option<String>,
     pub email: Option<String>,
     pub status: Option<String>,
@@ -2369,4 +2370,27 @@ where
 {
     let dt: Option<DateTime<Utc>> = Option::deserialize(deserializer)?;
     Ok(dt.map(|d| d.naive_utc()))
+}
+
+
+#[cfg(test)]
+mod security_tests {
+    use super::User;
+
+    #[test]
+    fn password_is_not_serialized() {
+        let user = User {
+            id: Some(1),
+            username: Some("alice".to_string()),
+            password: Some("$argon2id$v=19$redacted".to_string()),
+            email: Some("alice@example.com".to_string()),
+            status: Some("active".to_string()),
+            created_at: None,
+            updated_at: None,
+            deleted_at: None,
+        };
+
+        let json = serde_json::to_value(user).expect("user should serialize");
+        assert!(json.get("password").is_none());
+    }
 }

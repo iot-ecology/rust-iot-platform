@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 use crate::db::db_model::User;
+use argon2::{password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString}, Argon2};
 use anyhow::{Context, Error, Result};
 use common_lib::redis_pool_utils::RedisOp;
 use common_lib::sql_utils::{
@@ -44,21 +45,73 @@ impl UserBiz {
     }
 
     pub async fn find_user_with_pwd(&self, username: String, password: String) -> Option<User> {
-        let sql = "select * from users where username = ? and password = ?";
+        let sql = "select * from users where username = ?";
         let record = sqlx::query_as::<_, User>(sql)
-            .bind(username.clone())
-            .bind(password.clone())
+            .bind(&username)
             .fetch_optional(&self.mysql)
-            .await
-            .with_context(|| {
-                format!(
-                    "Failed to fetch updated record from table '{}' with username {:?}",
-                    "users",
-                    username.clone()
-                )
-            });
+            .await;
 
-        record.unwrap()
+        let mut user = match record {
+            Ok(Some(user)) => user,
+            Ok(None) | Err(_) => return None,
+        };
+
+        let stored_password = match user.password.clone() {
+            Some(value) if !value.is_empty() => value,
+            _ => return None,
+        };
+
+        let verified = if stored_password.starts_with("$argon2") {
+            let parsed_hash = match PasswordHash::new(&stored_password) {
+                Ok(hash) => hash,
+                Err(_) => return None,
+            };
+            Argon2::default()
+                .verify_password(password.as_bytes(), &parsed_hash)
+                .is_ok()
+        } else {
+            // Backward-compatible one-time migration for existing plaintext records.
+            if stored_password != password {
+                return None;
+            }
+
+            let hash = match Self::hash_password(&password) {
+                Ok(hash) => hash,
+                Err(_) => return None,
+            };
+
+            let id = match user.id {
+                Some(id) => id,
+                None => return None,
+            };
+
+            if sqlx::query("UPDATE users SET password = ? WHERE id = ?")
+                .bind(&hash)
+                .bind(id)
+                .execute(&self.mysql)
+                .await
+                .is_err()
+            {
+                return None;
+            }
+
+            user.password = Some(hash);
+            true
+        };
+
+        if verified {
+            Some(user)
+        } else {
+            None
+        }
+    }
+
+    fn hash_password(password: &str) -> Result<String, Error> {
+        let salt = SaltString::generate(&mut OsRng);
+        Argon2::default()
+            .hash_password(password.as_bytes(), &salt)
+            .map(|hash| hash.to_string())
+            .map_err(|err| Error::msg(format!("Failed to hash password: {err}")))
     }
 
     pub async fn find_by_username(&self, username: Option<String>) -> Result<Option<User>, Error> {
@@ -99,7 +152,8 @@ impl CrudOperations<User> for UserBiz {
         }
 
         if let Some(password) = item.password {
-            updates.push(("password", password));
+            let password_hash = Self::hash_password(&password)?;
+            updates.push(("password", password_hash));
         } else {
             return Err(Error::msg("Password is required for user creation"));
         }
@@ -116,8 +170,6 @@ impl CrudOperations<User> for UserBiz {
             return Err(Error::msg("Email is required for user creation"));
         }
 
-        log::info!("Creating user with updates: {:?}", updates);
-
         let result = common_lib::sql_utils::insert::<User>(&self.mysql, "users", updates).await;
 
         result
@@ -132,7 +184,8 @@ impl CrudOperations<User> for UserBiz {
         }
 
         if let Some(password) = item.password {
-            updates.push(("password", password));
+            let password_hash = Self::hash_password(&password)?;
+            updates.push(("password", password_hash));
         } else {
             return Err(Error::msg("Password is required for user update"));
         }
@@ -149,7 +202,7 @@ impl CrudOperations<User> for UserBiz {
             return Err(Error::msg("Email is required for user update"));
         }
 
-        log::info!("Updating user with ID {}: {:?}", id, updates);
+        log::info!("Updating user with ID {}", id);
 
         let result =
             common_lib::sql_utils::update_by_id::<User>(&self.mysql, "users", id, updates).await;
@@ -192,5 +245,22 @@ impl CrudOperations<User> for UserBiz {
     async fn by_id(&self, id: i64) -> Result<User, Error> {
         let result = common_lib::sql_utils::by_id_common::<User>(&self.mysql, "users", id).await;
         result
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::UserBiz;
+    use argon2::{password_hash::{PasswordHash, PasswordVerifier}, Argon2};
+
+    #[test]
+    fn password_hash_is_argon2id_and_verifies() {
+        let password = "correct horse battery staple";
+        let hash = UserBiz::hash_password(password).expect("password hashing should succeed");
+        assert!(hash.starts_with("$argon2id$"));
+
+        let parsed = PasswordHash::new(&hash).expect("generated hash should parse");
+        assert!(Argon2::default().verify_password(password.as_bytes(), &parsed).is_ok());
+        assert!(Argon2::default().verify_password(b"wrong password", &parsed).is_err());
     }
 }

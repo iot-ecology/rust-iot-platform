@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+use crate::AuthToken;
 use crate::biz::user_biz::UserBiz;
 use crate::db::db_model::User;
 use common_lib::config::Config;
@@ -29,6 +30,7 @@ use serde_json::json;
 
 #[get("/user/index")]
 pub async fn user_index(
+    _auth_token: AuthToken,
     user_biz: &rocket::State<UserBiz>,
     config: &State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -58,11 +60,12 @@ pub async fn user_index(
 
 #[post("/User/create", format = "json", data = "<data>")]
 pub async fn create_user(
+    _auth_token: AuthToken,
     data: Json<User>,
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
-    info!("user = {:?}", data);
+    info!("creating user = {:?}", data.username);
 
     if data.username.clone().is_none() {
         let error_json = json!({
@@ -115,6 +118,7 @@ pub async fn create_user(
 
 #[post("/User/update", format = "json", data = "<data>")]
 pub async fn update_user(
+    _auth_token: AuthToken,
     data: Json<User>,
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
@@ -160,6 +164,7 @@ pub async fn update_user(
 
 #[get("/User/page?<username>&<page>&<page_size>")]
 pub async fn page_user(
+    _auth_token: AuthToken,
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
     username: Option<String>,
@@ -218,6 +223,7 @@ pub async fn page_user(
 
 #[post("/User/delete/<id>")]
 pub async fn delete_user(
+    _auth_token: AuthToken,
     id: i64,
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
@@ -243,6 +249,7 @@ pub async fn delete_user(
 
 #[get("/User/<id>")]
 pub async fn by_id_user(
+    _auth_token: AuthToken,
     id: i64,
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
@@ -269,6 +276,7 @@ pub async fn by_id_user(
 
 #[get("/User/list")]
 pub async fn list_user(
+    _auth_token: AuthToken,
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -294,6 +302,7 @@ pub async fn list_user(
 
 #[post("/User/BindRole")]
 pub async fn bind_role(
+    _auth_token: AuthToken,
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -306,6 +315,7 @@ pub async fn bind_role(
 
 #[post("/User/BindDept")]
 pub async fn bind_dept(
+    _auth_token: AuthToken,
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -318,6 +328,7 @@ pub async fn bind_dept(
 
 #[get("/User/QueryBindRole")]
 pub async fn query_bind_role(
+    _auth_token: AuthToken,
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -330,6 +341,7 @@ pub async fn query_bind_role(
 
 #[get("/User/QueryBindDept")]
 pub async fn query_bind_dept(
+    _auth_token: AuthToken,
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -342,6 +354,7 @@ pub async fn query_bind_dept(
 
 #[post("/User/BindDeviceInfo")]
 pub async fn bind_device_info(
+    _auth_token: AuthToken,
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
@@ -354,6 +367,7 @@ pub async fn bind_device_info(
 
 #[post("/User/QueryBindDeviceInfo")]
 pub async fn query_bind_device_info(
+    _auth_token: AuthToken,
     user_api: &rocket::State<UserBiz>,
     config: &rocket::State<Config>,
 ) -> rocket::response::status::Custom<Json<serde_json::Value>> {
