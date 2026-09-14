@@ -101,17 +101,19 @@ fn generate_token(
     encode(
         &Header::default(),
         &claims,
-        &EncodingKey::from_secret(JWT_SECRET.as_ref()),
+        &EncodingKey::from_secret(jwt_secret().as_bytes()),
     )
 }
 
 /// 配置文件或常量
-const JWT_SECRET: &str = "a_secret_test123456";
+fn jwt_secret() -> String {
+    std::env::var("JWT_SECRET").expect("JWT_SECRET environment variable must be configured")
+}
 /// 解析 JWT Token
-fn parse_token(token: &str) -> Result<MyClaims, jsonwebtoken::errors::Error> {
+pub(crate) fn parse_token(token: &str) -> Result<MyClaims, jsonwebtoken::errors::Error> {
     let decoded = decode::<MyClaims>(
         token,
-        &DecodingKey::from_secret(JWT_SECRET.as_ref()),
+        &DecodingKey::from_secret(jwt_secret().as_bytes()),
         &Validation::default(),
     )?;
     Ok(decoded.claims)
