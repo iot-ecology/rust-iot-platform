@@ -541,18 +541,29 @@ impl<'r> FromRequest<'r> for AuthToken {
         let path = request.uri().path();
 
         if whitelist.contains(path.as_str()) {
-            Outcome::Success(AuthToken("".to_string()))
-        } else {
-            if let Some(value) = request.headers().get_one("Authorization") {
-                Outcome::Success(AuthToken(value.to_string()))
-            } else {
-                Outcome::Error((
+            return Outcome::Success(AuthToken("".to_string()));
+        }
+
+        let value = match request.headers().get_one("Authorization") {
+            Some(value) if !value.trim().is_empty() => value.trim(),
+            _ => {
+                return Outcome::Error((
                     Status::Unauthorized,
                     Json(ErrorResponse {
                         message: "Authorization header missing".to_string(),
                     }),
-                ))
+                ));
             }
+        };
+
+        match crate::controller::login_router::parse_token(value) {
+            Ok(_) => Outcome::Success(AuthToken(value.to_string())),
+            Err(_) => Outcome::Error((
+                Status::Unauthorized,
+                Json(ErrorResponse {
+                    message: "Invalid or expired authorization token".to_string(),
+                }),
+            )),
         }
     }
 }
