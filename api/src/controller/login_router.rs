@@ -107,7 +107,10 @@ fn generate_token(
 
 /// 配置文件或常量
 fn jwt_secret() -> String {
-    std::env::var("JWT_SECRET").expect("JWT_SECRET environment variable must be configured")
+    let secret = std::env::var("JWT_SECRET")
+        .expect("JWT_SECRET environment variable must be configured");
+    assert!(secret.len() >= 32, "JWT_SECRET must be at least 32 bytes long");
+    secret
 }
 /// 解析 JWT Token
 pub(crate) fn parse_token(token: &str) -> Result<MyClaims, jsonwebtoken::errors::Error> {
